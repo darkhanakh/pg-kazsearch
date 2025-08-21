@@ -206,12 +206,37 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
             )
         return ok
 
+    # Accusative variants -ын/-ін typically after a consonant-final base
+    if suffix in {"ын", "ін"}:
+        if len(word) < len(suffix) + 1:
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (too short for check)"
+            )
+            return False
+        ok = not _is_vowel(word[-len(suffix) - 1])
+        if not ok:
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (preceding "
+                f"'{word[-len(suffix) - 1]}' is a vowel)"
+            )
+        return ok
+
     if suffix in {"а", "е"}:
         base = word[: -len(suffix)]
         ok = base.endswith(("ы", "і", "сы", "сі"))
         if not ok:
             logger.debug(
                 f"  [BLOCK] '{suffix}' on '{word}' (no possessive tail)"
+            )
+        return ok
+
+    # Enclitic accusative -н generally after 3sg possessive -ы/-і
+    if suffix == "н":
+        base = word[: -1]
+        ok = base.endswith(("ы", "і"))
+        if not ok:
+            logger.debug(
+                f"  [BLOCK] 'н' on '{word}' (base '{base}' lacks 3sg possessive)"
             )
         return ok
 
@@ -229,10 +254,12 @@ def _iter_suffixes_with_group(
       is a lemma AND removing the vowel doesn't lead to a valid lemma.
     - probe: looser logging-only mode for 'looks inflected' checks.
     """
+    # Prefer stripping possessive before case to avoid losing lexical material
+    # in forms like 'орыны' -> 'орын' (POSS before CASE).
     groups = [
         ("PRED", PREDICATE_SUFFIXES),
-        ("CASE", CASE_SUFFIXES),
         ("POSS", POSSESSIVE_SUFFIXES),
+        ("CASE", CASE_SUFFIXES),
         ("PLUR", PLURAL_SUFFIXES),
     ]
     for tag, group in groups:
@@ -259,6 +286,16 @@ def _iter_suffixes_with_group(
                     )
                     continue  # keep the lemma intact
 
+            # If the whole word and the base are both lemmas, avoid stripping
+            # case suffixes to preserve uninflected lemmas like 'қысқа'.
+            base = word[: -len(sfx)]
+            if tag == "CASE" and word in LEMMAS:
+                if base in LEMMAS:
+                    logger.debug(
+                        f"  [SAFE] Skip CASE '{sfx}' on lemma '{word}': base '{base}' is also lemma"
+                    )
+                    continue
+
             if probe:
                 logger.debug(
                     f"  [LOOKS-INFLECTED] {tag} suffix '{sfx}' matches '{word}'"
@@ -281,13 +318,16 @@ def _looks_inflected(word: str) -> bool:
 # Search / main stemmer
 # =======================
 def _search(
-    word: str, lemmas: set[str], depth: int, seen: set[str]
+    word: str, lemmas: set[str], depth: int, seen: set[str], prefer_strip_first: bool = False
 ) -> str | None:
     logger.debug(f"[DEPTH {depth}] Enter: '{word}'")
-    hit, reason = _check_stem(word, lemmas)
-    if hit:
-        logger.debug(f"[DEPTH {depth}] HIT '{hit}' ({reason})")
-        return hit
+
+    # Optionally try stripping suffixes before accepting the word as a direct lemma.
+    if not prefer_strip_first:
+        hit, reason = _check_stem(word, lemmas)
+        if hit:
+            logger.debug(f"[DEPTH {depth}] HIT '{hit}' ({reason})")
+            return hit
 
     if depth == 0 or word in seen:
         logger.debug(f"[DEPTH {depth}] Stop on '{word}' (depth/seen)")
@@ -309,12 +349,19 @@ def _search(
             )
             return hit
 
-        found = _search(base, lemmas, depth - 1, seen)
+        found = _search(base, lemmas, depth - 1, seen, prefer_strip_first)
         if found:
             logger.debug(
                 f"[DEPTH {depth}] Backtrack success via '{sfx}': '{found}'"
             )
             return found
+
+    # If we preferred stripping first, check the word as-is last.
+    if prefer_strip_first:
+        hit, reason = _check_stem(word, lemmas)
+        if hit:
+            logger.debug(f"[DEPTH {depth}] HIT '{hit}' ({reason})")
+            return hit
 
     logger.debug(f"[DEPTH {depth}] No suffix led to lemma for '{word}'")
     return None
@@ -351,7 +398,12 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
                 "Bypass early return: policy=never; attempting stemming"
             )
 
-    found = _search(w, lemmas, depth=7, seen=set())
+    prefer_strip_first = False
+    if w in lemmas and _looks_inflected(w):
+        # Looks inflected, but also present as a lemma: prioritize stripping
+        prefer_strip_first = True
+
+    found = _search(w, lemmas, depth=7, seen=set(), prefer_strip_first=prefer_strip_first)
     if found:
         logger.debug(f"RESULT: '{orig}' -> '{found}'")
         return found
