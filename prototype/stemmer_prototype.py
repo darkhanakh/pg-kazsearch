@@ -89,11 +89,14 @@ DEFAULT_SUFFIXES_PATH = (
 )
 all_suffixes = _load_suffixes_from_json(DEFAULT_SUFFIXES_PATH)
 
-# 4. Assign suffix groups from the loaded data, with fallbacks to empty lists
-PLURAL_SUFFIXES = all_suffixes.get("PLURAL", [])
-POSSESSIVE_SUFFIXES = all_suffixes.get("POSSESSIVE", [])
-CASE_SUFFIXES = all_suffixes.get("CASE", [])
-PREDICATE_SUFFIXES = all_suffixes.get("PREDICATE", [])
+# 4. Assign suffix groups from the loaded data, pre-sorted once by length (desc)
+def _sort_suffixes_desc(seq: list[str]) -> tuple[str, ...]:
+    return tuple(sorted(seq, key=len, reverse=True))
+
+PLURAL_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("PLURAL", []))
+POSSESSIVE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("POSSESSIVE", []))
+CASE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("CASE", []))
+PREDICATE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("PREDICATE", []))
 
 
 # Better vowel set (Cyrillic)
@@ -246,30 +249,27 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
 
     if suffix in {"а", "е"}:
         base = word[: -len(suffix)]
-        # Allow dative -а/-е after 1st/2nd/3rd possessives with guard rails
-        long_possessive = (
-            "ым", "ім", "ың", "ің", "сы", "сі", "ы", "і",
-            "ымыз", "іміз", "ыңыз", "іңіз", "мыз", "міз", "ңыз", "ңіз"
+        # Consolidate most possessive tails into one tuple for a single endswith check,
+        # but keep guard rails for single-letter 'м'/'ң' which require a preceding vowel.
+        valid_possessive_tails = (
+            "ымыз", "іміз", "ыңыз", "іңіз", "мыз", "міз", "ңыз", "ңіз",
+            "ым", "ім", "ың", "ің", "сы", "сі", "ы", "і"
         )
-        ok = False
-        if base.endswith(long_possessive):
-            ok = True
-        elif base.endswith("м") and len(base) >= 2 and _is_vowel(base[-2]):
-            # 1sg possessive -м attaches to vowel-final base: e.g., 'алмам' (алма+м)
-            ok = True
-        elif base.endswith("ң") and len(base) >= 2 and _is_vowel(base[-2]):
-            # 2sg possessive -ң attaches to vowel-final base
-            ok = True
+        ok = (
+            base.endswith(valid_possessive_tails)
+            or (base.endswith("м") and len(base) >= 2 and _is_vowel(base[-2]))
+            or (base.endswith("ң") and len(base) >= 2 and _is_vowel(base[-2]))
+        )
         if not ok:
             logger.debug(
                 f"  [BLOCK] '{suffix}' on '{word}' (no possessive tail)"
             )
         return ok
 
-    # Enclitic accusative -н generally after 3sg possessive -ы/-і
+    # Enclitic accusative -н generally after 3sg possessive -ы/-і or -сы/-сі
     if suffix == "н":
         base = word[: -1]
-        ok = base.endswith(("ы", "і"))
+        ok = base.endswith(("ы", "і", "сы", "сі"))
         if not ok:
             logger.debug(
                 f"  [BLOCK] 'н' on '{word}' (base '{base}' lacks 3sg possessive)"
@@ -299,7 +299,7 @@ def _iter_suffixes_with_group(
         ("PLUR", PLURAL_SUFFIXES),
     ]
     for tag, group in groups:
-        for sfx in sorted(group, key=len, reverse=True):
+        for sfx in group:
             if not word.endswith(sfx):
                 continue
 
