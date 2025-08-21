@@ -198,7 +198,13 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
                 f"  [BLOCK] '{suffix}' on '{word}' (too short for check)"
             )
             return False
-        ok = _is_vowel(word[-len(suffix) - 1])
+        base = word[: -len(suffix)]
+        # Block accusative -ны/-ні after 3sg possessive tails
+        if base.endswith(("ы", "і", "сы", "сі")):
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (after 3sg possessive; use 'н')"
+            )
+        ok = _is_vowel(word[-len(suffix) - 1]) and not base.endswith(("ы", "і", "сы", "сі"))
         if not ok:
             logger.debug(
                 f"  [BLOCK] '{suffix}' on '{word}' (preceding "
@@ -223,7 +229,20 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
 
     if suffix in {"а", "е"}:
         base = word[: -len(suffix)]
-        ok = base.endswith(("ы", "і", "сы", "сі"))
+        # Allow dative -а/-е after 1st/2nd/3rd possessives with guard rails
+        long_possessive = (
+            "ым", "ім", "ың", "ің", "сы", "сі", "ы", "і",
+            "ымыз", "іміз", "ыңыз", "іңіз", "мыз", "міз", "ңыз", "ңіз"
+        )
+        ok = False
+        if base.endswith(long_possessive):
+            ok = True
+        elif base.endswith("м") and len(base) >= 2 and _is_vowel(base[-2]):
+            # 1sg possessive -м attaches to vowel-final base: e.g., 'алмам' (алма+м)
+            ok = True
+        elif base.endswith("ң") and len(base) >= 2 and _is_vowel(base[-2]):
+            # 2sg possessive -ң attaches to vowel-final base
+            ok = True
         if not ok:
             logger.debug(
                 f"  [BLOCK] '{suffix}' on '{word}' (no possessive tail)"
@@ -254,12 +273,12 @@ def _iter_suffixes_with_group(
       is a lemma AND removing the vowel doesn't lead to a valid lemma.
     - probe: looser logging-only mode for 'looks inflected' checks.
     """
-    # Prefer stripping possessive before case to avoid losing lexical material
-    # in forms like 'орыны' -> 'орын' (POSS before CASE).
+    # Morphological order: Case before Possessive helps nested genitive chains
+    # like 'алмасының' (алма+сы+ның) to peel case first.
     groups = [
         ("PRED", PREDICATE_SUFFIXES),
-        ("POSS", POSSESSIVE_SUFFIXES),
         ("CASE", CASE_SUFFIXES),
+        ("POSS", POSSESSIVE_SUFFIXES),
         ("PLUR", PLURAL_SUFFIXES),
     ]
     for tag, group in groups:
