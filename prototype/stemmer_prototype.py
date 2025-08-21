@@ -96,7 +96,37 @@ def _sort_suffixes_desc(seq: list[str]) -> tuple[str, ...]:
 PLURAL_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("PLURAL", []))
 POSSESSIVE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("POSSESSIVE", []))
 CASE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("CASE", []))
-PREDICATE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("PREDICATE", []))
+# Augment predicate-like derivational endings that are missing in data
+_pred_base = list(all_suffixes.get("PREDICATE", []))
+_pred_base += [
+    "сыз", "сіз",
+    "мын", "мін", "бын", "бін", "пын", "пін",
+    "мыз", "міз", "быз", "біз", "пыз", "піз",
+    "сың", "сің",
+    "сыңдар", "сіңдер",
+    "сыздар", "сіздер",
+]
+PREDICATE_SUFFIXES = _sort_suffixes_desc(_pred_base)
+VERB_SUFFIXES = _sort_suffixes_desc(
+    all_suffixes.get(
+        "VERB",
+        [
+            # Common verb endings / markers
+            "йды", "йді", "ады", "еді",
+            "ды", "ді", "ты", "ті",
+            "саң", "сең", "сақ", "сек", "са", "се",
+            "майды", "мейді", "байды", "бейді", "пайды", "пейді",
+            "май", "мей",
+            "ма", "ме", "ба", "бе", "па", "пе",
+            "ған", "ген", "қан", "кен",
+            "мақ", "мек", "бақ", "бек", "пақ", "пек",
+            # participle/infinitive/conditional/future markers
+            "атын", "етін", "йтын", "йтін",
+            "тын", "тін",
+            "у", "а", "е", "й",
+        ],
+    )
+)
 
 
 # Better vowel set (Cyrillic)
@@ -178,15 +208,16 @@ def _check_stem(stem: str, lemmas: set[str]) -> tuple[str | None, str]:
     """
     Returns (valid_stem, reason) where reason ∈ {'direct','mutated','elided',''}
     """
-    if stem in lemmas:
-        logger.debug(f"  [CHECK] '{stem}' is a direct lemma")
-        return stem, "direct"
-
+    # Prefer reverse-mutation restoration over accepting the raw base
     if stem and stem[-1] in REVERSE_MUTATION:
         mutated = stem[:-1] + REVERSE_MUTATION[stem[-1]]
         if mutated in lemmas:
             logger.debug(f"  [CHECK] '{stem}' -> '{mutated}' via mutation")
             return mutated, "mutated"
+
+    if stem in lemmas:
+        logger.debug(f"  [CHECK] '{stem}' is a direct lemma")
+        return stem, "direct"
 
     elided = _handle_vowel_elision(stem, lemmas)
     if elided:
@@ -295,6 +326,7 @@ def _iter_suffixes_with_group(
     groups = [
         ("PRED", PREDICATE_SUFFIXES),
         ("CASE", CASE_SUFFIXES),
+        ("VERB", VERB_SUFFIXES),
         ("POSS", POSSESSIVE_SUFFIXES),
         ("PLUR", PLURAL_SUFFIXES),
     ]
@@ -322,13 +354,32 @@ def _iter_suffixes_with_group(
                     )
                     continue  # keep the lemma intact
 
-            # If the whole word and the base are both lemmas, avoid stripping
-            # case suffixes to preserve uninflected lemmas like 'қысқа'.
+            # Ambiguity safeguard: If the whole word and the base are both lemmas,
+            # avoid stripping for non-derivational layers (CASE/POSS/PLUR).
+            # Allow stripping for VERB/PRED (derivational/copular) so forms like
+            # 'бару' -> 'бар' and 'сөзсіз' -> 'сөз' still work.
             base = word[: -len(sfx)]
-            if tag == "CASE" and word in LEMMAS:
-                if base in LEMMAS:
+            if word in LEMMAS and base in LEMMAS and tag in {"CASE", "POSS", "PLUR"}:
+                logger.debug(
+                    f"  [SAFE] Skip {tag} '{sfx}' on lemma '{word}': base '{base}' is also lemma"
+                )
+                continue
+
+            # Additional guards for VERB layer to avoid over-stripping
+            if tag == "VERB":
+                short_vowels = {"а", "е"}
+                # Only treat single-letter markers as ambiguous; allow stripping negation -ма/-ме
+                ambiguous_verb_markers = {"а", "е", "й"}
+                # Only allow single vowel verb markers if the base is a known lemma
+                if sfx in short_vowels and base not in LEMMAS:
                     logger.debug(
-                        f"  [SAFE] Skip CASE '{sfx}' on lemma '{word}': base '{base}' is also lemma"
+                        f"  [SAFE] Skip VERB '{sfx}' on '{word}': base '{base}' not a lemma"
+                    )
+                    continue
+                # If both word and base are lemmas and suffix is ambiguous, keep the lemma intact
+                if word in LEMMAS and base in LEMMAS and sfx in ambiguous_verb_markers:
+                    logger.debug(
+                        f"  [SAFE] Skip VERB '{sfx}' on lemma '{word}': base '{base}' is also lemma"
                     )
                     continue
 
@@ -377,6 +428,7 @@ def _search(
             f"'{word}' -> base '{base}'"
         )
 
+        # Immediately and fully check the base for lemma match, including mutation/elision
         hit, reason = _check_stem(base, lemmas)
         if hit:
             logger.debug(
@@ -385,6 +437,7 @@ def _search(
             )
             return hit
 
+        # If not a direct or repaired lemma, continue recursion from the base
         found = _search(base, lemmas, depth - 1, seen, prefer_strip_first)
         if found:
             logger.debug(
