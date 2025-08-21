@@ -590,7 +590,7 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
         # Looks inflected, but also present as a lemma: prioritize stripping
         prefer_strip_first = True
 
-    found = _search(w, lemmas, depth=7, seen=set(), prefer_strip_first=prefer_strip_first)
+    found = _search(w, lemmas, depth=10, seen=set(), prefer_strip_first=prefer_strip_first)
     if found:
         logger.debug(f"RESULT: '{orig}' -> '{found}'")
         return found
