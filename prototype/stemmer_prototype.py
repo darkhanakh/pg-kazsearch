@@ -11,7 +11,7 @@ import json  # 1. Import the json library
 # =======================
 # Debug configuration
 # =======================
-DEBUG = False  # set False to quiet logs
+DEBUG = True  # set False to quiet logs
 LOG_CODEPOINTS = False  # True -> print hex codepoints of words
 EARLY_RETURN_POLICY = "if_looks_uninflected"
 
