@@ -85,7 +85,7 @@ def _load_suffixes_from_json(path: str | Path) -> dict[str, list[str]]:
 
 # 3. Define the path and load the JSON file
 DEFAULT_SUFFIXES_PATH = (
-    Path(__file__).resolve().parent.parent / "data" / "processed" / "kazakh_endings.json"
+    Path(__file__).resolve().parent.parent / "data" / "processed" / "kazakh_atomic_suffixes.json"
 )
 all_suffixes = _load_suffixes_from_json(DEFAULT_SUFFIXES_PATH)
 
@@ -351,7 +351,7 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
                 "Bypass early return: policy=never; attempting stemming"
             )
 
-    found = _search(w, lemmas, depth=4, seen=set())
+    found = _search(w, lemmas, depth=7, seen=set())
     if found:
         logger.debug(f"RESULT: '{orig}' -> '{found}'")
         return found
@@ -375,8 +375,8 @@ if __name__ == "__main__":
     words_to_test = [
     # базовые тесты
     ("мектептің", "мектеп"),
-    ("аузы", "ауыз"),
-    ("орны", "орын"),
+    ("ауызы", "ауыз"),
+    ("орыны", "орын"),
     ("мектепке", "мектеп"),
 
     # парадигма "алма"
