@@ -6,17 +6,13 @@ import sys
 import unicodedata
 import os
 from pathlib import Path
+import json  # 1. Import the json library
 
 # =======================
 # Debug configuration
 # =======================
 DEBUG = False  # set False to quiet logs
 LOG_CODEPOINTS = False  # True -> print hex codepoints of words
-
-# Early-return policy when a word is in LEMMAS:
-# - "always": return immediately (original behavior).
-# - "if_looks_uninflected": return only if no plausible suffix is detected.
-# - "never": never early-return; always try to stem and fall back on failure.
 EARLY_RETURN_POLICY = "if_looks_uninflected"
 
 logger = logging.getLogger("kaz_stemmer")
@@ -30,10 +26,7 @@ logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 # Lemmas / data init
 # =======================
 CLEANED_LEMMAS: set[str] = globals().get("CLEANED_LEMMAS", set())
-
 LEMMAS = CLEANED_LEMMAS
-
-# Load lemmas from data/processed/lemmas.txt (or env override) at import time
 LEMMAS_FILE_ENV = "KAZ_STEMMER_LEMMAS_PATH"
 DEFAULT_LEMMAS_PATH = (
     Path(__file__).resolve().parent.parent / "data" / "processed" / "lemmas.txt"
@@ -67,96 +60,41 @@ if not CLEANED_LEMMAS:
     else:
         logger.warning("No lemmas loaded; proceeding with empty lemma set")
 
-# Exceptions: words that should not be stemmed.
 EXCEPTIONS = {"абай", "алматы", "туралы", "және"}
 
-# Suffix groups
-PLURAL_SUFFIXES = ["лар", "лер", "дар", "дер", "тар", "тер"]
+# =======================
+# Suffixes init
+# =======================
 
-POSSESSIVE_SUFFIXES = [
-    "ымыз",
-    "іміз",
-    "ыңыз",
-    "іңіз",
-    "лары",
-    "лері",
-    "дары",
-    "дері",
-    "тары",
-    "тері",  # 3rd person plural possessive
-    "сы",
-    "сі",
-    "ым",
-    "ім",
-    "ың",
-    "ің",
-    "м",
-    "ң",
-    "ы",
-    "і",
-]
+# 2. Define a function to load suffixes from the JSON file
+def _load_suffixes_from_json(path: str | Path) -> dict[str, list[str]]:
+    """Loads suffix groups from a JSON file."""
+    p = Path(path)
+    suffixes: dict[str, list[str]] = {}
+    try:
+        with p.open("r", encoding="utf-8") as f:
+            suffixes = json.load(f)
+            logger.info(f"Loaded {sum(len(v) for v in suffixes.values())} suffixes from '{p}'")
+    except FileNotFoundError:
+        logger.warning(f"Suffix file not found: '{p}'. Stemming will be impaired.")
+    except json.JSONDecodeError:
+        logger.warning(f"Error decoding JSON from suffix file: '{p}'")
+    except Exception as e:
+        logger.warning(f"Error reading suffix file '{p}': {e}")
+    return suffixes
 
-# NOTE: bare "н" removed
-CASE_SUFFIXES = [
-    "дағы",
-    "дегі",
-    "тағы",
-    "тегі",
-    "дан",
-    "ден",
-    "тан",
-    "тен",
-    "нан",
-    "нен",
-    "ның",
-    "нің",
-    "дың",
-    "дің",
-    "тың",
-    "тің",
-    "нда",  # Locative after possessive
-    "нде",
-    "мен",
-    "бен",
-    "пен",
-    "ға",
-    "ге",
-    "қа",
-    "ке",
-    "на",
-    "не",
-    "да",
-    "де",
-    "та",
-    "те",
-    "ны",  # guarded by constraints
-    "ні",  # guarded by constraints
-    "ды",
-    "ді",
-    "ты",
-    "ті",
-    "а",  # Dative after possessive (guarded)
-    "е",  # Dative after possessive (guarded)
-]
+# 3. Define the path and load the JSON file
+DEFAULT_SUFFIXES_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "processed" / "kazakh_endings.json"
+)
+all_suffixes = _load_suffixes_from_json(DEFAULT_SUFFIXES_PATH)
 
-PREDICATE_SUFFIXES = [
-    "сыңдар",
-    "сіңдер",
-    "сыздар",
-    "сіздер",
-    "мын",
-    "мін",
-    "пын",
-    "пін",
-    "сың",
-    "сің",
-    "сыз",
-    "сіз",
-    "мыз",
-    "міз",
-    "пыз",
-    "піз",
-]
+# 4. Assign suffix groups from the loaded data, with fallbacks to empty lists
+PLURAL_SUFFIXES = all_suffixes.get("PLURAL", [])
+POSSESSIVE_SUFFIXES = all_suffixes.get("POSSESSIVE", [])
+CASE_SUFFIXES = all_suffixes.get("CASE", [])
+PREDICATE_SUFFIXES = all_suffixes.get("PREDICATE", [])
+
 
 # Better vowel set (Cyrillic)
 VOWELS = set("аәеёиіоуыөүұ")
@@ -282,7 +220,7 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
 
 def _iter_suffixes_with_group(
     word: str,
-    apply_single_vowel_safeguard: bool = True, 
+    apply_single_vowel_safeguard: bool = True,
     probe: bool = False,
 ):
     """
@@ -361,7 +299,7 @@ def _search(
         logger.debug(
             f"[DEPTH {depth}] Try {tag} suffix '{sfx}': "
             f"'{word}' -> base '{base}'"
-        ) 
+        )
 
         hit, reason = _check_stem(base, lemmas)
         if hit:
