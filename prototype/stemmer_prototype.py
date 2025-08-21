@@ -370,6 +370,15 @@ def _iter_suffixes_with_group(
                 short_vowels = {"а", "е"}
                 # Only treat single-letter markers as ambiguous; allow stripping negation -ма/-ме
                 ambiguous_verb_markers = {"а", "е", "й"}
+                # Negation markers frequently coincide with noun endings (e.g., 'алма').
+                # If both the word and the base are lemmas and the base is very short,
+                # prefer keeping the noun intact to avoid overstemming.
+                negation_markers = {"ма", "ме", "ба", "бе", "па", "пе"}
+                if sfx in negation_markers and word in LEMMAS and base in LEMMAS and len(base) <= 2:
+                    logger.debug(
+                        f"  [SAFE] Skip VERB '{sfx}' on lemma '{word}': base '{base}' too short"
+                    )
+                    continue
                 # Only allow single vowel verb markers if the base is a known lemma
                 if sfx in short_vowels and base not in LEMMAS:
                     logger.debug(
