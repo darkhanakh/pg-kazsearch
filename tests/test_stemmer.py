@@ -11,6 +11,8 @@ class TestKazakhStemmer(unittest.TestCase):
         failures = []
         for word, expected in ALL_CASES:
             result = stem_kazakh_word(word, LEMMAS, EXCEPTIONS)
+            # Show each tested word and its stemming result
+            print(f"{word} -> {result} (expected: {expected})")
             if result != expected:
                 failures.append((word, result, expected))
         if failures:
