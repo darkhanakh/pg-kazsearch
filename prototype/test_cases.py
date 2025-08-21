@@ -321,6 +321,96 @@ EDGE_CASES = [
     ("мектептеріміздегі", "мектеп"), # Very long suffix chain
 ]
 
+# ======================================================================
+# ADVANCED HARD CASES
+# ======================================================================
+
+# More complex consonant mutations and exceptions (e.g., loanwords)
+COMPLEX_MUTATION_CASES = [
+    ("көйлек", "көйлек"),
+    ("көйлегі", "көйлек"),       # Mutation: к -> г
+    ("тілек", "тілек"),
+    ("тілегі", "тілек"),         # Mutation: к -> г
+    ("қасық", "қасық"),
+    ("қасығы", "қасық"),     # Mutation: қ -> ғ
+    ("жапырақ", "жапырақ"),
+    ("жапырағы", "жапырақ"),     # Mutation: қ -> ғ
+    ("талап", "талап"),
+    ("талабы", "талап"),         # Mutation: п -> б
+    ("педагог", "педагог"),
+    ("педагогі", "педагог"),     # Mutation still applies to some loanwords
+    ("парк", "парк"),
+    ("паркі", "парк"),           # Exception: No mutation for 'парк'
+    ("банк", "банк"),
+    ("банкі", "банк"),           # Exception: No mutation for 'банк'
+    ("республика", "республика"),
+    ("республикасы", "республика"), # Exception: Final 'к' in loanwords with 'а'
+]
+
+# More cases of vowel elision, including front-vowel stems
+COMPLEX_ELISION_CASES = [
+    ("халық", "халық"),
+    ("халықы", "халық"),          # Vowel elision: халық -> халқы
+    ("қарын", "қарын"),
+    ("қарыны", "қарын"),          # Vowel elision: қарын -> қарны
+    ("ерін", "ерін"),
+    ("ерні", "ерін"),            # Vowel elision (front vowel): ерін -> ерні
+    ("мойын", "мойын"),
+    ("мойыны", "мойын"),          # Vowel elision: мойын -> мойны
+    ("пікір", "пікір"),
+    ("пікірі", "пікір"),         # Vowel elision (front vowel): пікір -> пікірі
+    ("өмір", "өмір"),
+    ("өмірі", "өмір"),           # Vowel elision (front vowel): өмір -> өмірі
+    ("жігіт", "жігіт"),
+    ("жігіті", "жігіт"),         # No elision, tests over-application of the rule
+]
+
+# Loanwords that challenge vowel harmony and mutation rules
+LOANWORD_CASES = [
+    ("автобус", "автобус"),
+    ("автобуспен", "автобус"),     # Backness harmony on a mixed word
+    ("автобусқа", "автобус"),
+    ("компьютер", "компьютер"),
+    ("компьютерге", "компьютер"),   # Frontness harmony on a mixed word
+    ("теледидар", "теледидар"),
+    ("теледидардың", "теледидар"),   # Backness harmony despite 'е' and 'і'
+    ("мәдениет", "мәдениет"),
+    ("мәдениетіміз", "мәдениет"),
+]
+
+# Extremely long suffix chains and verb-derived nouns
+EXTREME_SUFFIX_CHAIN_CASES = [
+    ("қаламсаптарымыздағылардың", "қаламсап"), # noun + pl + poss(1p pl) + loc + -ғы + pl + gen
+    ("келіспеушіліктерімізден", "келіспеушілік"), # A more conservative stem for a complex derived noun
+    ("орындаушыларымызбен", "орындаушы"),
+    ("жұмыссыздармен", "жұмыс"),          # noun + privative + pl + comitative
+    ("ауылшаруашылығындағы", "ауылшаруашылық"), # compound noun + poss(3p) + loc + -ғы
+]
+
+# Complex verb forms, including participles, negatives, and passives
+VERB_COMPLEX_CASES = [
+    ("келгендіктен", "кел"),         # Past participle + reason suffix
+    ("айтылғандай", "айт"),          # Passive voice + past participle + manner
+    ("отырғызбапты", "отырғыз"),     # Causative verb stem + negative + evidential past
+    ("көрмегенсіңдер", "көр"),       # Negative + past participle + person (2p pl inf)
+    ("жазыпты", "жаз"),              # Evidential past tense
+    ("жазыспайды", "жазыс"),         # Reciprocal verb stem + negative present
+    ("айтқыз", "айт"),               # Causative verb stem
+    ("келісілді", "келіс"),         # Reciprocal verb stem + passive
+    ("жаздырма", "жаздыр"),          # Causative verb stem + negative imperative
+]
+
+# Homographs and other sources of ambiguity
+AMBIGUOUS_AND_HOMOGRAPH_CASES = [
+    ("жазғы", "жаз"),               # 'summer' (adj) from 'жаз' (summer, noun)
+    ("жазба", "жаз"),             # A 'writing' or 'record' (noun)
+    ("атпен", "ат"),                 # 'with a horse' (noun)
+    ("ату", "ат"),                   # 'to shoot' (verb)
+    ("санаға", "сана"),             # to 'consciousness' (noun)
+    ("санға", "сан"),               # to a 'number' (noun)
+    ("түсімдегі", "түс"),           # 'the one in my dream' (noun 'түс')
+    ("түспе", "түс"),               # 'don't get off' (verb 'түс')
+]
 
 # ======================================================================
 # COMBINED LIST FOR MAIN SCRIPT
@@ -335,4 +425,10 @@ ALL_CASES = (
     + VERB_CASES
     + ADJECTIVE_CASES
     + EDGE_CASES
+    + COMPLEX_MUTATION_CASES
+    + COMPLEX_ELISION_CASES
+    + LOANWORD_CASES
+    + EXTREME_SUFFIX_CHAIN_CASES
+    + VERB_COMPLEX_CASES
+    + AMBIGUOUS_AND_HOMOGRAPH_CASES
 )
