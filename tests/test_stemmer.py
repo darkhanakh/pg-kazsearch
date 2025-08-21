@@ -7,17 +7,23 @@ from prototype.test_cases import ALL_CASES
 
 
 class TestKazakhStemmer(unittest.TestCase):
-    def test_all_cases(self):
-        failures = []
-        for word, expected in ALL_CASES:
-            result = stem_kazakh_word(word, LEMMAS, EXCEPTIONS)
-            # Show each tested word and its stemming result
-            print(f"{word} -> {result} (expected: {expected})")
-            if result != expected:
-                failures.append((word, result, expected))
-        if failures:
-            lines = [f"{w} -> {r} (expected: {e})" for w, r, e in failures]
-            self.fail("\n" + "\n".join(lines))
+    pass
+
+
+def _make_case_test(word: str, expected: str):
+    def test(self):
+        result = stem_kazakh_word(word, LEMMAS, EXCEPTIONS)
+        ok = result == expected
+        emoji = "✅" if ok else "❌"
+        print(f"{emoji} {word} -> {result} (expected: {expected})")
+        self.assertEqual(result, expected, f"{word} -> {result} (expected: {expected})")
+    return test
+
+
+for i, (word, expected) in enumerate(ALL_CASES):
+    name = f"test_{i:04d}_{word}"
+    safe_name = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in name)
+    setattr(TestKazakhStemmer, safe_name, _make_case_test(word, expected))
 
 
 if __name__ == "__main__":

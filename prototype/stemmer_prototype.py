@@ -128,9 +128,19 @@ def _handle_vowel_elision(stem: str, lemmas: set[str]) -> str | None:
     Tries to reverse vowel elision by inserting 'ы' or 'і'.
     Example: 'ауз' -> 'ауыз'
     """
+    # ======================================================================
+    # OPTIMIZATION: Only run this expensive check on candidates that could
+    # plausibly be stems with an elided vowel. These candidates are almost
+    # always short and contain exactly one vowel (e.g., 'ауз', 'орн').
+    vowel_count = sum(1 for char in stem if _is_vowel(char))
+    if vowel_count != 1:
+        return None
+    # ======================================================================
+
     if len(stem) < 2:
         return None
 
+    # (The rest of the function is unchanged)
     vowel_back = "аоұы"
     vowel_front = "әеөүі"
     all_vowels = vowel_back + vowel_front
