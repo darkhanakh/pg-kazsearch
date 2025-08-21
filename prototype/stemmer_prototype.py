@@ -442,13 +442,6 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
 # Test / sanity
 # =======================
 if __name__ == "__main__":
-    # Your quick membership probe
-    for probe in ["мектепке", "аузы", "орны"]:
-        print(
-            f"Membership in CLEANED_LEMMAS: {probe!r} -> "
-            f"{probe in CLEANED_LEMMAS}"
-        )
-
     print("--- Refined Stemming Results ---")
     words_to_test = [
     # базовые тесты
