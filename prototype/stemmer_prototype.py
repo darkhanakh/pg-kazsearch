@@ -219,6 +219,13 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
                 f"  [BLOCK] '{suffix}' on '{word}' (too short for check)"
             )
             return False
+        base = word[: -len(suffix)]
+        # Do not allow -ын/-ін right after 3sg possessive stem ending with 'с' (as in '-сы/-сі')
+        if base.endswith("с"):
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (base ends with 'с' -> prefer enclitic 'н')"
+            )
+            return False
         ok = not _is_vowel(word[-len(suffix) - 1])
         if not ok:
             logger.debug(
