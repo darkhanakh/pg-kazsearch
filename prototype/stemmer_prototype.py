@@ -4,11 +4,13 @@ from __future__ import annotations
 import logging
 import sys
 import unicodedata
+import os
+from pathlib import Path
 
 # =======================
 # Debug configuration
 # =======================
-DEBUG = True  # set False to quiet logs
+DEBUG = False  # set False to quiet logs
 LOG_CODEPOINTS = False  # True -> print hex codepoints of words
 
 # Early-return policy when a word is in LEMMAS:
@@ -27,12 +29,43 @@ logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 # =======================
 # Lemmas / data init
 # =======================
-try:
-    CLEANED_LEMMAS
-except NameError:
-    CLEANED_LEMMAS = set()
+CLEANED_LEMMAS: set[str] = globals().get("CLEANED_LEMMAS", set())
 
 LEMMAS = CLEANED_LEMMAS
+
+# Load lemmas from data/processed/lemmas.txt (or env override) at import time
+LEMMAS_FILE_ENV = "KAZ_STEMMER_LEMMAS_PATH"
+DEFAULT_LEMMAS_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "processed" / "lemmas.txt"
+)
+
+def _load_lemmas_from_file(path: str | Path) -> set[str]:
+    p = Path(path)
+    lemmas: set[str] = set()
+    try:
+        with p.open("r", encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s or s.startswith("#"):
+                    continue
+                w = unicodedata.normalize("NFC", s).lower()
+                lemmas.add(w)
+    except FileNotFoundError:
+        logger.warning(f"Lemma file not found: '{p}'")
+    except Exception as e:
+        logger.warning(f"Error reading lemma file '{p}': {e}")
+    return lemmas
+
+if not CLEANED_LEMMAS:
+    path_str = os.environ.get(LEMMAS_FILE_ENV)
+    path = Path(path_str) if path_str else DEFAULT_LEMMAS_PATH
+    loaded = _load_lemmas_from_file(path)
+    if loaded:
+        CLEANED_LEMMAS = loaded
+        LEMMAS = CLEANED_LEMMAS
+        logger.info(f"Loaded {len(CLEANED_LEMMAS)} lemmas from '{path}'")
+    else:
+        logger.warning("No lemmas loaded; proceeding with empty lemma set")
 
 # Exceptions: words that should not be stemmed.
 EXCEPTIONS = {"абай", "алматы", "туралы", "және"}
