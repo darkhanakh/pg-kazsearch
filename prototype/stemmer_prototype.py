@@ -95,7 +95,13 @@ def _sort_suffixes_desc(seq: list[str]) -> tuple[str, ...]:
 
 PLURAL_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("PLURAL", []))
 POSSESSIVE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("POSSESSIVE", []))
-CASE_SUFFIXES = _sort_suffixes_desc(all_suffixes.get("CASE", []))
+_case_base = list(all_suffixes.get("CASE", []))
+# Add common manner/equative endings
+_case_base += [
+    "дай", "дей",
+]
+CASE_SUFFIXES = _sort_suffixes_desc(_case_base)
+
 # Augment predicate-like derivational endings that are missing in data
 _pred_base = list(all_suffixes.get("PREDICATE", []))
 _pred_base += [
@@ -106,27 +112,49 @@ _pred_base += [
     "сыңдар", "сіңдер",
     "сыздар", "сіздер",
 ]
+# Remove single-letter 'қ' which causes heavy overstemming (e.g., 'қасық' -> 'қас')
+_pred_base = [s for s in _pred_base if s != "қ"]
 PREDICATE_SUFFIXES = _sort_suffixes_desc(_pred_base)
-VERB_SUFFIXES = _sort_suffixes_desc(
-    all_suffixes.get(
-        "VERB",
-        [
-            # Common verb endings / markers
-            "йды", "йді", "ады", "еді",
-            "ды", "ді", "ты", "ті",
-            "саң", "сең", "сақ", "сек", "са", "се",
-            "майды", "мейді", "байды", "бейді", "пайды", "пейді",
-            "май", "мей",
-            "ма", "ме", "ба", "бе", "па", "пе",
-            "ған", "ген", "қан", "кен",
-            "мақ", "мек", "бақ", "бек", "пақ", "пек",
-            # participle/infinitive/conditional/future markers
-            "атын", "етін", "йтын", "йтін",
-            "тын", "тін",
-            "у", "а", "е", "й",
-        ],
-    )
+
+_verb_base = all_suffixes.get(
+    "VERB",
+    [
+        # Common verb endings / markers
+        "йды", "йді", "ады", "еді",
+        "ды", "ді", "ты", "ті",
+        "саң", "сең", "сақ", "сек", "са", "се",
+        "майды", "мейді", "байды", "бейді", "пайды", "пейді",
+        "май", "мей",
+        "ма", "ме", "ба", "бе", "па", "пе",
+        "ған", "ген", "қан", "кен",
+        "мақ", "мек", "бақ", "бек", "пақ", "пек",
+        # participle/infinitive/conditional/future markers
+        "атын", "етін", "йтын", "йтін",
+        "тын", "тін",
+        "у", "а", "е", "й",
+    ],
 )
+# Add common causative, passive, derivational verb-related and evidential clusters
+_verb_base += [
+    # evidential past after converb -п
+    "пты", "пті",
+    # causatives
+    "қыз", "ғыз", "кіз", "гіз",
+    # passive/causative light suffixes
+    "ыл", "іл",
+    # adjectival/participle
+    "ғы", "гі",
+    # nominalizers frequently attached to participles
+    "дық", "дік", "тық", "тік", "лық", "лік",
+]
+VERB_SUFFIXES = _sort_suffixes_desc(_verb_base)
+
+# Predicate endings that often clash with possessives; try them before others when present
+PRED_PRIORITY_SUFFIXES: tuple[str, ...] = _sort_suffixes_desc([
+    "сыңдар", "сіңдер", "сыздар", "сіздер",
+    "сыз", "сіз", "сың", "сің",
+    "мын", "мін", "мыз", "міз",
+])
 
 
 # Better vowel set (Cyrillic)
@@ -278,6 +306,38 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
             )
         return ok
 
+    # Stricter handling for accusative -ды/-ді/-ты/-ті
+    if suffix in {"ды", "ді", "ты", "ті"}:
+        if len(word) < len(suffix) + 1:
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (too short for check)"
+            )
+            return False
+        base = word[: -len(suffix)]
+        # Preceding character must be a consonant (true accusative context)
+        pre_char = word[-len(suffix) - 1]
+        if _is_vowel(pre_char):
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (preceding '{pre_char}' is a vowel)"
+            )
+            return False
+        # Avoid splitting evidential past '-пты/-пті' as CASE 'ты/ті'
+        if base.endswith("п"):
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (base ends with 'п' -> likely evidential past)"
+            )
+            return False
+        # Avoid treating possessive + 'і' as case 'ті' (e.g., 'жігіті')
+        if base.endswith((
+            "ымыз", "іміз", "ыңыз", "іңіз", "мыз", "міз", "ңыз", "ңіз",
+            "ым", "ім", "ың", "ің", "сы", "сі", "ы", "і", "м", "ң"
+        )):
+            logger.debug(
+                f"  [BLOCK] '{suffix}' on '{word}' (base has possessive tail)"
+            )
+            return False
+        return True
+
     if suffix in {"а", "е"}:
         base = word[: -len(suffix)]
         # Consolidate most possessive tails into one tuple for a single endswith check,
@@ -324,12 +384,24 @@ def _iter_suffixes_with_group(
     # Morphological order: Case before Possessive helps nested genitive chains
     # like 'алмасының' (алма+сы+ның) to peel case first.
     groups = [
-        ("PRED", PREDICATE_SUFFIXES),
+        # Peel inflectional layers first, then derivational/verb-like
         ("CASE", CASE_SUFFIXES),
-        ("VERB", VERB_SUFFIXES),
         ("POSS", POSSESSIVE_SUFFIXES),
         ("PLUR", PLURAL_SUFFIXES),
+        ("VERB", VERB_SUFFIXES),
+        ("PRED", PREDICATE_SUFFIXES),
     ]
+    # Prioritize predicate personal endings to avoid mis-parsing as possessives
+    for sfx in PRED_PRIORITY_SUFFIXES:
+        if word.endswith(sfx):
+            if probe:
+                logger.debug(
+                    f"  [LOOKS-INFLECTED] PRED (priority) suffix '{sfx}' matches '{word}'"
+                )
+            else:
+                logger.debug(f"  [MATCH] PRED (priority) suffix '{sfx}' matches '{word}'")
+            yield "PRED", sfx
+
     for tag, group in groups:
         for sfx in group:
             if not word.endswith(sfx):
@@ -392,6 +464,17 @@ def _iter_suffixes_with_group(
                     )
                     continue
 
+            # Guard comparative adjective stripping on very short bases to avoid e.g. 'жапырақ' -> 'жап'
+            if tag == "PRED":
+                comparative_set = {"ырақ", "ірек", "рақ", "рек"}
+                if sfx in comparative_set:
+                    # Avoid stripping if the base is too short or not a known lemma
+                    if len(base) < 4 or base not in LEMMAS:
+                        logger.debug(
+                            f"  [SAFE] Skip PRED comparative '{sfx}' on '{word}': base '{base}' not reliable"
+                        )
+                        continue
+
             if probe:
                 logger.debug(
                     f"  [LOOKS-INFLECTED] {tag} suffix '{sfx}' matches '{word}'"
@@ -422,8 +505,14 @@ def _search(
     if not prefer_strip_first:
         hit, reason = _check_stem(word, lemmas)
         if hit:
-            logger.debug(f"[DEPTH {depth}] HIT '{hit}' ({reason})")
-            return hit
+            # If the form still looks inflected, keep stripping; otherwise accept the hit
+            if not _looks_inflected(word):
+                logger.debug(f"[DEPTH {depth}] HIT '{hit}' ({reason})")
+                return hit
+            else:
+                logger.debug(
+                    f"[DEPTH {depth}] Bypass direct hit for '{word}': looks inflected, continue"
+                )
 
     if depth == 0 or word in seen:
         logger.debug(f"[DEPTH {depth}] Stop on '{word}' (depth/seen)")
