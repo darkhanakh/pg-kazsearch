@@ -11,7 +11,7 @@ import json  # 1. Import the json library
 # =======================
 # Debug configuration
 # =======================
-DEBUG = True  # set False to quiet logs
+DEBUG = False  # set False to quiet logs
 LOG_CODEPOINTS = False  # True -> print hex codepoints of words
 EARLY_RETURN_POLICY = "if_looks_uninflected"
 
@@ -271,6 +271,13 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
             )
             return False
         base = word[: -len(suffix)]
+        # If both the full word and the base are lemmas, prefer the longer lemma
+        # to avoid overstemming lexicalized forms like 'қарын'/'ерін'.
+        if word in LEMMAS and base in LEMMAS:
+            logger.debug(
+                f"  [SAFE] Skip accusative '{suffix}' on lemma '{word}': base '{base}' is also lemma"
+            )
+            return False
         # Block accusative -ны/-ні after 3sg possessive tails
         if base.endswith(("ы", "і", "сы", "сі")):
             logger.debug(
@@ -292,6 +299,13 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
             )
             return False
         base = word[: -len(suffix)]
+        # If both the full word and the base are lemmas, prefer the longer lemma
+        # to avoid overstemming lexicalized forms like 'қарын'/'ерін'.
+        if word in LEMMAS and base in LEMMAS:
+            logger.debug(
+                f"  [SAFE] Skip accusative '{suffix}' on lemma '{word}': base '{base}' is also lemma"
+            )
+            return False
         # Do not allow -ын/-ін right after 3sg possessive stem ending with 'с' (as in '-сы/-сі')
         if base.endswith("с"):
             logger.debug(
@@ -360,6 +374,13 @@ def _can_use_case_suffix(word: str, suffix: str) -> bool:
     # Enclitic accusative -н generally after 3sg possessive -ы/-і or -сы/-сі
     if suffix == "н":
         base = word[: -1]
+        # If the full word is a lemma, avoid stripping a bare -н to
+        # preserve lexicalized forms like 'қарын', 'ерін'.
+        if word in LEMMAS:
+            logger.debug(
+                f"  [SAFE] Skip enclitic 'н' on lemma '{word}'"
+            )
+            return False
         ok = base.endswith(("ы", "і", "сы", "сі"))
         if not ok:
             logger.debug(
@@ -590,7 +611,7 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
         # Looks inflected, but also present as a lemma: prioritize stripping
         prefer_strip_first = True
 
-    found = _search(w, lemmas, depth=10, seen=set(), prefer_strip_first=prefer_strip_first)
+    found = _search(w, lemmas, depth=8, seen=set(), prefer_strip_first=prefer_strip_first)
     if found:
         logger.debug(f"RESULT: '{orig}' -> '{found}'")
         return found
