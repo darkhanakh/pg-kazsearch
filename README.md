@@ -129,4 +129,4 @@ SELECT to_tsvector('kazakh', 'алмаларымыздағы');
 - Data (lemmas, suffixes): CC BY-SA (attribution to KazNU authors for suffix sets)
 
 ## 🙌 Acknowledgments
-- **KazNU NLP group** (@NLP-KazNU) for sharing their suffix lexicons and morphology models.
+- **KazNU NLP group** (@NLP-KazNU) for sharing their suffix lexicons and morphology models :)
