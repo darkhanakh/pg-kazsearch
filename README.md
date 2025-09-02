@@ -1,4 +1,4 @@
-# kz-psql: Kazakh Stemmer for PostgreSQL (WIP, active development)
+# pg-kazsearch: Kazakh Stemmer for PostgreSQL (WIP, active development)
 
 A work‑in‑progress PostgreSQL text search dictionary and supporting tools to enable **accurate full‑text search in Kazakh**.
 This project combines **rule‑based suffix stripping**, **phonological repair rules**, and a **lemma dictionary** to achieve high accuracy on Kazakh’s rich agglutinative morphology.
