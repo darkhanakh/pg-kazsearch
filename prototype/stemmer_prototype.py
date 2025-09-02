@@ -22,7 +22,7 @@ handler.setFormatter(logging.Formatter(fmt))
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 
-# =======================
+# =======================z
 # Lemmas / data init
 # =======================
 CLEANED_LEMMAS: set[str] = globals().get("CLEANED_LEMMAS", set())
