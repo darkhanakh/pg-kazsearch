@@ -63,6 +63,42 @@ if not CLEANED_LEMMAS:
 EXCEPTIONS = {"абай", "алматы", "туралы", "және"}
 
 # =======================
+# Stopwords init
+# =======================
+STOPWORDS: set[str] = globals().get("STOPWORDS", set())
+STOPWORDS_FILE_ENV = "KAZ_STEMMER_STOPWORDS_PATH"
+DEFAULT_STOPWORDS_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "processed" / "stopwords.txt"
+)
+
+def _load_stopwords_from_file(path: str | Path) -> set[str]:
+    p = Path(path)
+    stop: set[str] = set()
+    try:
+        with p.open("r", encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s or s.startswith("#"):
+                    continue
+                w = unicodedata.normalize("NFC", s).lower()
+                stop.add(w)
+    except FileNotFoundError:
+        logger.warning(f"Stopwords file not found: '{p}'")
+    except Exception as e:
+        logger.warning(f"Error reading stopwords file '{p}': {e}")
+    return stop
+
+if not STOPWORDS:
+    sw_env = os.environ.get(STOPWORDS_FILE_ENV)
+    sw_path = Path(sw_env) if sw_env else DEFAULT_STOPWORDS_PATH
+    loaded_sw = _load_stopwords_from_file(sw_path)
+    if loaded_sw:
+        STOPWORDS = loaded_sw
+        logger.info(f"Loaded {len(STOPWORDS)} stopwords from '{sw_path}'")
+    else:
+        logger.info("No stopwords loaded; proceeding without stopword filtering")
+
+# =======================
 # Suffixes init
 # =======================
 
@@ -581,6 +617,11 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
     logger.debug("=" * 60)
     logger.debug(f"WORD '{orig}' -> normalized '{w}'")
     _log_codepoints("word", w)
+
+    # Early return on stopwords (treat as stable tokens)
+    if w in STOPWORDS:
+        logger.debug(f"Early return: '{w}' is in STOPWORDS")
+        return w
 
     if w in exceptions:
         logger.debug(f"Early return: '{w}' is in EXCEPTIONS")
