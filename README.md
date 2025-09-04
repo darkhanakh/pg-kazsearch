@@ -129,4 +129,29 @@ SELECT to_tsvector('kazakh', 'алмаларымыздағы');
 - Data (lemmas, suffixes): CC BY-SA (attribution to KazNU authors for suffix sets)
 
 ## 🙌 Acknowledgments
+
 - **KazNU NLP group** (@NLP-KazNU) for sharing their suffix lexicons and morphology models :)
+
+## 📈 Benchmark (2025-09-04)
+
+```text
+--- Benchmark Complete ---
+Timestamp: 2025-09-04T14:38:05
+Host: benchmark-pg-kaz
+Platform: Linux-6.11.0-1018-azure-x86_64-with-glibc2.39
+Input file: benchmark/kaz_tokens.txt
+Processes used: 8
+---
+Processed tokens: 29274550
+Covered tokens: 23676581
+Uncovered tokens: 5597969
+Coverage: 80.88%
+---
+Unique covered words: 244758
+Unique uncovered words: 677044
+---
+Duration (s): 299.61
+Throughput (tokens/s): 97708.09
+
+Saved summary to: benchmark_results/benchmark_result_20250904_143805.txt
+```
