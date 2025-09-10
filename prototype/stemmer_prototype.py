@@ -11,7 +11,7 @@ import json  # 1. Import the json library
 # =======================
 # Debug configuration
 # =======================
-DEBUG = False  # set False to quiet logs
+DEBUG = True  # set False to quiet logs
 LOG_CODEPOINTS = False  # True -> print hex codepoints of words
 EARLY_RETURN_POLICY = "if_looks_uninflected"
 
@@ -182,6 +182,8 @@ _verb_base += [
     "ғы", "гі",
     # nominalizers frequently attached to participles
     "дық", "дік", "тық", "тік", "лық", "лік",
+    # short adjectival/nominalizer often used with loanword bases
+    "ік",
 ]
 VERB_SUFFIXES = _sort_suffixes_desc(_verb_base)
 
@@ -592,6 +594,24 @@ def _search(
             )
             return hit
 
+        # Special repair: '-тік' often corresponds to stem-final 'т' + 'ік'
+        # e.g., 'социалистік' -> 'социалист' (not 'социалис')
+        if sfx == "тік" and base.endswith(("с", "з")):
+            alt_base = base + "т"
+            alt_hit, alt_reason = _check_stem(alt_base, lemmas)
+            if alt_hit:
+                logger.debug(
+                    f"[DEPTH {depth}] HIT via alt repair for 'тік': '{alt_hit}' ({alt_reason})"
+                )
+                return alt_hit
+            # Try recursion from the alternative base as well
+            alt_found = _search(alt_base, lemmas, depth - 1, seen, prefer_strip_first)
+            if alt_found:
+                logger.debug(
+                    f"[DEPTH {depth}] Backtrack success via alt 'тік' repair: '{alt_found}'"
+                )
+                return alt_found
+
         # If not a direct or repaired lemma, continue recursion from the base
         found = _search(base, lemmas, depth - 1, seen, prefer_strip_first)
         if found:
@@ -618,10 +638,7 @@ def stem_kazakh_word(word: str, lemmas: set[str], exceptions: set[str]) -> str:
     logger.debug(f"WORD '{orig}' -> normalized '{w}'")
     _log_codepoints("word", w)
 
-    # Early return on stopwords (treat as stable tokens)
-    if w in STOPWORDS:
-        logger.debug(f"Early return: '{w}' is in STOPWORDS")
-        return w
+    # Do not early-return on stopwords; allow stemming (e.g., 'болмаса' -> 'бол')
 
     if w in exceptions:
         logger.debug(f"Early return: '{w}' is in EXCEPTIONS")

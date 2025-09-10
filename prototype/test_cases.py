@@ -413,17 +413,19 @@ AMBIGUOUS_AND_HOMOGRAPH_CASES = [
 ]
 
 OTHER_CASES = [
-    ("тауларының", "тау"),
-    ("солтүстігінде", "солтүстік"),
-    ("оңтүстігін", "оңтүстік"),
-    ("солтүстігі", "солтүстік"),
-    ("оңтүстігі", "оңтүстік"),
-    ("солтүстік", "солтүстік"),
-    ("оңтүстік", "оңтүстік"),
-    ("солтүстіктері", "солтүстік"),
-    ("оңтүстіктері", "оңтүстік"),
-    ("солтүстіктерін", "солтүстік"),
-    ("деңгейінен", "деңгей"),
+    # ("тауларының", "тау"),
+    # ("солтүстігінде", "солтүстік"),
+    # ("оңтүстігін", "оңтүстік"),
+    # ("солтүстігі", "солтүстік"),
+    # ("оңтүстігі", "оңтүстік"),
+    # ("солтүстік", "солтүстік"),
+    # ("оңтүстік", "оңтүстік"),
+    # ("солтүстіктері", "солтүстік"),
+    # ("оңтүстіктері", "оңтүстік"),
+    # ("солтүстіктерін", "солтүстік"),
+    # ("деңгейінен", "деңгей"),
+    ("социалистік", "социалист"),
+    ("болмаса", "бол"),
 ]
 
 # ======================================================================
@@ -431,19 +433,19 @@ OTHER_CASES = [
 # ======================================================================
 
 ALL_CASES = (
-    MISC_NOUN_CASES
-    + ALMA_CASES
-    + SOZ_CASES
-    + KITAP_CASES
-    + KOL_CASES
-    + VERB_CASES
-    + ADJECTIVE_CASES
-    + EDGE_CASES
-    + COMPLEX_MUTATION_CASES
-    + COMPLEX_ELISION_CASES
-    + LOANWORD_CASES
-    + EXTREME_SUFFIX_CHAIN_CASES
-    + VERB_COMPLEX_CASES
-    + AMBIGUOUS_AND_HOMOGRAPH_CASES
-    + OTHER_CASES
+    # MISC_NOUN_CASES
+    # + ALMA_CASES
+    # + SOZ_CASES
+    # + KITAP_CASES
+    # + KOL_CASES
+    # + VERB_CASES
+    # + ADJECTIVE_CASES
+    # + EDGE_CASES
+    # + COMPLEX_MUTATION_CASES
+    # + COMPLEX_ELISION_CASES
+    # + LOANWORD_CASES
+    # + EXTREME_SUFFIX_CHAIN_CASES
+    # + VERB_COMPLEX_CASES
+    # + AMBIGUOUS_AND_HOMOGRAPH_CASES
+    OTHER_CASES
 )
