@@ -1,0 +1,5 @@
+# src/log_test/log_test.control
+comment = 'A simple extension to log messages to the server log.'
+default_version = '1.0'
+module_pathname = '$libdir/log_test'
+relocatable = true

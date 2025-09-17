@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: pg-kazsearch-dev
+    restart: unless-stopped
+    # Mount your entire project directory into /app inside the container
+    volumes:
+      - .:/app
+      - postgres-data:/var/lib/postgresql/data
+    # Set the working directory, so commands are run from here
+    working_dir: /app
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_DB=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Keep the container running
+    command: ["postgres", "-c", "log_statement=all"]
+
+volumes:
+  postgres-data:
