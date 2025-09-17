@@ -1,0 +1,42 @@
+// .devcontainer/devcontainer.json
+{
+  "name": "KazSearch Postgres Dev",
+
+  // Point to your existing docker-compose file.
+  "dockerComposeFile": "../docker-compose.yml",
+
+  // The service from your docker-compose file to attach to.
+  "service": "postgres",
+
+  // The folder inside the container where your code is mounted.
+  "workspaceFolder": "/app",
+
+  // Make things run as the 'postgres' user to avoid file permission issues.
+  "remoteUser": "postgres",
+
+  // Run commands after the container is created.
+  // Perfect for installing python dependencies or running an initial make.
+  "postCreateCommand": "make && pip3 install -r requirements.txt",
+
+  // Forward the Postgres port so you can still connect from host tools if needed.
+  "forwardPorts": [5432],
+
+  // Customize VS Code inside the container.
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Sets the integrated terminal to bash by default
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        // Essential for C/C++ development
+        "ms-vscode.cpptools-extension-pack",
+        // Essential for Python development
+        "ms-python.python",
+        "ms-python.vscode-pylint",
+        // Helpful for managing the Docker environment itself
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
