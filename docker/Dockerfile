@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     procps \
     git-lfs \
+    clangd \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable Git LFS system-wide inside the container

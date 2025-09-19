@@ -26,11 +26,24 @@
     "vscode": {
       "settings": {
         // Sets the integrated terminal to bash by default
-        "terminal.integrated.defaultProfile.linux": "bash"
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        // Prefer clangd over the Microsoft C/C++ extension's intellisense
+        "C_Cpp.intelliSenseEngine": "Disabled",
+        // Ensure VS Code finds clangd from PATH inside the container
+        "clangd.path": "clangd",
+        // Suggested extra clangd flags; adjust if your compile_commands.json differs
+        "clangd.arguments": [
+          "--header-insertion=never",
+          "--suggest-missing-includes",
+          "--background-index",
+          "--clang-tidy"
+        ]
       },
       "extensions": [
         // Essential for C/C++ development
         "ms-vscode.cpptools-extension-pack",
+        // clangd language server for better C/C++ experience
+        "llvm-vs-code-extensions.vscode-clangd",
         // Essential for Python development
         "ms-python.python",
         "ms-python.vscode-pylint",
