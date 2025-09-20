@@ -19,8 +19,10 @@ openai.base_url = os.environ.get("OPENAI_BASE_URL", getattr(openai, "base_url", 
 # Model can be overridden via env; defaults to a reasonable model name
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5")
 
-INPUT_FILE = "priority_list.txt"
-OUTPUT_FILE = "word_stems.txt"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+INPUT_FILE = REPO_ROOT / "data" / "processed" / "priority_list.txt"
+OUTPUT_FILE = REPO_ROOT / "data" / "processed" / "word_stems.txt"
+
 BATCH_SIZE = 1000  # adjust depending on token limit and cost
 
 def parse_priority_file(file_path: str, limit=None):
