@@ -19,7 +19,7 @@ openai.base_url = os.environ.get("OPENAI_BASE_URL", getattr(openai, "base_url", 
 # Model can be overridden via env; defaults to a reasonable model name
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5")
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 INPUT_FILE = REPO_ROOT / "data" / "processed" / "priority_list.txt"
 OUTPUT_FILE = REPO_ROOT / "data" / "processed" / "word_stems.txt"
 
