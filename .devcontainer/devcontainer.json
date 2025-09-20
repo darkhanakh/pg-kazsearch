@@ -16,7 +16,8 @@
 
   // Run commands after the container is created.
   // Generate .clangd with correct Postgres include paths and compile_commands.json for clangd.
-  "postCreateCommand": "bash -lc 'set -e; printf \"CompileFlags:\n  Add:\n    - -I%s\n    - -I%s\n\" \"$(pg_config --includedir-server)\" \"$(pg_config --includedir)\" > .clangd; (bear -- make -C src/log_test -B || make -C src/log_test); if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi'",
+  // Create a Python virtual environment and install requirements inside it (PEP 668 compliant).
+  "postCreateCommand": "bash -lc 'set -e; printf \"CompileFlags:\n  Add:\n    - -I%s\n    - -I%s\n\" \"$(pg_config --includedir-server)\" \"$(pg_config --includedir)\" > .clangd; (bear -- make -C src/log_test -B || make -C src/log_test); python3 -m venv .venv; . .venv/bin/activate; if [ -f requirements.txt ]; then pip install -r requirements.txt; fi'",
 
   // Forward the Postgres port so you can still connect from host tools if needed.
   "forwardPorts": [5432],
@@ -31,6 +32,8 @@
         "C_Cpp.intelliSenseEngine": "Disabled",
         // Ensure VS Code finds clangd from PATH inside the container
         "clangd.path": "clangd",
+        // Use the project venv interpreter for Python
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
         // Suggested extra clangd flags; adjust if your compile_commands.json differs
         "clangd.arguments": [
           "--header-insertion=never",
