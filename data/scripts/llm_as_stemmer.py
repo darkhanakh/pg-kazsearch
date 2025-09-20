@@ -20,7 +20,7 @@ openai.base_url = os.environ.get("OPENAI_BASE_URL", getattr(openai, "base_url", 
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-INPUT_FILE = REPO_ROOT / "data" / "processed" / "priority_list.txt"
+INPUT_FILE = REPO_ROOT / "data" / "raw" / "priority_list.txt"
 OUTPUT_FILE = REPO_ROOT / "data" / "processed" / "word_stems.txt"
 
 BATCH_SIZE = 1000  # adjust depending on token limit and cost
