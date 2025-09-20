@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - -I/usr/include/postgresql/17/server
+    - -I/usr/include/postgresql

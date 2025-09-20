@@ -15,8 +15,8 @@
   "remoteUser": "postgres",
 
   // Run commands after the container is created.
-  // Generate compile_commands.json for clangd and install optional Python deps.
-  "postCreateCommand": "(bear -- make -B || make) && if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi",
+  // Generate .clangd with correct Postgres include paths and compile_commands.json for clangd.
+  "postCreateCommand": "bash -lc 'set -e; printf \"CompileFlags:\n  Add:\n    - -I%s\n    - -I%s\n\" \"$(pg_config --includedir-server)\" \"$(pg_config --includedir)\" > .clangd; (bear -- make -C src/log_test -B || make -C src/log_test); if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi'",
 
   // Forward the Postgres port so you can still connect from host tools if needed.
   "forwardPorts": [5432],
@@ -25,8 +25,8 @@
   "customizations": {
     "vscode": {
       "settings": {
-        // Sets the integrated terminal to zsh by default
-        "terminal.integrated.defaultProfile.linux": "zsh",
+        // Sets the integrated terminal to bash by default
+        "terminal.integrated.defaultProfile.linux": "bash",
         // Prefer clangd over the Microsoft C/C++ extension's intellisense
         "C_Cpp.intelliSenseEngine": "Disabled",
         // Ensure VS Code finds clangd from PATH inside the container
@@ -36,7 +36,8 @@
           "--header-insertion=never",
           "--suggest-missing-includes",
           "--background-index",
-          "--clang-tidy"
+          "--clang-tidy",
+          "--compile-commands-dir=/app"
         ]
       },
       "extensions": [
