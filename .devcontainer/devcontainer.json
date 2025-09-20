@@ -15,8 +15,8 @@
   "remoteUser": "postgres",
 
   // Run commands after the container is created.
-  // Perfect for installing python dependencies or running an initial make.
-  "postCreateCommand": "make && pip3 install -r requirements.txt",
+  // Generate compile_commands.json for clangd and install optional Python deps.
+  "postCreateCommand": "(bear -- make -B || make) && if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi",
 
   // Forward the Postgres port so you can still connect from host tools if needed.
   "forwardPorts": [5432],
@@ -25,7 +25,7 @@
   "customizations": {
     "vscode": {
       "settings": {
-        // Sets the integrated terminal to bash by default
+        // Sets the integrated terminal to zsh by default
         "terminal.integrated.defaultProfile.linux": "zsh",
         // Prefer clangd over the Microsoft C/C++ extension's intellisense
         "C_Cpp.intelliSenseEngine": "Disabled",
