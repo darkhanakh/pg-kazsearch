@@ -1,0 +1,51 @@
+{"query": "доллар бағамы", "relevant_ids": [19, 277, 287, 301, 529, 683, 733, 850, 908, 924], "source": "gold", "note": "currency rate - exact title terms"}
+{"query": "долларлардың бағамдары", "relevant_ids": [19, 277, 287, 301, 529, 683, 733, 850, 908, 924], "source": "gold", "note": "currency rate - inflected forms (plural+genitive)"}
+{"query": "доллардың арзандауы", "relevant_ids": [19, 277, 287, 301, 850], "source": "gold", "note": "dollar depreciation - genitive+verbal noun"}
+{"query": "мектептердегі білім", "relevant_ids": [222, 288, 352, 532, 535, 603, 705, 754, 849, 942, 1140, 1188, 1584, 2649], "source": "gold", "note": "education in schools - locative suffix -дегі on plural"}
+{"query": "мектеп оқушылары", "relevant_ids": [36, 288, 352, 535, 603, 606, 705, 754, 849, 942, 1140], "source": "gold", "note": "school students - possessive plural"}
+{"query": "қылмыскерлерді ұстады", "relevant_ids": [22, 30, 48, 63, 74, 105, 106, 128, 153, 158, 1334], "source": "gold", "note": "criminals caught - accusative + past tense verb"}
+{"query": "қылмыскерлер қамауға алынды", "relevant_ids": [22, 27, 48, 61, 63, 74, 105, 128, 153, 600], "source": "gold", "note": "criminals detained - passive voice alternate"}
+{"query": "спортшылардың жетістіктері", "relevant_ids": [614, 615, 625, 660, 755, 759, 768, 772, 773, 880], "source": "gold", "note": "athletes achievements - genitive + possessive"}
+{"query": "олимпиада жүлдегерлері", "relevant_ids": [614, 615, 625, 660, 669, 709, 755, 768, 772, 773, 790, 1763], "source": "gold", "note": "Olympic medalists - plural possessive"}
+{"query": "президенттің жарлығы", "relevant_ids": [283, 300, 833, 1344, 1686, 1720, 1889, 2235, 2686], "source": "gold", "note": "president's decree - genitive + possessive"}
+{"query": "Тоқаев жарлыққа қол қойды", "relevant_ids": [283, 300, 833, 1344, 1686, 1720, 2235], "source": "gold", "note": "Tokayev signed decree - exact event"}
+{"query": "алматыдағы оқиғалар", "relevant_ids": [83, 88, 100, 149, 354, 849, 1188, 1215, 2243, 2490], "source": "gold", "note": "events in Almaty - locative relative"}
+{"query": "жұмыссыздық деңгейі", "relevant_ids": [1659], "source": "gold", "note": "unemployment level - derivational suffix"}
+{"query": "жұмыссыз қазақстандықтарға көмек", "relevant_ids": [1659], "source": "gold", "note": "help for unemployed kazakhstanis - dative suffix chain"}
+{"query": "балалардың денсаулығы", "relevant_ids": [30, 207, 518, 686, 871, 874, 937], "source": "gold", "note": "children's health - genitive + possessive"}
+{"query": "балаларға зорлық-зомбылық", "relevant_ids": [207, 238, 686, 871, 874, 937], "source": "gold", "note": "violence against children - dative"}
+{"query": "мұнай бағасының өзгеруі", "relevant_ids": [197, 228, 370, 433, 496, 531, 544], "source": "gold", "note": "oil price change - genitive chain"}
+{"query": "мұнай экспорты", "relevant_ids": [141, 338, 423, 470, 496, 801, 802], "source": "gold", "note": "oil export - possessive"}
+{"query": "қазақстандықтарға көмек", "relevant_ids": [349, 382, 398, 412, 454, 550, 682], "source": "gold", "note": "help for kazakhstanis - dative"}
+{"query": "банктердегі несиелер", "relevant_ids": [123, 355, 421, 528, 587, 600], "source": "gold", "note": "loans in banks - locative relative + plural"}
+{"query": "жол апатындағы зардаптар", "relevant_ids": [36, 88, 100, 106, 124, 149, 354, 460, 820, 886, 2243, 2490], "source": "gold", "note": "traffic accident consequences - locative possessive chain"}
+{"query": "жол апатынан адам өлімі", "relevant_ids": [88, 149, 460, 886, 2490], "source": "gold", "note": "deaths from road accidents - ablative case"}
+{"query": "ауа райының болжамы", "relevant_ids": [38, 49, 87, 122, 145, 156, 174, 191, 242, 334, 448, 506, 654], "source": "gold", "note": "weather forecast - genitive + possessive"}
+{"query": "бүгін ауа райы қандай", "relevant_ids": [38, 49, 87, 122, 145, 174, 191, 242, 334, 448, 506, 654], "source": "gold", "note": "what's the weather today - conversational query"}
+{"query": "зейнетақыны алу шарттары", "relevant_ids": [52, 112, 113, 114, 552, 587], "source": "gold", "note": "pension conditions - accusative + verbal noun"}
+{"query": "зейнетақы жинағын мерзімінен бұрын алу", "relevant_ids": [112, 114, 587], "source": "gold", "note": "early pension withdrawal - complex nominal chain"}
+{"query": "жер сілкінісі болды", "relevant_ids": [40, 42, 736, 737, 738, 928, 930, 1271, 1274, 1363], "source": "gold", "note": "earthquake occurred - genitive verbal"}
+{"query": "алматыдағы жер сілкіну", "relevant_ids": [736, 737, 738, 928, 1274], "source": "gold", "note": "earthquake in Almaty - locative"}
+{"query": "сайлау нәтижелері", "relevant_ids": [279, 280, 294, 308, 321], "source": "gold", "note": "election results - possessive plural"}
+{"query": "референдумда дауыс беру", "relevant_ids": [275, 280, 290, 294, 308, 323, 327, 833], "source": "gold", "note": "voting in referendum - locative + verbal noun"}
+{"query": "тұрғын үй мәселесі", "relevant_ids": [517, 542, 598, 628, 704, 706, 837, 847, 853, 857], "source": "gold", "note": "housing issue - possessive"}
+{"query": "тұрғын үй құрылысы", "relevant_ids": [542, 598, 704, 706, 853], "source": "gold", "note": "housing construction - possessive"}
+{"query": "Тоқаев елшілерді қабылдады", "relevant_ids": [7, 159, 499, 528], "source": "gold", "note": "Tokayev received ambassadors - accusative + past tense"}
+{"query": "Тоқаев министрлерді қабылдады", "relevant_ids": [258, 413, 494, 515], "source": "gold", "note": "Tokayev received ministers - accusative + past tense"}
+{"query": "дәрігерлердің жұмысы", "relevant_ids": [68, 223, 274, 412, 413, 518, 602, 835], "source": "gold", "note": "doctors' work - genitive + possessive"}
+{"query": "денсаулық сақтау саласы", "relevant_ids": [413, 518, 835, 2012], "source": "gold", "note": "healthcare sector - possessive"}
+{"query": "жалақы көтерілді", "relevant_ids": [197, 259, 707, 861, 1047, 1238, 1268, 1708], "source": "gold", "note": "salary raised - past tense"}
+{"query": "мемлекеттік қызметшілердің жалақысы", "relevant_ids": [259, 707, 861, 1047, 1238, 1708], "source": "gold", "note": "civil servants' salary - genitive chain + possessive"}
+{"query": "су тасқыны", "relevant_ids": [64, 104, 244, 397, 813, 1993], "source": "gold", "note": "flood - compound noun"}
+{"query": "тасқыннан зардап шеккендер", "relevant_ids": [64, 104, 244, 397, 813], "source": "gold", "note": "flood victims - ablative + past participle"}
+{"query": "Қазақстандағы АЭС құрылысы", "relevant_ids": [2057, 2312, 2522, 2580, 2750, 2810, 2811, 2847], "source": "gold", "note": "nuclear power plant construction in KZ - locative + possessive"}
+{"query": "атом электр станциясы", "relevant_ids": [249, 2057, 2312, 2522, 2580, 2750, 2810, 2811, 2847], "source": "gold", "note": "nuclear power station - full form synonym for АЭС"}
+{"query": "Конституцияны өзгерту", "relevant_ids": [201, 215, 262, 273, 282, 283, 284, 294, 308, 830, 837, 1106], "source": "gold", "note": "changing the constitution - accusative + verbal noun"}
+{"query": "Конституциялық реформа", "relevant_ids": [201, 215, 262, 273, 282, 283, 284, 294, 308, 830, 837, 1106], "source": "gold", "note": "constitutional reform - derivational adjective"}
+{"query": "боран мен аяз", "relevant_ids": [448, 654, 807, 816, 832, 1528, 1560], "source": "gold", "note": "blizzard and frost - coordinated nouns"}
+{"query": "қар жауады", "relevant_ids": [448, 654, 716, 807, 816, 832, 1819, 2060, 2061, 2243], "source": "gold", "note": "it snows - verb form"}
+{"query": "өрт шықты", "relevant_ids": [158, 161, 414, 455, 456, 672, 2829], "source": "gold", "note": "fire broke out - past tense event"}
+{"query": "эвакуацияланған қазақстандықтар", "relevant_ids": [349, 382, 412, 454], "source": "gold", "note": "evacuated kazakhstanis - past participle"}
+{"query": "құтқарушылар адамдарды аман алып қалды", "relevant_ids": [111, 170, 398, 784, 954, 2197], "source": "gold", "note": "rescuers saved people - complex verb chain"}
+{"query": "пәтер бағасы", "relevant_ids": [517, 542, 628, 847], "source": "gold", "note": "apartment price - possessive"}
+{"query": "Ұлттық банктің шешімі", "relevant_ids": [13, 19, 54, 91, 116, 128], "source": "gold", "note": "National Bank's decision - genitive + possessive"}
