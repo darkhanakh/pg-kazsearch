@@ -1,0 +1,5 @@
+comment = 'Kazakh full-text stemmer (Rust/pgrx port)'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/pg_kazsearch_rs'
+relocatable = false
+superuser = false

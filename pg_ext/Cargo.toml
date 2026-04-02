@@ -1,0 +1,27 @@
+[package]
+name = "pg_kazsearch_rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+default = ["pg18"]
+pg14 = ["pgrx/pg14", "pgrx-tests/pg14"]
+pg15 = ["pgrx/pg15", "pgrx-tests/pg15"]
+pg16 = ["pgrx/pg16", "pgrx-tests/pg16"]
+pg17 = ["pgrx/pg17", "pgrx-tests/pg17"]
+pg18 = ["pgrx/pg18", "pgrx-tests/pg18"]
+pg_test = []
+
+[dependencies]
+pgrx = "=0.17.0"
+kazsearch-core = { path = "../core" }
+
+[[bin]]
+name = "pgrx_embed_pg_kazsearch_rs"
+path = "src/bin/pgrx_embed.rs"
+
+[dev-dependencies]
+pgrx-tests = "=0.17.0"
