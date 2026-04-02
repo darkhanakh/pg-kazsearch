@@ -25,3 +25,6 @@ outcmaes/
 scripts/profile_pg_kazsearch.*
 
 pg_kazsearch-*.zip
+
+# Rust build artifacts
+target/
