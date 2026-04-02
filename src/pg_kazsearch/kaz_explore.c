@@ -321,7 +321,8 @@ next_state_idx(bool noun_track, int cur_idx, int layer_id, const char *suffix)
 
 double
 kaz_candidate_penalty(const KazCandidate *c, const char *word, int original_chars, bool verb_track,
-					  const int *chars_prefix, const int *syll_prefix)
+					  const int *chars_prefix, const int *syll_prefix,
+					  const KazPenaltyWeights *w)
 {
 	int chars = chars_prefix[c->len];
 	int syll = syll_prefix[c->len];
@@ -329,30 +330,31 @@ kaz_candidate_penalty(const KazCandidate *c, const char *word, int original_char
 	double p = 0.0;
 
 	if (c->steps == 0)
-		p += 6.0;
+		p += w->w_no_strip;
 	if (chars < 2)
-		p += 120.0;
+		p += w->w_short_char;
 	if (syll < 1)
-		p += 90.0;
+		p += w->w_no_syll;
 	if (chars == 2)
-		p += 8.0;
+		p += w->w_two_char;
 	if (chars == 3 && syll == 1)
-		p += 2.5;
+		p += w->w_three_one;
 
-	p += c->deriv * 3.2 + c->weak * 2.5 + c->single_char * 1.2;
+	p += c->deriv * w->w_deriv + c->weak * w->w_weak + c->single_char * w->w_single_char;
 
 	if (verb_track && c->verbal_inf > 0 && c->verbal_inf == c->weak)
-		p += 10.0;
+		p += w->w_verb_all_weak;
 
 	if (c->penalty_flags & KAZ_PENALTY_NIK_DERIV)
-		p += 20.0;
+		p += w->w_nik_deriv;
 	if (c->penalty_flags & KAZ_PENALTY_FINAL_CONS)
-		p += 4.0;
+		p += w->w_final_cons;
 
-	p -= c->nominal_inf * 3.9 + c->verbal_inf * 4.2 + Min(removed, 10) * 0.32;
+	p -= c->nominal_inf * w->w_nominal_inf + c->verbal_inf * w->w_verbal_inf +
+		Min(removed, 10) * w->w_removed;
 
 	if (verb_track)
-		p += 1.2;
+		p += w->w_verb_track;
 
 	return p;
 }
@@ -635,7 +637,7 @@ kaz_explore_track_best(const char *word, int len, const KazLayerDef *layers, int
 	result.best_scored.len = len;
 	kaz_candidate_fill_penalty_flags(&result.best_scored, word);
 	best_pen = kaz_candidate_penalty(&result.best_scored, word, original_chars, verb_track,
-									 chars_prefix, syll_prefix);
+									 chars_prefix, syll_prefix, &cfg->weights);
 
 	{
 		KazExploreState seed;
@@ -657,7 +659,7 @@ kaz_explore_track_best(const char *word, int len, const KazLayerDef *layers, int
 
 		{
 			double cur_pen = kaz_candidate_penalty(&st.c, word, original_chars, verb_track,
-												   chars_prefix, syll_prefix);
+												   chars_prefix, syll_prefix, &cfg->weights);
 
 			if (kaz_candidate_beats(&st.c, &result.best_scored, cur_pen, best_pen, word,
 									  chars_prefix))

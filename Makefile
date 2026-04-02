@@ -81,7 +81,11 @@ GOLD_Q     ?= eval/gold_queries.jsonl
 SCRAPE_LIM ?= 3000
 EVAL_MAX_Q ?= 0
 
-.PHONY: scrape load-corpus gen-queries eval-search pipeline
+OPT_REPORT ?= eval/results/optimized_weights.json
+OPT_EVALS  ?= 2000
+OPT_OBJ    ?= combined
+
+.PHONY: scrape load-corpus gen-queries eval-search pipeline optimize apply-weights
 
 scrape:
 	python3 eval/scraper.py --output "$(CORPUS)" --limit $(SCRAPE_LIM) --resume
@@ -94,6 +98,19 @@ gen-queries:
 
 eval-search:
 	python3 eval/run_eval.py --auto "$(AUTO_Q)" --gold "$(GOLD_Q)" --max-queries $(EVAL_MAX_Q)
+
+optimize:
+	python3 eval/optimize_weights.py --auto "$(AUTO_Q)" --gold "$(GOLD_Q)" \
+		--max-evals $(OPT_EVALS) --objective $(OPT_OBJ) --report "$(OPT_REPORT)"
+
+apply-weights:
+	@python3 -c "\
+	import json, sys; \
+	r = json.load(open('$(OPT_REPORT)')); \
+	w = r['weights']; \
+	opts = ', '.join(f'{k} = {v}' for k, v in w.items()); \
+	print(f'ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict ({opts});')" | \
+	$(DOCKER) exec -i $(CONTAINER) psql -U $(PG_USER) -d $(PG_DB)
 
 pipeline: scrape load-corpus gen-queries eval-search
 
@@ -140,6 +157,8 @@ help:
 	@printf "    make pipeline      Full eval (scrape+load+gen+eval)\n"
 	@printf "    make eval-search   Run FTS vs trigram comparison\n"
 	@printf "    make load-corpus   Load articles into PostgreSQL\n"
+	@printf "    make optimize      Run CMA-ES weight optimizer\n"
+	@printf "    make apply-weights Apply optimized weights from JSON\n"
 	@printf "\n"
 	@printf "  \033[1mCleanup\033[0m\n"
 	@printf "    make clean         Remove build artifacts\n"

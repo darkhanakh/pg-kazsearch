@@ -83,6 +83,71 @@ kaz_restore_lexicon_vowel(char *lexeme, HTAB *lexicon, int steps)
 	return lexeme;
 }
 
+static void
+kaz_init_default_weights(KazPenaltyWeights *w)
+{
+	w->w_no_strip = KAZ_DEFAULT_W_NO_STRIP;
+	w->w_short_char = KAZ_DEFAULT_W_SHORT_CHAR;
+	w->w_no_syll = KAZ_DEFAULT_W_NO_SYLL;
+	w->w_two_char = KAZ_DEFAULT_W_TWO_CHAR;
+	w->w_three_one = KAZ_DEFAULT_W_THREE_ONE;
+	w->w_deriv = KAZ_DEFAULT_W_DERIV;
+	w->w_weak = KAZ_DEFAULT_W_WEAK;
+	w->w_single_char = KAZ_DEFAULT_W_SINGLE_CHAR;
+	w->w_verb_all_weak = KAZ_DEFAULT_W_VERB_ALL_WEAK;
+	w->w_nik_deriv = KAZ_DEFAULT_W_NIK_DERIV;
+	w->w_final_cons = KAZ_DEFAULT_W_FINAL_CONS;
+	w->w_nominal_inf = KAZ_DEFAULT_W_NOMINAL_INF;
+	w->w_verbal_inf = KAZ_DEFAULT_W_VERBAL_INF;
+	w->w_removed = KAZ_DEFAULT_W_REMOVED;
+	w->w_verb_track = KAZ_DEFAULT_W_VERB_TRACK;
+}
+
+static bool
+kaz_try_parse_weight(const char *name, const char *value, KazPenaltyWeights *w)
+{
+	struct
+	{
+		const char *key;
+		double	   *dst;
+	}			map[] = {
+		{"w_no_strip", &w->w_no_strip},
+		{"w_short_char", &w->w_short_char},
+		{"w_no_syll", &w->w_no_syll},
+		{"w_two_char", &w->w_two_char},
+		{"w_three_one", &w->w_three_one},
+		{"w_deriv", &w->w_deriv},
+		{"w_weak", &w->w_weak},
+		{"w_single_char", &w->w_single_char},
+		{"w_verb_all_weak", &w->w_verb_all_weak},
+		{"w_nik_deriv", &w->w_nik_deriv},
+		{"w_final_cons", &w->w_final_cons},
+		{"w_nominal_inf", &w->w_nominal_inf},
+		{"w_verbal_inf", &w->w_verbal_inf},
+		{"w_removed", &w->w_removed},
+		{"w_verb_track", &w->w_verb_track},
+	};
+	int			i;
+
+	for (i = 0; i < (int) lengthof(map); i++)
+	{
+		if (strcmp(name, map[i].key) == 0)
+		{
+			char	   *endp;
+			double		v = strtod(value, &endp);
+
+			if (endp == value || *endp != '\0')
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("invalid value for pg_kazsearch weight \"%s\": \"%s\"",
+								name, value)));
+			*map[i].dst = v;
+			return true;
+		}
+	}
+	return false;
+}
+
 Datum
 pg_kazsearch_init(PG_FUNCTION_ARGS)
 {
@@ -93,6 +158,7 @@ pg_kazsearch_init(PG_FUNCTION_ARGS)
 
 	cfg->derivation = true;
 	cfg->max_steps = 8;
+	kaz_init_default_weights(&cfg->weights);
 
 	foreach(l, dictoptions)
 	{
@@ -104,7 +170,7 @@ pg_kazsearch_init(PG_FUNCTION_ARGS)
 			cfg->max_steps = pg_strtoint32(defGetString(defel));
 		else if (strcmp(defel->defname, "lexicon") == 0)
 			lexicon_name = defGetString(defel);
-		else
+		else if (!kaz_try_parse_weight(defel->defname, defGetString(defel), &cfg->weights))
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 					 errmsg("unrecognized pg_kazsearch parameter: \"%s\"", defel->defname)));
@@ -180,9 +246,9 @@ pg_kazsearch_lexize(PG_FUNCTION_ARGS)
 		if (noun.has_lexhit && verb.has_lexhit)
 		{
 			double np = kaz_candidate_penalty(&noun.best_lexhit, txt, original_chars, false,
-											  chars_prefix, syll_prefix);
+											  chars_prefix, syll_prefix, &cfg->weights);
 			double vp = kaz_candidate_penalty(&verb.best_lexhit, txt, original_chars, true,
-											  chars_prefix, syll_prefix);
+											  chars_prefix, syll_prefix, &cfg->weights);
 
 			if (kaz_candidate_beats(&verb.best_lexhit, &noun.best_lexhit, vp, np, txt, chars_prefix))
 				best_lex = &verb.best_lexhit;
@@ -218,9 +284,9 @@ pg_kazsearch_lexize(PG_FUNCTION_ARGS)
 	if (best == NULL)
 	{
 		double np = kaz_candidate_penalty(&noun.best_scored, txt, original_chars, false,
-										  chars_prefix, syll_prefix);
+										  chars_prefix, syll_prefix, &cfg->weights);
 		double vp = kaz_candidate_penalty(&verb.best_scored, txt, original_chars, true,
-										  chars_prefix, syll_prefix);
+										  chars_prefix, syll_prefix, &cfg->weights);
 		bool input_is_known = cfg->lexicon != NULL &&
 			kaz_lexicon_contains(cfg->lexicon, txt, len);
 

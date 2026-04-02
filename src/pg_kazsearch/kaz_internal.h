@@ -15,6 +15,23 @@
 #define KAZ_VISIT_HASH_INIT 4096
 #define KAZ_MAX_STEM_BYTES 128
 
+/* Penalty-weight defaults (compile-time; overridable via dictionary options) */
+#define KAZ_DEFAULT_W_NO_STRIP      6.0
+#define KAZ_DEFAULT_W_SHORT_CHAR  120.0
+#define KAZ_DEFAULT_W_NO_SYLL      90.0
+#define KAZ_DEFAULT_W_TWO_CHAR      8.0
+#define KAZ_DEFAULT_W_THREE_ONE     2.5
+#define KAZ_DEFAULT_W_DERIV         3.2
+#define KAZ_DEFAULT_W_WEAK          2.5
+#define KAZ_DEFAULT_W_SINGLE_CHAR   1.2
+#define KAZ_DEFAULT_W_VERB_ALL_WEAK 10.0
+#define KAZ_DEFAULT_W_NIK_DERIV    20.0
+#define KAZ_DEFAULT_W_FINAL_CONS    4.0
+#define KAZ_DEFAULT_W_NOMINAL_INF   3.9
+#define KAZ_DEFAULT_W_VERBAL_INF    4.2
+#define KAZ_DEFAULT_W_REMOVED       0.32
+#define KAZ_DEFAULT_W_VERB_TRACK    1.2
+
 enum
 {
 	KAZ_HARM_ANY = 0,
@@ -35,11 +52,31 @@ enum
 	KAZ_LAYER_VVOICE = 14,
 };
 
+typedef struct KazPenaltyWeights
+{
+	double w_no_strip;
+	double w_short_char;
+	double w_no_syll;
+	double w_two_char;
+	double w_three_one;
+	double w_deriv;
+	double w_weak;
+	double w_single_char;
+	double w_verb_all_weak;
+	double w_nik_deriv;
+	double w_final_cons;
+	double w_nominal_inf;
+	double w_verbal_inf;
+	double w_removed;
+	double w_verb_track;
+} KazPenaltyWeights;
+
 typedef struct KazStemCfg
 {
 	bool derivation;
 	int32 max_steps;
 	HTAB *lexicon;
+	KazPenaltyWeights weights;
 } KazStemCfg;
 
 typedef struct KazSuffixRule
@@ -135,7 +172,8 @@ extern KazExploreResult kaz_explore_track_best(const char *word, int len,
 extern bool kaz_candidate_hits_lexicon(const KazCandidate *c, const char *word, HTAB *lexicon);
 extern double kaz_candidate_penalty(const KazCandidate *c, const char *word, int original_chars,
 									bool verb_track,
-									const int *chars_prefix, const int *syll_prefix);
+									const int *chars_prefix, const int *syll_prefix,
+									const KazPenaltyWeights *w);
 extern bool kaz_candidate_beats(const KazCandidate *challenger, const KazCandidate *current,
 								double p_challenger, double p_current, const char *word,
 								const int *chars_prefix);
