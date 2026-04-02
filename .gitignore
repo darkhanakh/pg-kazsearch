@@ -1,1 +1,27 @@
 .idea
+.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+
+# PG extension build artifacts
+build/
+results/
+eval/results/
+
+# Generated eval artifacts (regenerable via make pipeline)
+data/corpus/
+eval/auto_queries.jsonl
+
+# IDE / local tooling
+.cursor/
+.vscode/
+compile_commands.json
+.cache/
+
+outcmaes/
+scripts/profile_pg_kazsearch.*
+
+pg_kazsearch-*.zip
