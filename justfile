@@ -76,6 +76,12 @@ test-ext:
     just psql-exec "SELECT ts_lexize('pg_kazsearch_dict', 'алмаларымыздағы');"
     just psql-exec "SELECT to_tsvector('kazakh_cfg', 'алмаларымыздағы мектептеріміздегі');"
 
+# ── Benchmark ────────────────────────────────────────────────────────────
+
+# Benchmark C extension (PostgreSQL) vs Rust core (native)
+bench:
+    python3 scripts/bench_compare.py
+
 # ── Eval pipeline ────────────────────────────────────────────────────────
 
 # Scrape articles from Tengrinews
