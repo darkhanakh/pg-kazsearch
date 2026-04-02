@@ -1,0 +1,32 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: pg-kazsearch
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - .:/app
+      - pgdata:/var/lib/postgresql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/10-extensions.sql:ro
+    working_dir: /app
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kazsearch
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kazsearch"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    command:
+      - postgres
+      - -c
+      - log_statement=all
+
+volumes:
+  pgdata:
