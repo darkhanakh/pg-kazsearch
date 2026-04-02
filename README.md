@@ -1,6 +1,8 @@
 # pg_kazsearch
 
-[![PGXN version](https://badge.fury.io/pg/pg_kazsearch.svg)](https://pgxn.org/dist/pg_kazsearch/)
+[![PGXN version](https://img.shields.io/badge/PGXN-1.0.1-blue)](https://pgxn.org/dist/pg_kazsearch/)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
+[![PostgreSQL: 18](https://img.shields.io/badge/PostgreSQL-18-336791.svg)](https://www.postgresql.org/)
 
 The first PostgreSQL full-text search extension for the Kazakh language.
 
