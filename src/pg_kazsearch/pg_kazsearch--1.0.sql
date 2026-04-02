@@ -27,3 +27,10 @@ CREATE TEXT SEARCH DICTIONARY pg_kazsearch_dict (
     max_steps = 8,
     lexicon = kaz_stems
 );
+
+CREATE TEXT SEARCH CONFIGURATION kazakh_cfg (PARSER = pg_catalog.default);
+
+ALTER TEXT SEARCH CONFIGURATION kazakh_cfg
+    ALTER MAPPING FOR asciiword, asciihword, hword_asciipart,
+                      word, hword, hword_part
+    WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;

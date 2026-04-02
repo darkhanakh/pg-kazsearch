@@ -63,16 +63,9 @@ build:
     just dc-exec make -C src/pg_kazsearch
     just dc-exec make -C src/pg_kazsearch install
 
-# Build + reload extension and FTS configuration
+# Build + reload extension (kazakh_cfg is created by the extension SQL)
 reload: build
     just psql-exec "DROP EXTENSION IF EXISTS pg_kazsearch CASCADE; CREATE EXTENSION pg_kazsearch;"
-    just psql-exec "DROP TEXT SEARCH CONFIGURATION IF EXISTS kazakh_cfg CASCADE; CREATE TEXT SEARCH CONFIGURATION kazakh_cfg (PARSER = pg_catalog.default);"
-    just psql-exec "ALTER TEXT SEARCH CONFIGURATION kazakh_cfg ALTER MAPPING FOR asciiword WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;"
-    just psql-exec "ALTER TEXT SEARCH CONFIGURATION kazakh_cfg ALTER MAPPING FOR asciihword WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;"
-    just psql-exec "ALTER TEXT SEARCH CONFIGURATION kazakh_cfg ALTER MAPPING FOR hword_asciipart WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;"
-    just psql-exec "ALTER TEXT SEARCH CONFIGURATION kazakh_cfg ALTER MAPPING FOR word WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;"
-    just psql-exec "ALTER TEXT SEARCH CONFIGURATION kazakh_cfg ALTER MAPPING FOR hword WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;"
-    just psql-exec "ALTER TEXT SEARCH CONFIGURATION kazakh_cfg ALTER MAPPING FOR hword_part WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;"
     @echo "Extension reloaded."
 
 # ── Test ─────────────────────────────────────────────────────────────────
