@@ -54,6 +54,13 @@ pub struct ExploreResult {
     pub has_lexhit: bool,
 }
 
+/// Match suffix only when it is strictly shorter than the word (mirrors C's
+/// `kaz_ends_with_bytes_n` which returns false when `suffix_len >= len`).
+#[inline]
+fn sfx_shorter(s: &str, suffix: &str) -> bool {
+    suffix.len() < s.len() && s.ends_with(suffix)
+}
+
 fn penalty_flags_at(word: &str, len: usize) -> u8 {
     let s = &word[..len];
     let mut f: u8 = 0;
@@ -62,7 +69,7 @@ fn penalty_flags_at(word: &str, len: usize) -> u8 {
         return 0;
     }
 
-    if s.ends_with("д") || s.ends_with("г") || s.ends_with("ғ") || s.ends_with("б") {
+    if sfx_shorter(s, "д") || sfx_shorter(s, "г") || sfx_shorter(s, "ғ") || sfx_shorter(s, "б") {
         f |= PENALTY_FINAL_CONS;
     }
 
@@ -70,10 +77,10 @@ fn penalty_flags_at(word: &str, len: usize) -> u8 {
         return f;
     }
 
-    if s.ends_with("дағ") || s.ends_with("дег")
-        || s.ends_with("тағ") || s.ends_with("тег")
-        || s.ends_with("нік") || s.ends_with("дік")
-        || s.ends_with("тік")
+    if sfx_shorter(s, "дағ") || sfx_shorter(s, "дег")
+        || sfx_shorter(s, "тағ") || sfx_shorter(s, "тег")
+        || sfx_shorter(s, "нік") || sfx_shorter(s, "дік")
+        || sfx_shorter(s, "тік")
     {
         f |= PENALTY_NIK_DERIV;
     }
