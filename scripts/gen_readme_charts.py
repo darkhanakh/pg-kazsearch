@@ -11,25 +11,6 @@ from pathlib import Path
 OUT = Path(__file__).resolve().parent.parent / "docs" / "img"
 OUT.mkdir(parents=True, exist_ok=True)
 
-BG = "#0d1117"
-FG = "#c9d1d9"
-GRID = "#21262d"
-ACCENT = "#58a6ff"
-ACCENT2 = "#6e7681"
-
-plt.rcParams.update({
-    "figure.facecolor": BG,
-    "axes.facecolor": BG,
-    "axes.edgecolor": GRID,
-    "axes.labelcolor": FG,
-    "text.color": FG,
-    "xtick.color": FG,
-    "ytick.color": FG,
-    "grid.color": GRID,
-    "font.family": "sans-serif",
-    "font.size": 13,
-})
-
 
 def chart_retrieval_quality():
     metrics = ["Recall@10", "MRR@10", "nDCG@10"]
@@ -40,24 +21,20 @@ def chart_retrieval_quality():
     w = 0.32
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    bars1 = ax.bar(x - w/2, kazsearch, w, label="pg_kazsearch", color=ACCENT, zorder=3)
-    bars2 = ax.bar(x + w/2, trgm, w, label="pg_trgm", color=ACCENT2, zorder=3)
+    bars1 = ax.bar(x - w/2, kazsearch, w, label="pg_kazsearch")
+    bars2 = ax.bar(x + w/2, trgm, w, label="pg_trgm")
 
-    for bar, val in zip(bars1, kazsearch):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.012,
-                f"{val:.3f}", ha="center", va="bottom", fontsize=11, fontweight="bold", color=ACCENT)
-    for bar, val in zip(bars2, trgm):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.012,
-                f"{val:.3f}", ha="center", va="bottom", fontsize=11, color=ACCENT2)
+    ax.bar_label(bars1, fmt="%.3f", padding=3, fontweight="bold")
+    ax.bar_label(bars2, fmt="%.3f", padding=3)
 
     ax.set_ylabel("Score")
-    ax.set_title("Retrieval Quality — 9,048 Queries over 2,999 Articles", fontsize=14, fontweight="bold", pad=14)
+    ax.set_title("Retrieval Quality — 9,048 Queries over 2,999 Articles", fontweight="bold", pad=12)
     ax.set_xticks(x)
     ax.set_xticklabels(metrics)
     ax.set_ylim(0, 0.92)
     ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.1f"))
-    ax.legend(frameon=False, loc="upper right")
-    ax.grid(axis="y", alpha=0.4, zorder=0)
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
     ax.set_axisbelow(True)
 
     fig.tight_layout()
@@ -69,73 +46,23 @@ def chart_retrieval_quality():
 def chart_latency():
     methods = ["pg_kazsearch", "pg_trgm"]
     latency = [0.5, 1.4]
-    colors = [ACCENT, ACCENT2]
 
-    fig, ax = plt.subplots(figsize=(6, 3.5))
-    bars = ax.barh(methods, latency, color=colors, height=0.45, zorder=3)
+    fig, ax = plt.subplots(figsize=(6, 3))
+    bars = ax.barh(methods, latency, height=0.45)
 
-    for bar, val in zip(bars, latency):
-        ax.text(bar.get_width() + 0.04, bar.get_y() + bar.get_height()/2,
-                f"{val} ms", ha="left", va="center", fontsize=12, fontweight="bold")
+    ax.bar_label(bars, labels=["0.5 ms", "1.4 ms"], padding=5, fontweight="bold")
 
     ax.set_xlabel("Query Latency (ms)")
-    ax.set_title("Average Query Latency", fontsize=14, fontweight="bold", pad=14)
+    ax.set_title("Average Query Latency", fontweight="bold", pad=12)
     ax.set_xlim(0, 2.0)
     ax.invert_yaxis()
-    ax.grid(axis="x", alpha=0.4, zorder=0)
+    ax.grid(axis="x", alpha=0.3)
     ax.set_axisbelow(True)
 
     fig.tight_layout()
     fig.savefig(OUT / "query_latency.png", dpi=180, bbox_inches="tight")
     plt.close(fig)
     print(f"  -> {OUT / 'query_latency.png'}")
-
-
-def chart_suffix_layers():
-    layers = [
-        "Derivational", "Plural", "Possessive", "Case",
-        "Predicate", "Voice", "Negation", "Tense", "Person"
-    ]
-    track = ["Noun", "Noun", "Noun", "Noun", "Noun",
-             "Verb", "Verb", "Verb", "Verb"]
-    examples = [
-        "-лық/-тік", "-лар/-лер", "-ым/-ің/-ы", "-да/-де/-ға/-ге",
-        "-мын/-мін", "-ыл/-іл", "-ма/-ме", "-ды/-ді/-ған", "-м/-ң/-ңыз"
-    ]
-
-    noun_color = ACCENT
-    verb_color = "#f78166"
-
-    fig, ax = plt.subplots(figsize=(9, 4.5))
-    colors = [noun_color if t == "Noun" else verb_color for t in track]
-    y = np.arange(len(layers))
-
-    bars = ax.barh(y, [1]*len(layers), color=colors, height=0.6, alpha=0.85, zorder=3)
-
-    for i, (layer, ex) in enumerate(zip(layers, examples)):
-        ax.text(0.03, i, f"{layer}", ha="left", va="center",
-                fontsize=12, fontweight="bold", color=BG)
-        ax.text(0.97, i, ex, ha="right", va="center",
-                fontsize=11, color=BG, style="italic")
-
-    ax.set_yticks([])
-    ax.set_xticks([])
-    ax.set_xlim(0, 1)
-    ax.set_title("BFS Suffix Stripping Layers", fontsize=14, fontweight="bold", pad=14)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-
-    ax.text(0.5, -0.08, "■ Noun track     ■ Verb track",
-            ha="center", va="top", transform=ax.transAxes, fontsize=11,
-            color=FG)
-
-    ax.invert_yaxis()
-    fig.tight_layout()
-    fig.savefig(OUT / "suffix_layers.png", dpi=180, bbox_inches="tight")
-    plt.close(fig)
-    print(f"  -> {OUT / 'suffix_layers.png'}")
 
 
 def chart_improvement():
@@ -146,19 +73,17 @@ def chart_improvement():
         ((0.729 - 0.582) / 0.582) * 100,
         ((1.4 - 0.5) / 1.4) * 100,
     ]
-    colors = [ACCENT, ACCENT, ACCENT, "#3fb950"]
+    colors = ["#1f77b4", "#1f77b4", "#1f77b4", "#2ca02c"]
 
     fig, ax = plt.subplots(figsize=(7, 4))
-    bars = ax.bar(metrics, improvement, color=colors, width=0.55, zorder=3)
+    bars = ax.bar(metrics, improvement, color=colors, width=0.55)
 
-    for bar, val in zip(bars, improvement):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
-                f"+{val:.0f}%", ha="center", va="bottom", fontsize=13, fontweight="bold")
+    ax.bar_label(bars, labels=[f"+{v:.0f}%" for v in improvement], padding=3, fontweight="bold")
 
     ax.set_ylabel("Improvement over pg_trgm (%)")
-    ax.set_title("pg_kazsearch vs pg_trgm — Relative Improvement", fontsize=14, fontweight="bold", pad=14)
+    ax.set_title("pg_kazsearch vs pg_trgm — Relative Improvement", fontweight="bold", pad=12)
     ax.set_ylim(0, 80)
-    ax.grid(axis="y", alpha=0.4, zorder=0)
+    ax.grid(axis="y", alpha=0.3)
     ax.set_axisbelow(True)
 
     fig.tight_layout()
@@ -171,6 +96,5 @@ if __name__ == "__main__":
     print("Generating charts...")
     chart_retrieval_quality()
     chart_latency()
-    chart_suffix_layers()
     chart_improvement()
     print("Done.")

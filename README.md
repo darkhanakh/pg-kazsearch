@@ -157,8 +157,6 @@ Tested on 2,999 Kazakh news articles with 9,048 evaluation queries:
 └────────────────────────────────────────────────────┘
 ```
 
-![Suffix Stripping Layers](docs/img/suffix_layers.png)
-
 The stemmer algorithm:
 
 - **BFS suffix stripper** — breadth-first search over layered morphological rules (predicate, case, possessive, plural, derivational for nouns; person, tense, negation, voice for verbs), with vowel harmony validation
