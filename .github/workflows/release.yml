@@ -23,13 +23,12 @@ jobs:
       - run: ./target/release/kazsearch stem алмаларымыздағы
 
   build-deb:
-    name: .deb / PG ${{ matrix.pg }} / ${{ matrix.arch }}
+    name: .deb / PG ${{ matrix.pg }}
     needs: test
-    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         pg: [16, 17, 18]
-        arch: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +38,7 @@ jobs:
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update
-          sudo apt-get install -y postgresql-server-dev-${{ matrix.pg }} libclang-dev pkg-config build-essential
+          sudo apt-get install -y postgresql-${{ matrix.pg }} postgresql-server-dev-${{ matrix.pg }} libclang-dev pkg-config build-essential
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -59,7 +58,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           PKG_NAME=postgresql-${{ matrix.pg }}-pg-kazsearch
-          PKG_DIR=${PKG_NAME}_${VERSION}_${{ matrix.arch }}
+          PKG_DIR=${PKG_NAME}_${VERSION}_amd64
           PGRX_OUT=target/release/pg_kazsearch-pg${{ matrix.pg }}
 
           mkdir -p ${PKG_DIR}/DEBIAN
@@ -67,7 +66,7 @@ jobs:
           cat > ${PKG_DIR}/DEBIAN/control << CTRL
           Package: ${PKG_NAME}
           Version: ${VERSION}
-          Architecture: ${{ matrix.arch }}
+          Architecture: amd64
           Depends: postgresql-${{ matrix.pg }}
           Maintainer: Darkhan Akhmetov <darkhanahmetov2005@gmail.com>
           Description: Kazakh full-text search stemmer for PostgreSQL
@@ -88,7 +87,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: deb-pg${{ matrix.pg }}-${{ matrix.arch }}
+          name: deb-pg${{ matrix.pg }}
           path: ${{ env.DEB_FILE }}
 
   release:
@@ -132,7 +131,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: deb-pg${{ matrix.pg }}-*
+          pattern: deb-pg${{ matrix.pg }}
           path: debs
           merge-multiple: true
 
@@ -144,7 +143,7 @@ jobs:
           build-args: |
             PG_MAJOR=${{ matrix.pg }}
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: |
             ghcr.io/${{ github.repository }}:${{ matrix.pg }}-${{ github.ref_name }}
             ghcr.io/${{ github.repository }}:${{ matrix.pg }}
