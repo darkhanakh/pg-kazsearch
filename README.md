@@ -1,7 +1,7 @@
 # pg_kazsearch
 
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](LICENSE)
-[![PostgreSQL: 16–18](https://img.shields.io/badge/PostgreSQL-16--18-336791.svg)](https://www.postgresql.org/)
+[License: LGPL v3](LICENSE)
+[PostgreSQL: 16–18](https://www.postgresql.org/)
 
 The first PostgreSQL full-text search extension for the Kazakh language.
 
@@ -115,26 +115,32 @@ ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (w_deriv = 3.5, w_short_char = 10
 
 ---
 
-## Stemmer quality
+## Benchmarks
 
 Tested on 2,999 Kazakh news articles with 9,048 evaluation queries:
 
-| Metric | pg_kazsearch | pg_trgm (trigram) |
-|--------|-------------|-------------------|
-| Recall@10 | **0.784** | 0.635 |
-| MRR@10 | **0.712** | 0.566 |
-| nDCG@10 | **0.729** | 0.582 |
-| Query latency | **0.5 ms** | 1.4 ms |
+![Retrieval Quality](docs/img/retrieval_quality.png)
 
-### Examples
+![Relative Improvement](docs/img/improvement.png)
 
-| Input | Output | Stripped |
-|-------|--------|---------|
-| мектептерімізде | мектеп | plural + possessive + locative |
+![Query Latency](docs/img/query_latency.png)
+
+| Metric        | pg_kazsearch | pg_trgm | Improvement |
+| ------------- | ------------ | ------- | ----------- |
+| Recall@10     | **0.784**    | 0.635   | +23%        |
+| MRR@10        | **0.712**    | 0.566   | +26%        |
+| nDCG@10       | **0.729**    | 0.582   | +25%        |
+| Query latency | **0.5 ms**   | 1.4 ms  | 2.8x faster |
+
+### Stemmer examples
+
+| Input            | Output    | Stripped                       |
+| ---------------- | --------- | ------------------------------ |
+| мектептерімізде  | мектеп    | plural + possessive + locative |
 | президенттерінің | президент | plural + possessive + genitive |
-| өзгеруі | өзгеру | verbal noun possessive |
-| берді | бер | past tense |
-| экономикалық | экономика | derivational adjective |
+| өзгеруі          | өзгеру    | verbal noun possessive         |
+| берді            | бер       | past tense                     |
+| экономикалық     | экономика | derivational adjective         |
 
 ---
 
@@ -150,6 +156,8 @@ Tested on 2,999 Kazakh news articles with 9,048 evaluation queries:
 │  elastic/      Elasticsearch plugin (planned)      │
 └────────────────────────────────────────────────────┘
 ```
+
+![Suffix Stripping Layers](docs/img/suffix_layers.png)
 
 The stemmer algorithm:
 
@@ -216,6 +224,7 @@ just cli
 5. Open a PR
 
 Key things to know:
+
 - Penalty weights in `core/src/explore.rs` are empirically tuned via CMA-ES — changing one can affect many test cases
 - Layer guards encode real morphotactic constraints, not heuristics
 - Vowel harmony (back/front) is mandatory for suffix validation
@@ -234,3 +243,4 @@ Key things to know:
 
 - **Code:** [LGPL-3.0](LICENSE)
 - **Lexicon data** derived from [Apertium-kaz](https://github.com/apertium/apertium-kaz) (GPL-3.0).
+
