@@ -129,12 +129,18 @@ pipeline: scrape load-corpus gen-queries eval-search
 
 # ── Release ──────────────────────────────────────────────────────────────
 
-# Generate META.json from template (reads version from pg_ext/Cargo.toml)
-meta:
+# Generate META.json from template (version from argument or latest git tag)
+meta version="":
     #!/usr/bin/env bash
-    version=$(grep -m1 '^version' pg_ext/Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
-    sed "s/@CARGO_VERSION@/${version}/g" META.json.in > META.json
-    echo "META.json generated (version ${version})"
+    v="{{ version }}"
+    if [ -z "$v" ]; then
+        v=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+    fi
+    if [ -z "$v" ]; then
+        echo "error: no version provided and no git tag found"; exit 1
+    fi
+    sed "s/@PGXN_VERSION@/${v}/g" META.json.in > META.json
+    echo "META.json generated (version ${v})"
 
 # Create distribution zip
 dist: meta

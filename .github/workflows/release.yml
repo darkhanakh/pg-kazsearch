@@ -163,8 +163,8 @@ jobs:
 
       - name: Generate META.json
         run: |
-          version=$(grep -m1 '^version' pg_ext/Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
-          sed "s/@CARGO_VERSION@/${version}/g" META.json.in > META.json
+          version=${GITHUB_REF_NAME#v}
+          sed "s/@PGXN_VERSION@/${version}/g" META.json.in > META.json
 
       - name: Bundle and publish
         env:
