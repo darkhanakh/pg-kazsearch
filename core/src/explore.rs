@@ -9,7 +9,7 @@ const QUEUE_MAX: usize = 1 << 18;
 const PENALTY_NIK_DERIV: u8 = 1;
 const PENALTY_FINAL_CONS: u8 = 2;
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Candidate {
     pub len: i32,
     pub steps: i32,
@@ -19,7 +19,7 @@ pub struct Candidate {
     pub weak: i32,
     pub single_char: i32,
     pub penalty_flags: u8,
-    pub last_suffix: Option<String>,
+    pub last_suffix: Option<&'static str>,
     pub last_layer: i32,
 }
 
@@ -40,7 +40,7 @@ impl Default for Candidate {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 struct ExploreState {
     len: i32,
     state_idx: i32,
@@ -51,7 +51,6 @@ struct ExploreState {
 pub struct ExploreResult {
     pub best_scored: Candidate,
     pub best_lexhit: Option<Candidate>,
-    pub has_lexhit: bool,
 }
 
 /// Match suffix only when it is strictly shorter than the word (mirrors C's
@@ -93,78 +92,62 @@ fn visit_key(len: i32, state_idx: i32, steps: i32) -> u64 {
 }
 
 fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32) -> bool {
-    let base_len = base.len();
-
-    if layer_id == LAYER_CASE {
-        if sfx == "н" {
-            return base.ends_with("сы") || base.ends_with("сі")
-                || base.ends_with("ы") || base.ends_with("і");
-        }
-
-        if sfx == "а" || sfx == "е" {
-            let poss_tails: &[&str] = &[
-                "ымыз", "іміз", "ыңыз", "іңіз",
-                "мыз", "міз", "ңыз", "ңіз",
-                "ым", "ім", "ың", "ің",
-                "сы", "сі", "ы", "і",
-            ];
-            for tail in poss_tails {
-                if base.ends_with(tail) {
+    match layer_id {
+        LAYER_CASE => {
+            if sfx == "н" {
+                return base.ends_with("сы") || base.ends_with("сі")
+                    || base.ends_with("ы") || base.ends_with("і");
+            }
+            if sfx == "а" || sfx == "е" {
+                const POSS_TAILS: &[&str] = &[
+                    "ымыз", "іміз", "ыңыз", "іңіз",
+                    "мыз", "міз", "ңыз", "ңіз",
+                    "ым", "ім", "ың", "ің",
+                    "сы", "сі", "ы", "і",
+                ];
+                if POSS_TAILS.iter().any(|t| base.ends_with(t)) {
                     return true;
                 }
-            }
-            if (base.ends_with("м") || base.ends_with("ң")) && base_len > 0 {
-                let chars: Vec<char> = base.chars().collect();
-                if chars.len() >= 2 {
-                    let prev = chars[chars.len() - 2];
-                    return is_vowel(prev);
+                if (base.ends_with("м") || base.ends_with("ң")) && !base.is_empty() {
+                    if let Some(prev) = base.chars().rev().nth(1) {
+                        return is_vowel(prev);
+                    }
                 }
+                return false;
             }
-            return false;
-        }
-
-        if let Some(cp) = utf8_last_cp(base) {
-            if sfx == "ны" || sfx == "ні" {
-                return is_vowel(cp);
+            match utf8_last_cp(base) {
+                Some(cp) => match sfx {
+                    "ны" | "ні" => return is_vowel(cp),
+                    "ын" | "ін" | "ды" | "ді" | "ты" | "ті" => return !is_vowel(cp),
+                    _ => {}
+                },
+                None => return false,
             }
-            if sfx == "ын" || sfx == "ін" {
-                return !is_vowel(cp);
+        }
+        LAYER_POSS => {
+            if sfx == "м" || sfx == "ң" {
+                return utf8_last_cp(base).map_or(false, |cp| is_vowel(cp));
             }
-            if sfx == "ды" || sfx == "ді" || sfx == "ты" || sfx == "ті" {
-                return !is_vowel(cp);
+        }
+        LAYER_VTENSE => match sfx {
+            "у" => return utf8_char_count(base) >= 2 && count_syllables(base) >= 1,
+            "й" => return steps_so_far > 0,
+            "а" | "е" => return steps_so_far > 0 && count_syllables(base) >= 2,
+            _ => {}
+        },
+        LAYER_VNEG => return utf8_char_count(base) >= 3,
+        LAYER_VPERSON => {
+            if matches!(sfx, "м" | "ң" | "қ" | "к") {
+                return count_syllables(base) >= 2;
             }
-        } else {
-            return false;
         }
-    } else if layer_id == LAYER_POSS {
-        if sfx == "м" || sfx == "ң" {
-            return utf8_last_cp(base).map_or(false, |cp| is_vowel(cp));
+        LAYER_DERIV => {
+            if matches!(sfx, "лық" | "лік" | "дық" | "дік" | "тық" | "тік") {
+                return count_syllables(base) >= 2;
+            }
         }
-    } else if layer_id == LAYER_VTENSE {
-        if sfx == "у" {
-            return utf8_char_count(base) >= 2 && count_syllables(base) >= 1;
-        }
-        if sfx == "й" {
-            return steps_so_far > 0;
-        }
-        if sfx == "а" || sfx == "е" {
-            return steps_so_far > 0 && count_syllables(base) >= 2;
-        }
-    } else if layer_id == LAYER_VNEG {
-        return utf8_char_count(base) >= 3;
-    } else if layer_id == LAYER_VPERSON {
-        if sfx == "м" || sfx == "ң" || sfx == "қ" || sfx == "к" {
-            return count_syllables(base) >= 2;
-        }
-    } else if layer_id == LAYER_DERIV {
-        if sfx == "лық" || sfx == "лік"
-            || sfx == "дық" || sfx == "дік"
-            || sfx == "тық" || sfx == "тік"
-        {
-            return count_syllables(base) >= 2;
-        }
+        _ => {}
     }
-
     true
 }
 
@@ -194,12 +177,11 @@ pub fn candidate_penalty(
     _word: &str,
     original_chars: i32,
     verb_track: bool,
-    chars_prefix: &[i32],
-    syll_prefix: &[i32],
+    prefix: &PrefixTables,
     w: &PenaltyWeights,
 ) -> f64 {
-    let chars = chars_prefix[c.len as usize];
-    let syll = syll_prefix[c.len as usize];
+    let chars = prefix.chars[c.len as usize];
+    let syll = prefix.syll[c.len as usize];
     let removed = (original_chars - chars).max(0);
     let mut p: f64 = 0.0;
 
@@ -234,7 +216,7 @@ pub fn candidate_beats(
     current: &Candidate,
     p_challenger: f64,
     p_current: f64,
-    chars_prefix: &[i32],
+    prefix: &PrefixTables,
 ) -> bool {
     #![allow(clippy::float_cmp)]
     if p_challenger != p_current {
@@ -253,8 +235,8 @@ pub fn candidate_beats(
         return inf_ch > inf_cu;
     }
 
-    let ch_ch = chars_prefix[challenger.len as usize];
-    let ch_cu = chars_prefix[current.len as usize];
+    let ch_ch = prefix.chars[challenger.len as usize];
+    let ch_cu = prefix.chars[current.len as usize];
     ch_ch > ch_cu
 }
 
@@ -286,94 +268,55 @@ pub fn apply_mutation(lexeme: &mut String) {
     }
 }
 
-pub fn apply_elision_restore(lexeme: &str) -> String {
-    let chars: Vec<char> = lexeme.chars().collect();
-    if chars.is_empty() {
-        return lexeme.to_string();
-    }
-
-    let last_cp = chars[chars.len() - 1];
-    if last_cp != 'н' && last_cp != 'з' {
-        return lexeme.to_string();
-    }
-    if chars.len() < 2 {
-        return lexeme.to_string();
-    }
-
-    let prev_cp = chars[chars.len() - 2];
-    let mut last_vowel: Option<char> = None;
-    for &c in &chars {
-        if is_vowel(c) {
-            last_vowel = Some(c);
-        }
-    }
-
-    if is_vowel(prev_cp) {
-        if !(lexeme.ends_with("уз") || lexeme.ends_with("із")) {
-            return lexeme.to_string();
-        }
-    }
-
-    let lv = match last_vowel {
-        Some(v) => v,
-        None => return lexeme.to_string(),
-    };
-
-    let ins = if is_back_vowel(lv) { "ы" } else { "і" };
-
-    // Insert before the last character
-    let last_char_start = lexeme.len() - last_cp.len_utf8();
-    let mut result = String::with_capacity(lexeme.len() + ins.len());
-    result.push_str(&lexeme[..last_char_start]);
-    result.push_str(ins);
-    result.push_str(&lexeme[last_char_start..]);
-    result
-}
-
-fn try_elision_restore_buf(stem: &str) -> Option<String> {
-    let chars: Vec<char> = stem.chars().collect();
-    if chars.is_empty() {
-        return None;
-    }
-    let last_cp = chars[chars.len() - 1];
+fn try_elision_restore(s: &str) -> Option<String> {
+    let mut it = s.chars().rev();
+    let last_cp = it.next()?;
     if last_cp != 'н' && last_cp != 'з' {
         return None;
     }
-    if chars.len() < 2 {
+    let prev_cp = it.next()?;
+
+    if is_vowel(prev_cp) && !(s.ends_with("уз") || s.ends_with("із")) {
         return None;
     }
-    let prev_cp = chars[chars.len() - 2];
-    let mut last_vowel: Option<char> = None;
-    for &c in &chars {
-        if is_vowel(c) {
-            last_vowel = Some(c);
-        }
-    }
-    if is_vowel(prev_cp)
-        && !(stem.ends_with("уз") || stem.ends_with("із"))
-    {
-        return None;
-    }
-    let lv = last_vowel?;
+
+    let lv = s.chars().filter(|&c| is_vowel(c)).last()?;
     let ins = if is_back_vowel(lv) { "ы" } else { "і" };
 
-    let last_char_start = stem.len() - last_cp.len_utf8();
-    let mut result = String::with_capacity(stem.len() + ins.len());
-    result.push_str(&stem[..last_char_start]);
+    let last_char_start = s.len() - last_cp.len_utf8();
+    let mut result = String::with_capacity(s.len() + ins.len());
+    result.push_str(&s[..last_char_start]);
     result.push_str(ins);
-    result.push_str(&stem[last_char_start..]);
+    result.push_str(&s[last_char_start..]);
     if result.len() >= MAX_STEM_BYTES {
         return None;
     }
     Some(result)
 }
 
+pub fn apply_elision_restore(lexeme: &str) -> String {
+    try_elision_restore(lexeme).unwrap_or_else(|| lexeme.to_string())
+}
+
+fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
+    let total = a.len() + b.len();
+    if total >= MAX_STEM_BYTES {
+        return None;
+    }
+    buf[..a.len()].copy_from_slice(a.as_bytes());
+    buf[a.len()..total].copy_from_slice(b.as_bytes());
+    Some(std::str::from_utf8(&buf[..total]).unwrap())
+}
+
 fn try_append_vowel_check(stem: &str, suffix: &str, lexicon: &Lexicon) -> bool {
-    if stem.is_empty() || stem.len() + suffix.len() >= MAX_STEM_BYTES {
+    if stem.is_empty() {
         return false;
     }
-    let trial = format!("{}{}", stem, suffix);
-    lexicon.contains(&trial)
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    match concat_on_stack(stem, suffix, &mut buf) {
+        Some(trial) => lexicon.contains(trial),
+        None => false,
+    }
 }
 
 pub fn candidate_hits_lexicon(c: &Candidate, word: &str, lexicon: &Lexicon) -> bool {
@@ -387,21 +330,21 @@ pub fn candidate_hits_lexicon(c: &Candidate, word: &str, lexicon: &Lexicon) -> b
     }
 
     if c.steps > 0 && c.nominal_inf > 0 {
-        if let Some(ref last_sfx) = c.last_suffix {
-            if POSS_VOWEL_SUFFIXES.contains(&last_sfx.as_str()) {
+        if let Some(last_sfx) = c.last_suffix {
+            if POSS_VOWEL_SUFFIXES.contains(&last_sfx) {
                 let mut alt = stem.to_string();
                 apply_mutation(&mut alt);
                 if lexicon.contains(&alt) {
                     return true;
                 }
-                if let Some(restored) = try_elision_restore_buf(&alt) {
+                if let Some(restored) = try_elision_restore(&alt) {
                     if lexicon.contains(&restored) {
                         return true;
                     }
                 }
 
                 let alt2 = stem.to_string();
-                if let Some(restored) = try_elision_restore_buf(&alt2) {
+                if let Some(restored) = try_elision_restore(&alt2) {
                     if lexicon.contains(&restored) {
                         return true;
                     }
@@ -455,12 +398,11 @@ pub fn explore_track_best(
     layers: &[LayerDef],
     cfg: &StemConfig,
     noun_track: bool,
-    chars_prefix: &[i32],
-    syll_prefix: &[i32],
+    prefix: &PrefixTables,
 ) -> ExploreResult {
     let nlayer = layers.len() as i32;
     let verb_track = !noun_track;
-    let original_chars = chars_prefix[len];
+    let original_chars = prefix.chars[len];
 
     let mut queue: VecDeque<ExploreState> = VecDeque::with_capacity(1024);
     let mut visit: HashSet<u64> = HashSet::with_capacity(4096);
@@ -472,12 +414,11 @@ pub fn explore_track_best(
     };
     let mut best_pen = candidate_penalty(
         &best_scored, word, original_chars, verb_track,
-        chars_prefix, syll_prefix, &cfg.weights,
+        prefix, &cfg.weights,
     );
 
     let mut best_lexhit: Option<Candidate> = None;
     let mut best_lex_pen: f64 = 0.0;
-    let mut has_lexhit = false;
 
     visit.insert(visit_key(len as i32, 0, 0));
     queue.push_back(ExploreState {
@@ -497,29 +438,23 @@ pub fn explore_track_best(
 
         let cur_pen = candidate_penalty(
             &st.c, word, original_chars, verb_track,
-            chars_prefix, syll_prefix, &cfg.weights,
+            prefix, &cfg.weights,
         );
 
-        if candidate_beats(&st.c, &best_scored, cur_pen, best_pen, chars_prefix) {
-            best_scored = st.c.clone();
+        if candidate_beats(&st.c, &best_scored, cur_pen, best_pen, prefix) {
+            best_scored = st.c;
             best_pen = cur_pen;
         }
 
         if st.c.steps > 0 {
             if let Some(ref lex) = cfg.lexicon {
                 if candidate_hits_lexicon(&st.c, word, lex) {
-                    if !has_lexhit
-                        || candidate_beats(
-                            &st.c,
-                            best_lexhit.as_ref().unwrap(),
-                            cur_pen,
-                            best_lex_pen,
-                            chars_prefix,
-                        )
-                    {
-                        best_lexhit = Some(st.c.clone());
+                    let dominated = best_lexhit
+                        .as_ref()
+                        .map_or(true, |prev| candidate_beats(&st.c, prev, cur_pen, best_lex_pen, prefix));
+                    if dominated {
+                        best_lexhit = Some(st.c);
                         best_lex_pen = cur_pen;
-                        has_lexhit = true;
                     }
                 }
             }
@@ -537,7 +472,7 @@ pub fn explore_track_best(
                 queue.push_back(ExploreState {
                     len: st.len,
                     state_idx: next_idx,
-                    c: st.c.clone(),
+                    c: st.c,
                 });
             }
         }
@@ -558,10 +493,10 @@ pub fn explore_track_best(
                 continue;
             }
             let base_len = st_len - sfx_bytes;
-            if chars_prefix[base_len] < 2 {
+            if prefix.chars[base_len] < 2 {
                 continue;
             }
-            if syll_prefix[base_len] < 1 {
+            if prefix.syll[base_len] < 1 {
                 continue;
             }
             if !harmony_ok(&word[..base_len], rule.harmony) {
@@ -571,17 +506,16 @@ pub fn explore_track_best(
                 continue;
             }
 
-            let sfx_chars = rule.suffix.chars().count() as i32;
             let new_state_idx = next_state_idx(noun_track, st.state_idx, layer.layer_id, rule.suffix);
 
-            let mut new_c = st.c.clone();
+            let mut new_c = st.c;
             new_c.len = base_len as i32;
             new_c.steps += 1;
-            new_c.last_suffix = Some(rule.suffix.to_string());
+            new_c.last_suffix = Some(rule.suffix);
             new_c.last_layer = layer.layer_id;
             if rule.weak { new_c.weak += 1; }
             new_c.penalty_flags = penalty_flags_at(word, base_len);
-            if sfx_chars == 1 { new_c.single_char += 1; }
+            if rule.sfx_chars == 1 { new_c.single_char += 1; }
             match layer.kind {
                 1 => new_c.nominal_inf += 1,
                 2 => new_c.verbal_inf += 1,
@@ -599,9 +533,5 @@ pub fn explore_track_best(
         }
     }
 
-    ExploreResult {
-        best_scored,
-        best_lexhit,
-        has_lexhit,
-    }
+    ExploreResult { best_scored, best_lexhit }
 }

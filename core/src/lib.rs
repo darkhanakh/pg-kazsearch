@@ -5,7 +5,7 @@ pub mod explore;
 
 use explore::ExploreResult;
 use rules::{NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
-use text::{fill_prefix_tables, word_is_back, utf8_last_cp, is_vowel};
+use text::{fill_prefix_tables, word_is_back, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
 
 pub const MAX_STEM_BYTES: usize = 128;
@@ -70,103 +70,66 @@ impl Default for StemConfig {
     }
 }
 
+fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
+    let total = a.len() + b.len();
+    if total >= MAX_STEM_BYTES {
+        return None;
+    }
+    buf[..a.len()].copy_from_slice(a.as_bytes());
+    buf[a.len()..total].copy_from_slice(b.as_bytes());
+    Some(std::str::from_utf8(&buf[..total]).unwrap())
+}
+
 fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, steps: i32) -> String {
-    if steps < 2 {
+    if steps < 2 || lexeme.is_empty() || lexeme.len() >= MAX_STEM_BYTES {
         return lexeme.to_string();
     }
-    let len = lexeme.len();
-    if len == 0 || len >= MAX_STEM_BYTES {
-        return lexeme.to_string();
-    }
-    if let Some(cp) = utf8_last_cp(lexeme) {
-        if is_vowel(cp) {
-            return lexeme.to_string();
-        }
-    } else {
+
+    let ends_with_vowel = utf8_last_cp(lexeme).map_or(true, |cp| is_vowel(cp));
+    if ends_with_vowel {
         return lexeme.to_string();
     }
 
     let is_back = word_is_back(lexeme);
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    let candidates = if is_back { ["ы", "а"] } else { ["і", "е"] };
 
-    let v1 = if is_back { "ы" } else { "і" };
-    let trial = format!("{}{}", lexeme, v1);
-    if trial.len() < MAX_STEM_BYTES && lexicon.contains(&trial) {
-        return trial;
-    }
-
-    let v2 = if is_back { "а" } else { "е" };
-    let trial = format!("{}{}", lexeme, v2);
-    if trial.len() < MAX_STEM_BYTES && lexicon.contains(&trial) {
-        return trial;
+    for sfx in &candidates {
+        if let Some(trial) = concat_on_stack(lexeme, sfx, &mut buf) {
+            if lexicon.contains(trial) {
+                return trial.to_string();
+            }
+        }
     }
 
     lexeme.to_string()
 }
 
+// main function to stem a word, entrypoint for the library
 pub fn stem(word: &str, cfg: &StemConfig) -> String {
     if word.is_empty() {
         return String::new();
     }
 
     let txt: String = word.to_lowercase();
-    if txt.is_empty() {
-        return String::new();
-    }
-
     let len = txt.len();
-    let (chars_prefix, syll_prefix) = fill_prefix_tables(&txt);
+    let prefix = fill_prefix_tables(&txt);
 
-    if syll_prefix[len] < 2 {
+    if prefix.syll[len] < 2 {
         return txt;
     }
 
-    let original_chars = chars_prefix[len] as i32;
+    let original_chars = prefix.chars[len];
+    let noun = explore::explore_track_best(&txt, len, &NOUN_LAYERS, cfg, true, &prefix);
+    let verb = explore::explore_track_best(&txt, len, &VERB_LAYERS, cfg, false, &prefix);
 
-    let noun = explore::explore_track_best(
-        &txt, len, &NOUN_LAYERS, cfg, true, &chars_prefix, &syll_prefix,
-    );
-    let verb = explore::explore_track_best(
-        &txt, len, &VERB_LAYERS, cfg, false, &chars_prefix, &syll_prefix,
-    );
-
-    let best;
-
-    if let Some(ref lex) = cfg.lexicon {
-        if noun.has_lexhit || verb.has_lexhit {
-            let best_lex = pick_best_lexhit(&noun, &verb, &txt, original_chars, &chars_prefix, &syll_prefix, &cfg.weights);
-
-            if let Some(bl) = best_lex {
-                let lex_input_is_known = lex.contains(&txt);
-                let shallow_ambiguous = bl.steps == 1 && syll_prefix[len] <= 2;
-
-                if lex_input_is_known
-                    && (shallow_ambiguous
-                        || (syll_prefix[len] >= 3
-                            && (syll_prefix[bl.len as usize] < syll_prefix[len])))
-                {
-                    return txt;
-                }
-                best = bl;
-            } else {
-                best = pick_best_scored(&noun, &verb, &txt, original_chars, &chars_prefix, &syll_prefix, &cfg.weights, cfg.lexicon.as_ref());
-            }
-        } else {
-            best = pick_best_scored(&noun, &verb, &txt, original_chars, &chars_prefix, &syll_prefix, &cfg.weights, cfg.lexicon.as_ref());
-        }
-    } else {
-        best = pick_best_scored(&noun, &verb, &txt, original_chars, &chars_prefix, &syll_prefix, &cfg.weights, None);
+    let best = select_best(&noun, &verb, &txt, original_chars, &prefix, cfg);
+    if best.steps == 0 {
+        return txt;
     }
 
     let mut lexeme = txt[..best.len as usize].to_string();
-
-    if best.steps > 0 && best.nominal_inf > 0 {
-        if let Some(ref last_sfx) = best.last_suffix {
-            if POSS_VOWEL_SUFFIXES.contains(&last_sfx.as_str()) {
-                explore::apply_mutation(&mut lexeme);
-                lexeme = explore::apply_elision_restore(&lexeme);
-            }
-        }
-    }
+    undo_sound_changes(&mut lexeme, &best);
 
     if let Some(ref lex) = cfg.lexicon {
         lexeme = restore_lexicon_vowel(&lexeme, lex, best.steps);
@@ -175,30 +138,76 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
     lexeme
 }
 
+fn should_keep_input(
+    candidate: &explore::Candidate,
+    txt: &str,
+    prefix: &PrefixTables,
+    lex: &Lexicon,
+) -> bool {
+    if !lex.contains(txt) {
+        return false;
+    }
+    let len = txt.len();
+    let shallow_ambiguous = candidate.steps == 1 && prefix.syll[len] <= 2;
+    let lost_syllables = prefix.syll[len] >= 3
+        && prefix.syll[candidate.len as usize] < prefix.syll[len];
+    shallow_ambiguous || lost_syllables
+}
+
+fn select_best(
+    noun: &ExploreResult,
+    verb: &ExploreResult,
+    txt: &str,
+    original_chars: i32,
+    prefix: &PrefixTables,
+    cfg: &StemConfig,
+) -> explore::Candidate {
+    let scored = || pick_best_scored(noun, verb, txt, original_chars, prefix, &cfg.weights, cfg.lexicon.as_ref());
+
+    let lex = match cfg.lexicon {
+        Some(ref l) => l,
+        None => return pick_best_scored(noun, verb, txt, original_chars, prefix, &cfg.weights, None),
+    };
+
+    if noun.best_lexhit.is_none() && verb.best_lexhit.is_none() {
+        return scored();
+    }
+
+    match pick_best_lexhit(noun, verb, txt, original_chars, prefix, &cfg.weights) {
+        Some(bl) if should_keep_input(&bl, txt, prefix, lex) => {
+            explore::Candidate { len: txt.len() as i32, ..Default::default() }
+        }
+        Some(bl) => bl,
+        None => scored(),
+    }
+}
+
+fn undo_sound_changes(lexeme: &mut String, best: &explore::Candidate) {
+    let needs_restore = best.nominal_inf > 0
+        && best.last_suffix.map_or(false, |s| POSS_VOWEL_SUFFIXES.contains(&s));
+
+    if needs_restore {
+        explore::apply_mutation(lexeme);
+        *lexeme = explore::apply_elision_restore(lexeme);
+    }
+}
+
 fn pick_best_lexhit(
     noun: &ExploreResult,
     verb: &ExploreResult,
     txt: &str,
     original_chars: i32,
-    chars_prefix: &[i32],
-    syll_prefix: &[i32],
+    prefix: &PrefixTables,
     weights: &PenaltyWeights,
 ) -> Option<explore::Candidate> {
-    match (noun.has_lexhit, verb.has_lexhit) {
-        (true, true) => {
-            let nc = noun.best_lexhit.as_ref().unwrap();
-            let vc = verb.best_lexhit.as_ref().unwrap();
-            let np = explore::candidate_penalty(nc, txt, original_chars, false, chars_prefix, syll_prefix, weights);
-            let vp = explore::candidate_penalty(vc, txt, original_chars, true, chars_prefix, syll_prefix, weights);
-            if explore::candidate_beats(vc, nc, vp, np, chars_prefix) {
-                Some(vc.clone())
-            } else {
-                Some(nc.clone())
-            }
+    match (noun.best_lexhit, verb.best_lexhit) {
+        (Some(nc), Some(vc)) => {
+            let np = explore::candidate_penalty(&nc, txt, original_chars, false, prefix, weights);
+            let vp = explore::candidate_penalty(&vc, txt, original_chars, true, prefix, weights);
+            Some(if explore::candidate_beats(&vc, &nc, vp, np, prefix) { vc } else { nc })
         }
-        (true, false) => noun.best_lexhit.clone(),
-        (false, true) => verb.best_lexhit.clone(),
-        (false, false) => None,
+        (Some(c), None) | (None, Some(c)) => Some(c),
+        (None, None) => None,
     }
 }
 
@@ -207,42 +216,31 @@ fn pick_best_scored(
     verb: &ExploreResult,
     txt: &str,
     original_chars: i32,
-    chars_prefix: &[i32],
-    syll_prefix: &[i32],
+    prefix: &PrefixTables,
     weights: &PenaltyWeights,
     lexicon: Option<&Lexicon>,
 ) -> explore::Candidate {
-    let np = explore::candidate_penalty(&noun.best_scored, txt, original_chars, false, chars_prefix, syll_prefix, weights);
-    let vp = explore::candidate_penalty(&verb.best_scored, txt, original_chars, true, chars_prefix, syll_prefix, weights);
+    let np = explore::candidate_penalty(&noun.best_scored, txt, original_chars, false, prefix, weights);
+    let vp = explore::candidate_penalty(&verb.best_scored, txt, original_chars, true, prefix, weights);
 
-    let input_is_known = lexicon.map_or(false, |l| l.contains(txt));
-
-    let best = if explore::candidate_beats(&verb.best_scored, &noun.best_scored, vp, np, chars_prefix) {
+    let best = if explore::candidate_beats(&verb.best_scored, &noun.best_scored, vp, np, prefix) {
         &verb.best_scored
     } else {
         &noun.best_scored
     };
 
-    if input_is_known {
-        let hits = lexicon.map_or(false, |l| explore::candidate_hits_lexicon(best, txt, l));
-        if !hits
-            || (best.steps > 0 && best.single_char == best.steps)
-            || syll_prefix[best.len as usize] < syll_prefix[txt.len()]
-        {
-            return explore::Candidate {
-                len: txt.len() as i32,
-                steps: 0,
-                nominal_inf: 0,
-                verbal_inf: 0,
-                deriv: 0,
-                weak: 0,
-                single_char: 0,
-                penalty_flags: 0,
-                last_suffix: None,
-                last_layer: 0,
-            };
+    let no_strip = explore::Candidate { len: txt.len() as i32, ..Default::default() };
+
+    if let Some(lex) = lexicon {
+        if lex.contains(txt) {
+            let only_single_char = best.steps > 0 && best.single_char == best.steps;
+            let lost_syllables = prefix.syll[best.len as usize] < prefix.syll[txt.len()];
+            let hits_lex = explore::candidate_hits_lexicon(best, txt, lex);
+            if !hits_lex || only_single_char || lost_syllables {
+                return no_strip;
+            }
         }
     }
 
-    best.clone()
+    *best
 }

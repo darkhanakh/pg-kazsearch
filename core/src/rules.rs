@@ -12,9 +12,23 @@ pub const LAYER_VTENSE: i32 = 12;
 pub const LAYER_VNEG: i32 = 13;
 pub const LAYER_VVOICE: i32 = 14;
 
-#[derive(Clone, Debug)]
+const fn const_char_count(s: &str) -> i32 {
+    let b = s.as_bytes();
+    let mut i = 0;
+    let mut count = 0i32;
+    while i < b.len() {
+        if b[i] & 0b1100_0000 != 0b1000_0000 {
+            count += 1;
+        }
+        i += 1;
+    }
+    count
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct SuffixRule {
     pub suffix: &'static str,
+    pub sfx_chars: i32,
     pub harmony: u8,
     pub weak: bool,
 }
@@ -28,8 +42,8 @@ pub struct LayerDef {
 }
 
 macro_rules! sfx {
-    ($s:expr, $h:expr, 0) => { SuffixRule { suffix: $s, harmony: $h, weak: false } };
-    ($s:expr, $h:expr, 1) => { SuffixRule { suffix: $s, harmony: $h, weak: true } };
+    ($s:expr, $h:expr, 0) => { SuffixRule { suffix: $s, sfx_chars: const_char_count($s), harmony: $h, weak: false } };
+    ($s:expr, $h:expr, 1) => { SuffixRule { suffix: $s, sfx_chars: const_char_count($s), harmony: $h, weak: true } };
 }
 
 static PRED_RULES: &[SuffixRule] = &[

@@ -149,10 +149,10 @@ fn test_text_module_word_is_back() {
 #[test]
 fn test_text_module_prefix_tables() {
     use kazsearch_core::text::*;
-    let (cp, sp) = fill_prefix_tables("алма");
+    let prefix = fill_prefix_tables("алма");
     let len = "алма".len();
-    assert_eq!(cp[len], 4);
-    assert_eq!(sp[len], 2);
+    assert_eq!(prefix.chars[len], 4);
+    assert_eq!(prefix.syll[len], 2);
 }
 
 #[test]

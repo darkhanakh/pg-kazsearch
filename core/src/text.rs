@@ -32,12 +32,19 @@ pub fn count_syllables(s: &str) -> i32 {
         .count() as i32
 }
 
-/// Build prefix tables: chars_prefix[b] and syll_prefix[b] give counts in s[0..b).
-/// Valid for every byte offset b that is a UTF-8 boundary.
-pub fn fill_prefix_tables(s: &str) -> (Vec<i32>, Vec<i32>) {
+/// Prefix sums indexed by UTF-8 byte offset `b`: `chars[b]` / `syll[b]` count
+/// Unicode scalars and vowel-based syllables in `s[0..b)`.
+#[derive(Clone, Debug)]
+pub struct PrefixTables {
+    pub chars: Vec<i32>,
+    pub syll: Vec<i32>,
+}
+
+/// Build prefix tables for [`PrefixTables`].
+pub fn fill_prefix_tables(s: &str) -> PrefixTables {
     let len = s.len();
-    let mut chars_prefix = vec![0i32; len + 1];
-    let mut syll_prefix = vec![0i32; len + 1];
+    let mut chars = vec![0i32; len + 1];
+    let mut syll = vec![0i32; len + 1];
 
     let mut nchars: i32 = 0;
     let mut nsyll: i32 = 0;
@@ -50,17 +57,12 @@ pub fn fill_prefix_tables(s: &str) -> (Vec<i32>, Vec<i32>) {
         }
         let end = i + char_len;
         for b in (i + 1)..=end.min(len) {
-            chars_prefix[b] = nchars;
-            syll_prefix[b] = nsyll;
+            chars[b] = nchars;
+            syll[b] = nsyll;
         }
     }
-    // Fill any trailing bytes beyond the last character
-    for b in (s.len().saturating_sub(0) + 1)..=len {
-        chars_prefix[b] = nchars;
-        syll_prefix[b] = nsyll;
-    }
 
-    (chars_prefix, syll_prefix)
+    PrefixTables { chars, syll }
 }
 
 pub fn word_is_back(s: &str) -> bool {
