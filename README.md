@@ -24,8 +24,8 @@ Download the `.deb` for your PostgreSQL version from [GitHub Releases](https://g
 
 ```bash
 # Example: PostgreSQL 18 on amd64
-wget https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/postgresql-18-pg-kazsearch_0.1.0_amd64.deb
-sudo dpkg -i postgresql-18-pg-kazsearch_0.1.0_amd64.deb
+curl -LO https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/postgresql-18-pg-kazsearch_2.0.0_amd64.deb
+sudo dpkg -i postgresql-18-pg-kazsearch_2.0.0_amd64.deb
 ```
 
 Then in psql:
