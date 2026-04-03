@@ -6,6 +6,8 @@ on:
 permissions:
   contents: write
   packages: write
+  attestations: write
+  id-token: write
 
 env:
   PGRX_VERSION: "=0.17.0"
@@ -152,6 +154,7 @@ jobs:
   pgxn:
     name: Publish to PGXN
     needs: build-deb
+    if: secrets.PGXN_USERNAME != ''
     runs-on: ubuntu-latest
     container: pgxn/pgxn-tools
     env:
