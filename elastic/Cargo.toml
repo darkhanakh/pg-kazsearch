@@ -1,0 +1,9 @@
+[package]
+name = "kazsearch-elastic"
+version = "0.1.0"
+edition = "2021"
+description = "Kazakh stemmer Elasticsearch plugin (placeholder)"
+license = "MIT"
+
+[dependencies]
+kazsearch-core = { path = "../core" }

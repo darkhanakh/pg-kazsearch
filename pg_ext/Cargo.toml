@@ -1,5 +1,5 @@
 [package]
-name = "pg_kazsearch_rs"
+name = "pg_kazsearch"
 version = "0.1.0"
 edition = "2021"
 
@@ -20,7 +20,7 @@ pgrx = "=0.17.0"
 kazsearch-core = { path = "../core" }
 
 [[bin]]
-name = "pgrx_embed_pg_kazsearch_rs"
+name = "pgrx_embed_pg_kazsearch"
 path = "src/bin/pgrx_embed.rs"
 
 [dev-dependencies]

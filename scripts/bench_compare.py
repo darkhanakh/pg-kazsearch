@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Head-to-head benchmark: C extension (via ts_lexize in PostgreSQL)
-vs Rust kazsearch-core (via cargo test --release).
+Head-to-head benchmark: C extension vs Rust extension, both via
+ts_lexize inside PostgreSQL, plus Rust kazsearch-core natively.
 
 Uses the same 45k token set from core/tests/bench_tokens.txt.
 
@@ -33,10 +33,11 @@ def load_tokens(path: str) -> list[str]:
     return tokens
 
 
-def bench_c_extension(
+def bench_pg_extension(
     tokens: list[str],
     iterations: int,
     batch_size: int,
+    dict_name: str,
     container: str,
     db: str,
     user: str,
@@ -47,12 +48,11 @@ def bench_c_extension(
         values = ",".join(f"('{qlit(t)}')" for t in chunk)
         sql = (
             f"WITH input(token) AS (VALUES {values}) "
-            "SELECT sum(COALESCE(array_length("
-            "ts_lexize('pg_kazsearch_dict', token), 1), 0)) FROM input;"
+            f"SELECT sum(COALESCE(array_length("
+            f"ts_lexize('{dict_name}', token), 1), 0)) FROM input;"
         )
         batches.append(sql)
 
-    # Warmup
     for sql in batches[:2]:
         subprocess.run(
             ["docker", "exec", container, "psql", "-U", user, "-d", db, "-At", "-c", sql],
@@ -84,7 +84,16 @@ def bench_c_extension(
     }
 
 
-def bench_rust_core() -> dict[str, float]:
+def rust_ext_available(container: str, db: str, user: str) -> bool:
+    r = subprocess.run(
+        ["docker", "exec", container, "psql", "-U", user, "-d", db, "-At", "-c",
+         "SELECT 1 FROM pg_ts_dict WHERE dictname = 'pg_kazsearch_rs_dict';"],
+        capture_output=True, text=True,
+    )
+    return "1" in r.stdout
+
+
+def bench_rust_core() -> dict[str, float] | None:
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     result = subprocess.run(
         ["cargo", "test", "--release", "-p", "kazsearch-core",
@@ -133,9 +142,8 @@ def bench_rust_core() -> dict[str, float]:
                 avg_tp = float(m.group(1))
 
     if avg_ms is None or n_tokens is None:
-        print("Failed to parse Rust bench output:", file=sys.stderr)
-        print(output, file=sys.stderr)
-        sys.exit(1)
+        print("  WARNING: Failed to parse Rust bench output", file=sys.stderr)
+        return None
 
     return {
         "tokens": n_tokens,
@@ -148,10 +156,30 @@ def bench_rust_core() -> dict[str, float]:
     }
 
 
+def print_comparison(results: list[tuple[str, float, float]]):
+    print("\n" + "=" * 62)
+    print("COMPARISON (avg per word)")
+    print("=" * 62)
+    print(f"  {'':24}  {'us/word':>10}  {'words/sec':>12}")
+    print(f"  {'-'*24}  {'-'*10}  {'-'*12}")
+    for label, us, tp in results:
+        print(f"  {label:24}  {us:>10.3f}  {tp:>12,.0f}")
+
+    fastest = min(results, key=lambda r: r[1])
+    print()
+    for label, us, tp in results:
+        if label == fastest[0]:
+            continue
+        if fastest[1] > 0:
+            ratio = us / fastest[1]
+            print(f"  {fastest[0]} is {ratio:.1f}x faster than {label}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark C vs Rust stemmer")
-    parser.add_argument("--iterations", type=int, default=5, help="C benchmark iterations")
+    parser.add_argument("--iterations", type=int, default=5, help="PostgreSQL benchmark iterations")
     parser.add_argument("--batch-size", type=int, default=5000)
+    parser.add_argument("--skip-native", action="store_true", help="Skip native Rust benchmark")
     parser.add_argument("--container", default="pg-kazsearch")
     parser.add_argument("--db", default="kazsearch")
     parser.add_argument("--user", default="postgres")
@@ -165,49 +193,47 @@ def main():
     tokens = load_tokens(tokens_path)
     print(f"Loaded {len(tokens)} tokens from {tokens_path}")
 
-    # ── Rust benchmark ───────────────────────────────────────────────────
-    print("\n=== Rust (kazsearch-core, native, --release) ===")
-    print("Running cargo test --release ...", flush=True)
-    rust = bench_rust_core()
-    print(f"  Tokens:          {rust['tokens']}")
-    print(f"  Single pass:     {rust['single_ms']:.2f} ms  ({rust['single_us_per_word']:.3f} us/word, {rust['single_throughput']:.0f} words/sec)")
-    print(f"  Avg (5 passes):  {rust['avg_ms']:.2f} ms  ({rust['avg_us_per_word']:.3f} us/word, {rust['avg_throughput']:.0f} words/sec)")
+    results: list[tuple[str, float, float]] = []
 
-    # ── C benchmark ──────────────────────────────────────────────────────
-    print(f"\n=== C (pg_kazsearch, PostgreSQL ts_lexize, {args.iterations} iters) ===")
+    # ── Rust native benchmark ────────────────────────────────────────────
+    if not args.skip_native:
+        print("\n=== Rust (kazsearch-core, native, --release) ===")
+        print("Running cargo test --release ...", flush=True)
+        rust = bench_rust_core()
+        if rust:
+            print(f"  Tokens:          {rust['tokens']}")
+            print(f"  Single pass:     {rust['single_ms']:.2f} ms  ({rust['single_us_per_word']:.3f} us/word, {rust['single_throughput']:.0f} words/sec)")
+            print(f"  Avg (5 passes):  {rust['avg_ms']:.2f} ms  ({rust['avg_us_per_word']:.3f} us/word, {rust['avg_throughput']:.0f} words/sec)")
+            results.append(("Rust (native)", rust["avg_us_per_word"], rust["avg_throughput"]))
+
+    # ── C extension in PostgreSQL ────────────────────────────────────────
+    print(f"\n=== C (pg_kazsearch_dict, PostgreSQL, {args.iterations} iters) ===")
     print(f"Running {args.iterations} iterations via docker exec ...", flush=True)
-    c = bench_c_extension(tokens, args.iterations, args.batch_size,
-                          args.container, args.db, args.user)
+    c = bench_pg_extension(tokens, args.iterations, args.batch_size,
+                           "pg_kazsearch_dict", args.container, args.db, args.user)
     print(f"  Tokens:          {c['tokens']}")
     print(f"  Best iteration:  {c['best_ms']:.2f} ms  ({c['best_us_per_word']:.3f} us/word, {c['best_throughput']:.0f} words/sec)")
     print(f"  Avg iteration:   {c['avg_ms']:.2f} ms  ({c['avg_us_per_word']:.3f} us/word, {c['avg_throughput']:.0f} words/sec)")
+    results.append(("C (PostgreSQL)", c["avg_us_per_word"], c["avg_throughput"]))
 
-    # ── Comparison ───────────────────────────────────────────────────────
-    rust_us = rust['avg_us_per_word']
-    c_us = c['avg_us_per_word']
+    # ── Rust extension in PostgreSQL ─────────────────────────────────────
+    has_rs = rust_ext_available(args.container, args.db, args.user)
+    if has_rs:
+        print(f"\n=== Rust (pg_kazsearch_rs_dict, PostgreSQL, {args.iterations} iters) ===")
+        print(f"Running {args.iterations} iterations via docker exec ...", flush=True)
+        rs = bench_pg_extension(tokens, args.iterations, args.batch_size,
+                                "pg_kazsearch_rs_dict", args.container, args.db, args.user)
+        print(f"  Tokens:          {rs['tokens']}")
+        print(f"  Best iteration:  {rs['best_ms']:.2f} ms  ({rs['best_us_per_word']:.3f} us/word, {rs['best_throughput']:.0f} words/sec)")
+        print(f"  Avg iteration:   {rs['avg_ms']:.2f} ms  ({rs['avg_us_per_word']:.3f} us/word, {rs['avg_throughput']:.0f} words/sec)")
+        results.append(("Rust (PostgreSQL)", rs["avg_us_per_word"], rs["avg_throughput"]))
+    else:
+        print("\n  Rust extension (pg_kazsearch_rs) not installed in PostgreSQL.")
+        print("  Run `just reload-rs` to install it for apples-to-apples comparison.")
 
-    print("\n" + "=" * 60)
-    print("COMPARISON (avg per word)")
-    print("=" * 60)
-    print(f"  {'':20}  {'us/word':>10}  {'words/sec':>12}")
-    print(f"  {'-'*20}  {'-'*10}  {'-'*12}")
-    print(f"  {'Rust (native)':20}  {rust_us:>10.3f}  {rust['avg_throughput']:>12,.0f}")
-    print(f"  {'C (PostgreSQL)':20}  {c_us:>10.3f}  {c['avg_throughput']:>12,.0f}")
-    print()
-
-    if c_us > 0 and rust_us > 0:
-        if rust_us < c_us:
-            ratio = c_us / rust_us
-            print(f"  Rust is {ratio:.1f}x faster per word (pure stemmer vs PG overhead)")
-        else:
-            ratio = rust_us / c_us
-            print(f"  C is {ratio:.1f}x faster per word")
-
-    print()
-    print("NOTE: C timings include PostgreSQL overhead (parsing, palloc,")
-    print("      docker exec, network). Rust timings are pure in-process.")
-    print("      For apples-to-apples, compare both inside PostgreSQL")
-    print("      by installing the Rust extension with pgrx.")
+    # ── Comparison table ─────────────────────────────────────────────────
+    if len(results) >= 2:
+        print_comparison(results)
 
 
 if __name__ == "__main__":

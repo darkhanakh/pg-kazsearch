@@ -3,9 +3,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      target: dev
     container_name: pg-kazsearch
     restart: unless-stopped
-    privileged: true
     volumes:
       - .:/app
       - pgdata:/var/lib/postgresql

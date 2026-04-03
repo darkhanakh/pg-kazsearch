@@ -62,12 +62,12 @@ unsafe fn load_lexicon_from_pg(lexicon_name: &str) -> Lexicon {
 }
 
 #[pg_extern(sql = "
-CREATE OR REPLACE FUNCTION pg_kazsearch_rs_init(internal)
+CREATE OR REPLACE FUNCTION pg_kazsearch_init(internal)
 RETURNS internal
-AS 'MODULE_PATHNAME', 'pg_kazsearch_rs_init_wrapper'
+AS 'MODULE_PATHNAME', 'pg_kazsearch_init_wrapper'
 LANGUAGE C STRICT;
 ")]
-fn pg_kazsearch_rs_init(dict_options: pgrx::Internal) -> pgrx::Internal {
+fn pg_kazsearch_init(dict_options: pgrx::Internal) -> pgrx::Internal {
     let mut cfg = StemConfig::default();
     let mut lexicon_name: Option<String> = None;
 
@@ -125,12 +125,12 @@ fn pg_kazsearch_rs_init(dict_options: pgrx::Internal) -> pgrx::Internal {
 }
 
 #[pg_extern(sql = "
-CREATE OR REPLACE FUNCTION pg_kazsearch_rs_lexize(internal, internal, internal, internal)
+CREATE OR REPLACE FUNCTION pg_kazsearch_lexize(internal, internal, internal, internal)
 RETURNS internal
-AS 'MODULE_PATHNAME', 'pg_kazsearch_rs_lexize_wrapper'
+AS 'MODULE_PATHNAME', 'pg_kazsearch_lexize_wrapper'
 LANGUAGE C STRICT;
 ")]
-fn pg_kazsearch_rs_lexize(
+fn pg_kazsearch_lexize(
     dict_state: pgrx::Internal,
     input: pgrx::Internal,
     len: pgrx::Internal,
@@ -189,31 +189,31 @@ fn pg_kazsearch_rs_lexize(
 
 extension_sql!(
     r#"
-CREATE TEXT SEARCH TEMPLATE pg_kazsearch_rs_template (
-    INIT = pg_kazsearch_rs_init,
-    LEXIZE = pg_kazsearch_rs_lexize
+CREATE TEXT SEARCH TEMPLATE pg_kazsearch_template (
+    INIT = pg_kazsearch_init,
+    LEXIZE = pg_kazsearch_lexize
 );
 
-CREATE TEXT SEARCH DICTIONARY pg_kazsearch_rs_stop (
+CREATE TEXT SEARCH DICTIONARY pg_kazsearch_stop (
     TEMPLATE = pg_catalog.simple,
     STOPWORDS = kaz_stopwords,
     ACCEPT = false
 );
 
-CREATE TEXT SEARCH DICTIONARY pg_kazsearch_rs_dict (
-    TEMPLATE = pg_kazsearch_rs_template,
+CREATE TEXT SEARCH DICTIONARY pg_kazsearch_dict (
+    TEMPLATE = pg_kazsearch_template,
     derivation = true,
     max_steps = 8,
     lexicon = kaz_stems
 );
 
-CREATE TEXT SEARCH CONFIGURATION kazakh_rs_cfg (PARSER = pg_catalog.default);
+CREATE TEXT SEARCH CONFIGURATION kazakh_cfg (PARSER = pg_catalog.default);
 
-ALTER TEXT SEARCH CONFIGURATION kazakh_rs_cfg
+ALTER TEXT SEARCH CONFIGURATION kazakh_cfg
     ALTER MAPPING FOR asciiword, asciihword, hword_asciipart,
                       word, hword, hword_part
-    WITH pg_kazsearch_rs_stop, pg_kazsearch_rs_dict, simple;
+    WITH pg_kazsearch_stop, pg_kazsearch_dict, simple;
 "#,
     name = "kazakh_cfg_setup",
-    requires = [pg_kazsearch_rs_init, pg_kazsearch_rs_lexize]
+    requires = [pg_kazsearch_init, pg_kazsearch_lexize]
 );
