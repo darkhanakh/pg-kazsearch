@@ -1,0 +1,6 @@
+ARG PG_MAJOR=18
+FROM postgres:${PG_MAJOR}
+
+ARG PG_MAJOR
+COPY debs/postgresql-${PG_MAJOR}-pg-kazsearch_*.deb /tmp/pg_kazsearch.deb
+RUN dpkg -i /tmp/pg_kazsearch.deb && rm /tmp/pg_kazsearch.deb
