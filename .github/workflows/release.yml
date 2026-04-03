@@ -11,8 +11,20 @@ env:
   PGRX_VERSION: "=0.17.0"
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p kazsearch-core --test stem_tests
+      - run: cargo build -p kazsearch-cli --release
+      - run: ./target/release/kazsearch stem алмаларымыздағы
+
   build-deb:
     name: .deb / PG ${{ matrix.pg }} / ${{ matrix.arch }}
+    needs: test
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     strategy:
       matrix:
