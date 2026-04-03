@@ -1,0 +1,10 @@
+[package]
+name = "kazsearch-core"
+version = "0.1.0"
+edition = "2021"
+description = "Kazakh stemmer — standalone Rust port of pg_kazsearch"
+license = "MIT"
+
+[dependencies]
+
+[dev-dependencies]

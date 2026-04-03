@@ -1,0 +1,9 @@
+target/
+.git/
+legacy/
+eval/
+prototype/
+benchmark/
+scripts/
+*.zip
+.cursor/

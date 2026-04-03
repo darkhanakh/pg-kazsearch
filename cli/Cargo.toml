@@ -1,0 +1,14 @@
+[package]
+name = "kazsearch-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for the Kazakh stemmer"
+license = "MIT"
+
+[[bin]]
+name = "kazsearch"
+path = "src/main.rs"
+
+[dependencies]
+kazsearch-core = { path = "../core" }
+clap = { version = "4", features = ["derive"] }

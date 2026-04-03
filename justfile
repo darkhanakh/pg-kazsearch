@@ -57,24 +57,39 @@ psql:
 
 # ── Extension build ─────────────────────────────────────────────────────
 
-# Build lexicon, compile, and install extension
+# Build lexicon + compile Rust extension + install into running container
 build:
     python3 scripts/build_lexicon.py
-    just dc-exec make -C src/pg_kazsearch
-    just dc-exec make -C src/pg_kazsearch install
+    just dc-exec cargo pgrx install --release -c /usr/bin/pg_config -p pg_kazsearch
 
-# Build + reload extension (kazakh_cfg is created by the extension SQL)
+# Build + reload extension (DROP/CREATE)
 reload: build
     just psql-exec "DROP EXTENSION IF EXISTS pg_kazsearch CASCADE; CREATE EXTENSION pg_kazsearch;"
     @echo "Extension reloaded."
 
+# ── CLI ──────────────────────────────────────────────────────────────────
+
+# Build the CLI tool
+cli:
+    cargo build -p kazsearch-cli --release
+
 # ── Test ─────────────────────────────────────────────────────────────────
 
-# Smoke test stemmer and tsvector
+# Run core library unit tests
+test-core:
+    cargo test -p kazsearch-core
+
+# Smoke test stemmer and tsvector via SQL
 test-ext:
     @echo "── Testing pg_kazsearch extension ──"
     just psql-exec "SELECT ts_lexize('pg_kazsearch_dict', 'алмаларымыздағы');"
     just psql-exec "SELECT to_tsvector('kazakh_cfg', 'алмаларымыздағы мектептеріміздегі');"
+
+# ── Benchmark ────────────────────────────────────────────────────────────
+
+# Benchmark Rust core (native)
+bench:
+    python3 scripts/bench_compare.py
 
 # ── Eval pipeline ────────────────────────────────────────────────────────
 
@@ -114,17 +129,24 @@ pipeline: scrape load-corpus gen-queries eval-search
 
 # ── Release ──────────────────────────────────────────────────────────────
 
+# Generate META.json from template (reads version from pg_ext/Cargo.toml)
+meta:
+    #!/usr/bin/env bash
+    version=$(grep -m1 '^version' pg_ext/Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
+    sed "s/@CARGO_VERSION@/${version}/g" META.json.in > META.json
+    echo "META.json generated (version ${version})"
+
 # Create distribution zip
-dist:
+dist: meta
     #!/usr/bin/env bash
     version=$(grep -m 1 '"version":' META.json | sed -e 's/[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/')
-    git archive --format zip --prefix="pg_kazsearch-${version}/" -o "pg_kazsearch-${version}.zip" HEAD
+    git archive --format zip --prefix="pg_kazsearch-${version}/" --add-file=META.json -o "pg_kazsearch-${version}.zip" HEAD
 
 # ── Cleanup ──────────────────────────────────────────────────────────────
 
 # Remove build artifacts
 clean:
-    -just dc-exec make -C src/pg_kazsearch clean
+    cargo clean
     rm -rf eval/results/
 
 # Stop container and remove volumes

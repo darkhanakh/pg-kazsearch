@@ -1,0 +1,4 @@
+comment = 'Kazakh full-text stemmer dictionary template'
+default_version = '1.0'
+module_pathname = '$libdir/pg_kazsearch'
+relocatable = true

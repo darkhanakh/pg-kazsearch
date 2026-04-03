@@ -8,27 +8,36 @@ No prior Kazakh stemmer exists for PostgreSQL or Elasticsearch. This is the firs
 
 ## Architecture
 
-The algorithm lives in C, tightly coupled to Postgres (`palloc`/`pfree`, `HTAB`, `PG_FUNCTION_INFO_V1`). Key files:
+Cargo workspace with a shared core library and multiple consumers:
 
-- `kaz_explore.c` — BFS engine, visit set, penalty scorer, stem repair. The heart.
-- `kaz_text.c` — UTF-8 iteration, vowel classification, harmony checks.
-- `kaz_rules.c` — Suffix tables for noun and verb layers.
-- `pg_kazsearch.c` — Postgres INIT/LEXIZE entry points, dual-track exploration, winner selection.
-- `kaz_internal.h` — All shared types (`KazCandidate`, `KazLayerDef`, `KazExploreState`, etc).
-- `kaz_lexicon.c` — Lexicon hash-table loader.
+- `core/` — `kazsearch-core`: pure Rust stemmer (BFS engine, suffix rules, vowel harmony, penalty scoring, lexicon, stem repair). No Postgres dependencies.
+- `pg_ext/` — `pg_kazsearch`: pgrx-based PostgreSQL extension. Thin wrapper that calls `kazsearch_core::stem()`.
+- `cli/` — `kazsearch-cli`: CLI tool (`kazsearch stem`, `analyze`, `bench`, `lexicon validate`).
+- `elastic/` — `kazsearch-elastic`: Elasticsearch plugin (placeholder).
+- `legacy/pg_kazsearch_c/` — archived original C implementation (reference only, not built).
+
+Key core modules:
+
+- `core/src/explore.rs` — BFS engine, visit set, penalty scorer, stem repair. The heart.
+- `core/src/text.rs` — UTF-8 iteration, vowel classification, harmony checks.
+- `core/src/rules.rs` — Suffix tables for noun and verb layers.
+- `core/src/lexicon.rs` — Lexicon loader.
+- `core/src/lib.rs` — `stem()` entry point, winner selection, sound change undo.
 
 Supporting: `scripts/` (lexicon builder), `eval/` (scraper, corpus loader, evaluator, CMA-ES optimizer), `docker/` (dev container).
 
 ## Commands
 
-All via `just`. Root `Makefile` only delegates to PGXS.
+All via `just`.
 
 | Command | What it does |
 |---|---|
 | `just up` / `just down` | Start/stop Postgres container |
-| `just build` | Build lexicon + compile + install extension |
+| `just build` | Build lexicon + compile Rust extension + install |
 | `just reload` | Build + DROP/CREATE EXTENSION |
-| `just test-ext` | Smoke-test stemmer output |
+| `just cli` | Build CLI tool |
+| `just test-core` | Run core library unit tests |
+| `just test-ext` | Smoke-test stemmer output via SQL |
 | `just psql` | Interactive psql |
 | `just pipeline` | Full eval: scrape → load → gen queries → evaluate |
 | `just optimize` | CMA-ES penalty weight optimization |
@@ -36,7 +45,7 @@ All via `just`. Root `Makefile` only delegates to PGXS.
 
 ## Style
 
-**C:** Tabs, `kaz_` prefix on symbols, `KAZ_` on constants, `KazPascalCase` on types. Follow Postgres conventions. All internal API in `kaz_internal.h`.
+**Rust:** Standard `rustfmt`. Public API in `core/src/lib.rs`. Modules mirror the C design: `explore`, `text`, `rules`, `lexicon`.
 
 **Python:** `snake_case`, standalone `argparse` CLIs.
 
@@ -46,10 +55,10 @@ All via `just`. Root `Makefile` only delegates to PGXS.
 
 - Kazakh is agglutinative — words stack 5-6 suffixes. Greedy stripping fails; BFS is necessary.
 - Vowel harmony (back/front) is mandatory for suffix validation. Glides (у, и, ю) are transparent.
-- Penalty constants in `kaz_candidate_penalty` are empirically tuned via CMA-ES against a real corpus. Changing one can break others.
+- Penalty constants in `candidate_penalty` (`core/src/explore.rs`) are empirically tuned via CMA-ES against a real corpus. Changing one can break others.
 - Stem repair reverses morphophonological changes: consonant mutation (б→п, ғ→қ, г→к), vowel elision, and lexicon-based vowel restore.
 - The lexicon safety valve prevents overstemming: if the input word is already in the dictionary and the candidate looks suspicious, return input unchanged.
-- Layer guards in `kaz_explore.c` encode real morphotactic constraints — they are not optional and each one prevents a class of mis-stems.
+- Layer guards in `core/src/explore.rs` encode real morphotactic constraints — they are not optional and each one prevents a class of mis-stems.
 
 <!-- BEGIN BEADS INTEGRATION -->
 ## Issue Tracking with bd (beads)

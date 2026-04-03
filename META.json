@@ -1,15 +1,15 @@
 {
   "name": "pg_kazsearch",
   "abstract": "Kazakh full-text search dictionary for PostgreSQL",
-  "description": "The first PostgreSQL text search extension for the Kazakh language. BFS suffix stripping with vowel harmony validation, consonant mutation repair, 21K-stem lexicon from Apertium-kaz, and stopword filtering.",
-  "version": "1.0.1",
+  "description": "The first PostgreSQL text search extension for the Kazakh language. BFS suffix stripping with vowel harmony validation, consonant mutation repair, 21K-stem lexicon from Apertium-kaz, and stopword filtering. Built with pgrx.",
+  "version": "0.1.0",
   "maintainer": "Darkhan Akhmetov <darkhanahmetov2005@gmail.com>",
   "license": "lgpl_3_0",
   "provides": {
     "pg_kazsearch": {
       "abstract": "Kazakh stemmer and stopword dictionary for PostgreSQL FTS",
-      "file": "src/pg_kazsearch/pg_kazsearch--1.0.sql",
-      "version": "1.0.1"
+      "file": "pg_ext/src/lib.rs",
+      "version": "0.1.0"
     }
   },
   "prereqs": {
@@ -38,9 +38,8 @@
     "dictionary",
     "fts",
     "morphology",
-    "agglutinative",
-    "natural language processing",
-    "kazakh language"
+    "pgrx",
+    "rust"
   ],
   "meta-spec": {
     "version": "1.0.0",
