@@ -154,7 +154,6 @@ jobs:
   pgxn:
     name: Publish to PGXN
     needs: build-deb
-    if: ${{ vars.PGXN_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     container: pgxn/pgxn-tools
     env:
