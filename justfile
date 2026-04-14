@@ -113,7 +113,9 @@ test-core:
 test-ext:
     @echo "── Testing pg_kazsearch extension ──"
     just psql-exec "SELECT ts_lexize('pg_kazsearch_dict', 'алмаларымыздағы');"
+    just psql-exec "SELECT ts_lexize('pg_kazsearch_dict', 'almalar');"
     just psql-exec "SELECT to_tsvector('kazakh_cfg', 'алмаларымыздағы мектептеріміздегі');"
+    just psql-exec "SELECT to_tsvector('kazakh_cfg', 'almalar mektepterimizdegi');"
 
 # ── Benchmark ────────────────────────────────────────────────────────────
 

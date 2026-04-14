@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use clap::{Parser, Subcommand};
 use kazsearch_core::lexicon::Lexicon;
-use kazsearch_core::{StemConfig, stem};
+use kazsearch_core::{ScriptMode, StemConfig, stem};
 
 #[derive(Parser)]
 #[command(name = "kazsearch", about = "Kazakh stemmer CLI")]
@@ -27,6 +27,10 @@ enum Commands {
         /// Path to lexicon dictionary file
         #[arg(short, long)]
         lexicon: Option<PathBuf>,
+
+        /// Disable Latin auto-detection and stem Cyrillic only
+        #[arg(long)]
+        cyrillic_only: bool,
     },
 
     /// Show morphological analysis of a word
@@ -37,6 +41,10 @@ enum Commands {
         /// Path to lexicon dictionary file
         #[arg(short, long)]
         lexicon: Option<PathBuf>,
+
+        /// Disable Latin auto-detection and stem Cyrillic only
+        #[arg(long)]
+        cyrillic_only: bool,
     },
 
     /// Benchmark stemming throughput
@@ -47,6 +55,10 @@ enum Commands {
         /// Path to lexicon dictionary file
         #[arg(short, long)]
         lexicon: Option<PathBuf>,
+
+        /// Disable Latin auto-detection and stem Cyrillic only
+        #[arg(long)]
+        cyrillic_only: bool,
     },
 
     /// Lexicon utilities
@@ -65,8 +77,11 @@ enum LexiconAction {
     },
 }
 
-fn build_config(lexicon_path: Option<&PathBuf>) -> StemConfig {
+fn build_config(lexicon_path: Option<&PathBuf>, cyrillic_only: bool) -> StemConfig {
     let mut cfg = StemConfig::default();
+    if cyrillic_only {
+        cfg.script_mode = ScriptMode::CyrillicOnly;
+    }
     if let Some(path) = lexicon_path {
         match Lexicon::load(path) {
             Ok(lex) => cfg.lexicon = Some(lex),
@@ -83,8 +98,8 @@ fn stem_word(word: &str, cfg: &StemConfig) {
     println!("{}\t{}", word, result);
 }
 
-fn cmd_stem(words: Vec<String>, use_stdin: bool, lexicon: Option<PathBuf>) {
-    let cfg = build_config(lexicon.as_ref());
+fn cmd_stem(words: Vec<String>, use_stdin: bool, lexicon: Option<PathBuf>, cyrillic_only: bool) {
+    let cfg = build_config(lexicon.as_ref(), cyrillic_only);
 
     if use_stdin || words.is_empty() {
         let stdin = io::stdin();
@@ -109,13 +124,14 @@ fn cmd_stem(words: Vec<String>, use_stdin: bool, lexicon: Option<PathBuf>) {
     }
 }
 
-fn cmd_analyze(word: &str, lexicon: Option<PathBuf>) {
+fn cmd_analyze(word: &str, lexicon: Option<PathBuf>, cyrillic_only: bool) {
     use kazsearch_core::explore::{explore_track_best, candidate_penalty};
     use kazsearch_core::rules::{NOUN_LAYERS, VERB_LAYERS};
+    use kazsearch_core::script::lower_kazakh;
     use kazsearch_core::text::{fill_prefix_tables, count_syllables, utf8_char_count};
 
-    let cfg = build_config(lexicon.as_ref());
-    let txt: String = word.to_lowercase();
+    let cfg = build_config(lexicon.as_ref(), cyrillic_only);
+    let txt = lower_kazakh(word);
     let len = txt.len();
     let prefix = fill_prefix_tables(&txt);
     let chars = prefix.chars[len];
@@ -155,8 +171,8 @@ fn cmd_analyze(word: &str, lexicon: Option<PathBuf>) {
     println!("Final stem: {}", final_stem);
 }
 
-fn cmd_bench(file: Option<PathBuf>, lexicon: Option<PathBuf>) {
-    let cfg = build_config(lexicon.as_ref());
+fn cmd_bench(file: Option<PathBuf>, lexicon: Option<PathBuf>, cyrillic_only: bool) {
+    let cfg = build_config(lexicon.as_ref(), cyrillic_only);
 
     let words: Vec<String> = if let Some(path) = file {
         match std::fs::read_to_string(&path) {
@@ -226,9 +242,22 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Stem { words, stdin, lexicon } => cmd_stem(words, stdin, lexicon),
-        Commands::Analyze { word, lexicon } => cmd_analyze(&word, lexicon),
-        Commands::Bench { file, lexicon } => cmd_bench(file, lexicon),
+        Commands::Stem {
+            words,
+            stdin,
+            lexicon,
+            cyrillic_only,
+        } => cmd_stem(words, stdin, lexicon, cyrillic_only),
+        Commands::Analyze {
+            word,
+            lexicon,
+            cyrillic_only,
+        } => cmd_analyze(&word, lexicon, cyrillic_only),
+        Commands::Bench {
+            file,
+            lexicon,
+            cyrillic_only,
+        } => cmd_bench(file, lexicon, cyrillic_only),
         Commands::Lexicon { action } => match action {
             LexiconAction::Validate { file } => cmd_lexicon_validate(file),
         },

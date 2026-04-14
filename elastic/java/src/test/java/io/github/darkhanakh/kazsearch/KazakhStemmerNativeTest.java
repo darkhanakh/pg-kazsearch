@@ -12,6 +12,8 @@ public class KazakhStemmerNativeTest {
         assertEquals("алма", KazakhStemmerNative.stem("алмаларымыздағы"));
         assertEquals("мектеп", KazakhStemmerNative.stem("мектептеріміздегі"));
         assertEquals("бар", KazakhStemmerNative.stem("бармады"));
+        assertEquals("алма", KazakhStemmerNative.stem("almalar"));
+        assertEquals("мектеп", KazakhStemmerNative.stem("mektepter"));
     }
 
     @Test
