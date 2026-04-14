@@ -85,22 +85,15 @@ cp data/tsearch_data/kaz_stopwords.stop $(pg_config --sharedir)/tsearch_data/
 
 The same Kazakh stemmer is available as an Elasticsearch analysis plugin (`kazsearch_stem` token filter). All stemmer logic stays in Rust — the Java side is a thin JNI bridge.
 
-### Quick start
+### Install from GitHub Releases
+
+Download the plugin ZIP from [GitHub Releases](https://github.com/darkhanakh/pg-kazsearch/releases) and install:
 
 ```bash
-# Build the native library and plugin ZIP
-just es-native
-just es-build
-
-# Start Elasticsearch with the plugin
-just es-up
+bin/elasticsearch-plugin install https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/analysis-kazsearch-0.1.0.zip
 ```
 
-Or install manually:
-
-```bash
-bin/elasticsearch-plugin install file:///path/to/analysis-kazsearch-0.1.0.zip
-```
+The pre-built ZIP includes native libraries for linux/amd64 and linux/aarch64.
 
 ### Configuration
 
@@ -199,11 +192,8 @@ Tested on 2,999 Kazakh news articles from [kaz.tengrinews.kz](https://kaz.tengri
 
 ### PostgreSQL: pg_kazsearch vs pg_trgm
 
-![Retrieval Quality](docs/img/retrieval_quality.png)
+Retrieval QualityRelative ImprovementQuery Latency
 
-![Relative Improvement](docs/img/improvement.png)
-
-![Query Latency](docs/img/query_latency.png)
 
 | Metric        | pg_kazsearch | pg_trgm | Improvement |
 | ------------- | ------------ | ------- | ----------- |
@@ -212,18 +202,22 @@ Tested on 2,999 Kazakh news articles from [kaz.tengrinews.kz](https://kaz.tengri
 | nDCG@10       | **0.729**    | 0.582   | +25%        |
 | Query latency | **0.5 ms**   | 1.4 ms  | 2.8x faster |
 
+
 ### Elasticsearch: kazsearch_stem vs standard analyzer
 
 On human-written gold queries, the stemmer finds more relevant articles and ranks them higher:
+
 
 | Metric    | kazsearch_stem | standard | Improvement |
 | --------- | -------------- | -------- | ----------- |
 | Recall@10 | **0.358**      | 0.309    | +16%        |
 | MRR@10    | **0.671**      | 0.591    | +13%        |
 
+
 ### vs Tengrinews.kz native search
 
 Searching the same articles on tengrinews.kz vs ES with kazsearch_stem:
+
 
 | Search query (Kazakh with suffixes) | tengrinews.kz | ES + kazsearch_stem |
 | ----------------------------------- | ------------- | ------------------- |
@@ -234,7 +228,9 @@ Searching the same articles on tengrinews.kz vs ES with kazsearch_stem:
 | бензиннің бағасын көтеру            | 0             | **69**              |
 | мектептеріміздегі мәселелер         | 0             | **609**             |
 
+
 ### Stemmer examples
+
 
 | Input            | Output    | Stripped                       |
 | ---------------- | --------- | ------------------------------ |
@@ -243,6 +239,7 @@ Searching the same articles on tengrinews.kz vs ES with kazsearch_stem:
 | өзгеруі          | өзгеру    | verbal noun possessive         |
 | берді            | бер       | past tense                     |
 | экономикалық     | экономика | derivational adjective         |
+
 
 ---
 

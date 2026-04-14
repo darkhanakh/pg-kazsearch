@@ -92,9 +92,46 @@ jobs:
           name: deb-pg${{ matrix.pg }}
           path: ${{ env.DEB_FILE }}
 
+  build-es-plugin:
+    name: Elasticsearch plugin
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-zigbuild and zig
+        run: |
+          pip3 install ziglang
+          cargo install cargo-zigbuild
+
+      - name: Cross-compile native libs
+        run: |
+          cargo zigbuild --release -p kazsearch-elastic --target x86_64-unknown-linux-gnu
+          cargo zigbuild --release -p kazsearch-elastic --target aarch64-unknown-linux-gnu
+          mkdir -p elastic/java/src/main/resources/native/linux-x86_64
+          mkdir -p elastic/java/src/main/resources/native/linux-aarch64
+          cp target/x86_64-unknown-linux-gnu/release/libkazsearch_elastic.so elastic/java/src/main/resources/native/linux-x86_64/
+          cp target/aarch64-unknown-linux-gnu/release/libkazsearch_elastic.so elastic/java/src/main/resources/native/linux-aarch64/
+
+      - name: Build plugin ZIP
+        run: |
+          docker run --rm -v "$(pwd)/elastic/java:/project" -w /project gradle:8.11-jdk21 \
+            gradle bundlePlugin -Pversion=${GITHUB_REF_NAME#v}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: es-plugin
+          path: elastic/java/build/distributions/analysis-kazsearch-*.zip
+
   release:
     name: GitHub Release
-    needs: build-deb
+    needs: [build-deb, build-es-plugin]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,7 +148,7 @@ jobs:
           gh release create ${{ github.ref_name }} \
             --title "pg_kazsearch ${{ github.ref_name }}" \
             --generate-notes \
-            artifacts/*.deb
+            artifacts/*.deb artifacts/*.zip
 
   docker:
     name: Docker / PG ${{ matrix.pg }}
