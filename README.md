@@ -3,15 +3,22 @@
 [License: LGPL v3](LICENSE)
 [PostgreSQL: 16–18](https://www.postgresql.org/)
 
-The first PostgreSQL full-text search extension for the Kazakh language.
+The first full-text search stemmer for the Kazakh language — for **PostgreSQL** and **Elasticsearch**.
 
-Kazakh is heavily agglutinative: a single word like `мектептерімізде` carries plural, possessive, and locative suffixes that must all be stripped to reach the root `мектеп`. No existing PostgreSQL or Elasticsearch analyzer handles this. pg_kazsearch fills that gap with a Rust extension (via [pgrx](https://github.com/pgcentralfoundation/pgrx)) that plugs directly into PostgreSQL's text search pipeline.
+Kazakh is heavily agglutinative: a single word like `мектептерімізде` carries plural, possessive, and locative suffixes that must all be stripped to reach the root `мектеп`. No existing PostgreSQL or Elasticsearch analyzer handles this. pg_kazsearch fills that gap with a Rust stemmer that plugs into both PostgreSQL (via [pgrx](https://github.com/pgcentralfoundation/pgrx)) and Elasticsearch (via JNI native plugin).
 
 ```sql
+-- PostgreSQL
 CREATE EXTENSION pg_kazsearch;
-
 SELECT to_tsvector('kazakh_cfg', 'президенттің жарлығы');
 -- 'жарлық':2 'президент':1
+```
+
+```json
+// Elasticsearch
+{ "filter": { "kaz_stem": { "type": "kazsearch_stem" } } }
+// алмаларымыздағы → алма
+// мектептеріміздегі → мектеп
 ```
 
 ---
@@ -74,7 +81,78 @@ cp data/tsearch_data/kaz_stopwords.stop $(pg_config --sharedir)/tsearch_data/
 
 ---
 
-## Usage
+## Elasticsearch
+
+The same Kazakh stemmer is available as an Elasticsearch analysis plugin (`kazsearch_stem` token filter). All stemmer logic stays in Rust — the Java side is a thin JNI bridge.
+
+### Quick start
+
+```bash
+# Build the native library and plugin ZIP
+just es-native
+just es-build
+
+# Start Elasticsearch with the plugin
+just es-up
+```
+
+Or install manually:
+
+```bash
+bin/elasticsearch-plugin install file:///path/to/analysis-kazsearch-0.1.0.zip
+```
+
+### Configuration
+
+```json
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "kaz_stem": { "type": "kazsearch_stem" }
+      },
+      "analyzer": {
+        "kazakh": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "kaz_stem"]
+        }
+      }
+    }
+  }
+}
+```
+
+### Verify
+
+```bash
+curl -X POST 'localhost:9200/my_index/_analyze' \
+  -H 'Content-Type: application/json' \
+  -d '{"analyzer": "kazakh", "text": "алмаларымыздағы мектептеріміздегі"}'
+# → tokens: ["алма", "мектеп"]
+```
+
+### Build from source
+
+Requires: Rust toolchain, JDK 21, Gradle 8+, and `cargo-zigbuild` for cross-compilation.
+
+```bash
+# Build Rust cdylib (native stemmer library)
+just es-native
+
+# Build ES plugin ZIP (includes Java bridge + native lib)
+just es-build
+# → elastic/java/build/distributions/analysis-kazsearch-0.1.0.zip
+
+# Run tests
+just es-up
+just es-load-corpus   # index 3000 articles
+just es-eval          # run search quality evaluation
+```
+
+---
+
+## Usage (PostgreSQL)
 
 The extension creates everything automatically — a text search template, dictionaries, and a ready-to-use configuration called `kazakh_cfg`:
 
@@ -117,7 +195,9 @@ ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (w_deriv = 3.5, w_short_char = 10
 
 ## Benchmarks
 
-Tested on 2,999 Kazakh news articles with 9,048 evaluation queries:
+Tested on 2,999 Kazakh news articles from [kaz.tengrinews.kz](https://kaz.tengrinews.kz/) with 9,048 evaluation queries.
+
+### PostgreSQL: pg_kazsearch vs pg_trgm
 
 ![Retrieval Quality](docs/img/retrieval_quality.png)
 
@@ -131,6 +211,28 @@ Tested on 2,999 Kazakh news articles with 9,048 evaluation queries:
 | MRR@10        | **0.712**    | 0.566   | +26%        |
 | nDCG@10       | **0.729**    | 0.582   | +25%        |
 | Query latency | **0.5 ms**   | 1.4 ms  | 2.8x faster |
+
+### Elasticsearch: kazsearch_stem vs standard analyzer
+
+On human-written gold queries, the stemmer finds more relevant articles and ranks them higher:
+
+| Metric    | kazsearch_stem | standard | Improvement |
+| --------- | -------------- | -------- | ----------- |
+| Recall@10 | **0.358**      | 0.309    | +16%        |
+| MRR@10    | **0.671**      | 0.591    | +13%        |
+
+### vs Tengrinews.kz native search
+
+Searching the same articles on tengrinews.kz vs ES with kazsearch_stem:
+
+| Search query (Kazakh with suffixes) | tengrinews.kz | ES + kazsearch_stem |
+| ----------------------------------- | ------------- | ------------------- |
+| мектептердегі оқушылар              | 2             | **159**             |
+| балалардың денсаулығы               | 13            | **391**             |
+| мұғалімдердің наразылығы            | 0             | **28**              |
+| спортшылардың жетістіктері          | 0             | **87**              |
+| бензиннің бағасын көтеру            | 0             | **69**              |
+| мектептеріміздегі мәселелер         | 0             | **609**             |
 
 ### Stemmer examples
 
@@ -147,15 +249,20 @@ Tested on 2,999 Kazakh news articles with 9,048 evaluation queries:
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────┐
-│                  Cargo Workspace                   │
-│                                                    │
-│  core/         Pure Rust stemmer (no PG deps)      │
-│  pg_ext/       pgrx PostgreSQL extension           │
-│  cli/          CLI tool (kazsearch)                │
-│  elastic/      Elasticsearch plugin (planned)      │
-└────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                    Cargo Workspace                        │
+│                                                          │
+│  core/         Pure Rust stemmer (no PG/ES deps)         │
+│  pg_ext/       pgrx PostgreSQL extension                 │
+│  cli/          CLI tool (kazsearch stem/analyze/bench)   │
+│  elastic/      Elasticsearch plugin (Rust cdylib + JNI)  │
+│    src/        C ABI + JNI exports calling core::stem()  │
+│    java/       Java bridge + Lucene TokenFilter (~50 LoC)│
+│    docker/     ES with plugin pre-installed              │
+└──────────────────────────────────────────────────────────┘
 ```
+
+One stemmer, multiple consumers. The `core/` crate is the single source of truth for all stemming logic — PostgreSQL, Elasticsearch, and CLI all call into it.
 
 The stemmer algorithm:
 
@@ -191,24 +298,26 @@ kazsearch lexicon validate data/tsearch_data/kaz_stems.dict
 
 ## Development
 
+### PostgreSQL
+
 ```bash
-# Start dev environment
-just up
+just up            # Start PG container
+just build         # Build + install extension
+just reload        # DROP + CREATE extension
+just test-core     # Core Rust unit tests
+just test-ext      # Smoke test via SQL
+just cli           # Build CLI
+```
 
-# Build and install extension into running container
-just build
+### Elasticsearch
 
-# Reload extension (DROP + CREATE)
-just reload
-
-# Run core tests
-just test-core
-
-# Smoke test via SQL
-just test-ext
-
-# Build CLI
-just cli
+```bash
+just es-native       # Build Rust cdylib for ES plugin
+just es-build        # Build plugin ZIP (Gradle)
+just es-up           # Start ES container with plugin
+just es-load-corpus  # Index 3000 articles
+just es-eval         # Run search quality evaluation
+just es-down         # Stop ES container
 ```
 
 ---
