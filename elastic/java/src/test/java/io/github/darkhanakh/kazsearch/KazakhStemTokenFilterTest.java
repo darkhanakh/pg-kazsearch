@@ -24,6 +24,18 @@ public class KazakhStemTokenFilterTest {
         }
     }
 
+    @Test
+    public void stemsLatinTokenToCanonicalCyrillic() throws IOException {
+        try (TokenStream stream = new KazakhStemTokenFilter(new SingleTokenTokenizer("almalar"))) {
+            CharTermAttribute term = stream.addAttribute(CharTermAttribute.class);
+            stream.reset();
+            assertTrue(stream.incrementToken());
+            assertEquals("алма", term.toString());
+            assertFalse(stream.incrementToken());
+            stream.end();
+        }
+    }
+
     private static final class SingleTokenTokenizer extends Tokenizer {
         private final String token;
         private final CharTermAttribute term = addAttribute(CharTermAttribute.class);

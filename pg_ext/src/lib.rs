@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 
 use kazsearch_core::lexicon::Lexicon;
-use kazsearch_core::{PenaltyWeights, StemConfig};
+use kazsearch_core::{PenaltyWeights, ScriptMode, StemConfig};
 
 pgrx::pg_module_magic!();
 
@@ -94,6 +94,19 @@ fn pg_kazsearch_init(dict_options: pgrx::Internal) -> pgrx::Internal {
                         let val = pg_sys::defGetString(defel);
                         lexicon_name =
                             Some(CStr::from_ptr(val).to_str().unwrap_or("").to_string());
+                    } else if name == "script_mode" {
+                        let val = pg_sys::defGetString(defel);
+                        let val_str = CStr::from_ptr(val).to_str().unwrap_or("auto");
+                        cfg.script_mode = match val_str {
+                            "auto" => ScriptMode::Auto,
+                            "cyrillic_only" => ScriptMode::CyrillicOnly,
+                            _ => {
+                                pgrx::error!(
+                                    "invalid script_mode for pg_kazsearch: \"{}\" (expected auto or cyrillic_only)",
+                                    val_str
+                                );
+                            }
+                        };
                     } else {
                         let val = pg_sys::defGetString(defel);
                         let val_str = CStr::from_ptr(val).to_str().unwrap_or("");
@@ -204,7 +217,8 @@ CREATE TEXT SEARCH DICTIONARY pg_kazsearch_dict (
     TEMPLATE = pg_kazsearch_template,
     derivation = true,
     max_steps = 8,
-    lexicon = kaz_stems
+    lexicon = kaz_stems,
+    script_mode = auto
 );
 
 CREATE TEXT SEARCH CONFIGURATION kazakh_cfg (PARSER = pg_catalog.default);

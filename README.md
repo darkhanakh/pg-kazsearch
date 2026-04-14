@@ -19,7 +19,15 @@ SELECT to_tsvector('kazakh_cfg', 'президенттің жарлығы');
 { "filter": { "kaz_stem": { "type": "kazsearch_stem" } } }
 // алмаларымыздағы → алма
 // мектептеріміздегі → мектеп
+// almalar → алма
+// mektepterimizdegi → мектеп
 ```
+
+Latin-script Kazakh is auto-detected and normalized to canonical Cyrillic inside the core stemmer. Successful Latin and Cyrillic inputs therefore converge to the same stem output (always Cyrillic), which keeps indexing and query matching unified across scripts.
+
+Current scope of Latin support:
+- Targets the official modern Kazakh Latin orthography first (`ä ö ü ū ğ ş ñ ı`, plus `q`/`w`).
+- Leaves mixed-script, unsupported Latin variants (apostrophe/acute/digraph legacy spellings), and low-confidence ASCII tokens unchanged.
 
 ---
 
@@ -183,6 +191,16 @@ Penalty weights are tunable at runtime without restarting PostgreSQL:
 ```sql
 ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (w_deriv = 3.5, w_short_char = 100.0);
 ```
+
+### Script mode controls
+
+`pg_kazsearch_dict` defaults to `script_mode = auto` (Latin auto-detection + canonical Cyrillic output). For debugging or strict Cyrillic-only behavior:
+
+```sql
+ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (script_mode = cyrillic_only);
+```
+
+CLI uses the same core default (`auto`) and exposes `--cyrillic-only` on `stem`, `analyze`, and `bench` commands. Elasticsearch currently inherits the core default (`auto`) through the native stemmer config.
 
 ---
 

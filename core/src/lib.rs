@@ -2,10 +2,12 @@ pub mod text;
 pub mod rules;
 pub mod lexicon;
 pub mod explore;
+pub mod script;
 
 use explore::ExploreResult;
 use rules::{NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
-use text::{fill_prefix_tables, word_is_back, utf8_last_cp, is_vowel, PrefixTables};
+use script::{LatinAnalysis, ScriptClass};
+use text::{count_syllables, fill_prefix_tables, utf8_char_count, word_is_back, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
 
 pub const MAX_STEM_BYTES: usize = 128;
@@ -57,6 +59,7 @@ pub struct StemConfig {
     pub max_steps: i32,
     pub lexicon: Option<Lexicon>,
     pub weights: PenaltyWeights,
+    pub script_mode: ScriptMode,
 }
 
 impl Default for StemConfig {
@@ -66,8 +69,21 @@ impl Default for StemConfig {
             max_steps: 8,
             lexicon: None,
             weights: PenaltyWeights::default(),
+            script_mode: ScriptMode::Auto,
         }
     }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum ScriptMode {
+    Auto,
+    CyrillicOnly,
+}
+
+#[derive(Clone, Debug)]
+struct StemOutcome {
+    stem: String,
+    best: explore::Candidate,
 }
 
 fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
@@ -111,12 +127,44 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
         return String::new();
     }
 
-    let txt: String = word.to_lowercase();
+    let analyzed = script::analyze_input(word);
+
+    if cfg.script_mode == ScriptMode::CyrillicOnly {
+        return match analyzed.class {
+            ScriptClass::Cyrillic => stem_canonical(&analyzed.lowered, cfg).stem,
+            _ => analyzed.lowered,
+        };
+    }
+
+    match analyzed.class {
+        ScriptClass::Cyrillic => stem_canonical(&analyzed.lowered, cfg).stem,
+        ScriptClass::Latin => {
+            let latin = match analyzed.latin.as_ref() {
+                Some(v) => v,
+                None => return analyzed.lowered,
+            };
+            stem_latin(latin, cfg).unwrap_or(analyzed.lowered)
+        }
+        ScriptClass::Mixed | ScriptClass::Unsupported => analyzed.lowered,
+    }
+}
+
+fn no_strip_candidate(len: usize) -> explore::Candidate {
+    explore::Candidate {
+        len: len as i32,
+        ..Default::default()
+    }
+}
+
+fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     let len = txt.len();
     let prefix = fill_prefix_tables(&txt);
 
     if prefix.syll[len] < 2 {
-        return txt;
+        return StemOutcome {
+            stem: txt.to_string(),
+            best: no_strip_candidate(len),
+        };
     }
 
     let original_chars = prefix.chars[len];
@@ -125,7 +173,10 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
 
     let best = select_best(&noun, &verb, &txt, original_chars, &prefix, cfg);
     if best.steps == 0 {
-        return txt;
+        return StemOutcome {
+            stem: txt.to_string(),
+            best: no_strip_candidate(len),
+        };
     }
 
     let mut lexeme = txt[..best.len as usize].to_string();
@@ -135,7 +186,116 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
         lexeme = restore_lexicon_vowel(&lexeme, lex, best.steps);
     }
 
-    lexeme
+    StemOutcome { stem: lexeme, best }
+}
+
+fn is_inflectional_strip(best: &explore::Candidate) -> bool {
+    best.steps > 0 && (best.nominal_inf > 0 || best.verbal_inf > 0)
+}
+
+fn latin_candidate_confident(
+    latin: &LatinAnalysis,
+    best: &explore::Candidate,
+    stem_chars: i32,
+    stem_syll: i32,
+    lex_word_hit: bool,
+    lex_stem_hit: bool,
+) -> bool {
+    if lex_word_hit || lex_stem_hit {
+        return true;
+    }
+    if !is_inflectional_strip(best) || stem_chars < 3 {
+        return false;
+    }
+
+    if latin.has_diacritic {
+        return stem_syll >= 1;
+    }
+    if latin.has_q_or_w {
+        return stem_syll >= 2;
+    }
+    stem_syll >= 2
+}
+
+fn latin_candidate_score(
+    latin: &LatinAnalysis,
+    best: &explore::Candidate,
+    stem_chars: i32,
+    stem_syll: i32,
+    lex_word_hit: bool,
+    lex_stem_hit: bool,
+) -> i32 {
+    let mut score: i32 = 0;
+    if lex_stem_hit {
+        score += 120;
+    }
+    if lex_word_hit {
+        score += 80;
+    }
+    if is_inflectional_strip(best) {
+        score += 35 + best.steps * 6;
+    }
+    if latin.has_diacritic {
+        score += 12;
+    } else if latin.has_q_or_w {
+        score += 8;
+    }
+
+    score += stem_syll * 2;
+    score + stem_chars.min(8)
+}
+
+fn stem_latin(latin: &LatinAnalysis, cfg: &StemConfig) -> Option<String> {
+    let mut best_choice: Option<((i32, i32, i32, i32, i32, i32), String)> = None;
+
+    for candidate in &latin.candidates {
+        let outcome = stem_canonical(candidate, cfg);
+        let stem_chars = utf8_char_count(&outcome.stem);
+        let stem_syll = count_syllables(&outcome.stem);
+
+        let (lex_word_hit, lex_stem_hit) = if let Some(ref lex) = cfg.lexicon {
+            (lex.contains(candidate), lex.contains(&outcome.stem))
+        } else {
+            (false, false)
+        };
+
+        if !latin_candidate_confident(
+            latin,
+            &outcome.best,
+            stem_chars,
+            stem_syll,
+            lex_word_hit,
+            lex_stem_hit,
+        ) {
+            continue;
+        }
+
+        let key = (
+            latin_candidate_score(
+                latin,
+                &outcome.best,
+                stem_chars,
+                stem_syll,
+                lex_word_hit,
+                lex_stem_hit,
+            ),
+            i32::from(lex_stem_hit),
+            i32::from(lex_word_hit),
+            outcome.best.steps,
+            outcome.best.nominal_inf + outcome.best.verbal_inf,
+            stem_chars,
+        );
+
+        let should_replace = best_choice
+            .as_ref()
+            .map_or(true, |(best_key, _)| key > *best_key);
+
+        if should_replace {
+            best_choice = Some((key, outcome.stem));
+        }
+    }
+
+    best_choice.map(|(_, stem)| stem)
 }
 
 fn should_keep_input(

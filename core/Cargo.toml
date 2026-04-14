@@ -6,5 +6,6 @@ description = "Kazakh stemmer — standalone Rust port of pg_kazsearch"
 license = "MIT"
 
 [dependencies]
+unicode-normalization = "0.1.25"
 
 [dev-dependencies]
