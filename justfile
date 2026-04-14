@@ -73,6 +73,36 @@ reload: build
 cli:
     cargo build -p kazsearch-cli --release
 
+# Build Rust native library for the Elasticsearch plugin and copy it into resources
+es-native:
+    ./scripts/build_elastic_native.sh
+
+# Build Elasticsearch plugin ZIP (native lib + Java plugin)
+es-build: es-native
+    cd elastic/java && gradle bundlePlugin
+
+# Start Elasticsearch container with kazsearch plugin
+es-up: es-build
+    docker compose -f elastic/docker/docker-compose.yml up -d --build
+    @echo "Waiting for Elasticsearch…"
+    @until curl -sf http://localhost:9200/_cluster/health >/dev/null 2>&1; do sleep 2; done
+    @echo "Elasticsearch ready."
+
+# Stop Elasticsearch container
+es-down:
+    docker compose -f elastic/docker/docker-compose.yml down
+
+# Load corpus into Elasticsearch
+es-load-corpus:
+    python3 eval/load_corpus_es.py
+
+# Run Elasticsearch search evaluation
+es-eval:
+    python3 eval/run_eval_es.py
+
+# Full ES pipeline: start, load, evaluate
+es-pipeline: es-up es-load-corpus es-eval
+
 # ── Test ─────────────────────────────────────────────────────────────────
 
 # Run core library unit tests

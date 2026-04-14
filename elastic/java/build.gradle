@@ -1,0 +1,44 @@
+plugins {
+    id "java"
+}
+
+ext.esVersion = "8.17.0"
+ext.luceneVersion = "9.12.0"
+
+group = "io.github.darkhanakh"
+version = "0.1.0"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly "org.elasticsearch:elasticsearch:${esVersion}"
+    compileOnly "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+
+    testImplementation "org.elasticsearch:elasticsearch:${esVersion}"
+    testImplementation "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+    testImplementation "junit:junit:4.13.2"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
+tasks.register("bundlePlugin", Zip) {
+    archiveBaseName = "analysis-kazsearch"
+    archiveVersion = version
+    from(jar)
+    from("src/main/plugin-metadata") {
+        include "plugin-descriptor.properties"
+        include "plugin-security.policy"
+    }
+}
+
+bundlePlugin.dependsOn(jar)

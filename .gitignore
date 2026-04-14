@@ -28,3 +28,12 @@ pg_kazsearch-*.zip
 
 # Rust build artifacts
 target/
+
+# Elasticsearch plugin build artifacts
+elastic/java/build/
+elastic/java/.gradle/
+elastic/java/src/main/resources/native/*/*.so
+elastic/java/src/main/resources/native/*/*.dylib
+
+# Local toolchains
+.tools/
