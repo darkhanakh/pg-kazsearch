@@ -5,5 +5,9 @@ edition = "2021"
 description = "Kazakh stemmer Elasticsearch plugin (placeholder)"
 license = "MIT"
 
+[lib]
+crate-type = ["rlib", "cdylib"]
+
 [dependencies]
+jni = "0.22.4"
 kazsearch-core = { path = "../core" }
