@@ -7,7 +7,7 @@ pub mod script;
 use explore::ExploreResult;
 use rules::{NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
 use script::{LatinAnalysis, ScriptClass};
-use text::{count_syllables, fill_prefix_tables, utf8_char_count, word_is_back, utf8_last_cp, is_vowel, PrefixTables};
+use text::{count_syllables, fill_prefix_tables, utf8_char_count, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
 
 pub const MAX_STEM_BYTES: usize = 128;
@@ -106,11 +106,15 @@ fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, steps: i32) -> String 
         return lexeme.to_string();
     }
 
-    let is_back = word_is_back(lexeme);
     let mut buf = [0u8; MAX_STEM_BYTES];
-    let candidates = if is_back { ["ы", "а"] } else { ["і", "е"] };
+    // Harmony-neutral stems (glide-only vowels) try both classes.
+    let candidates: &[&str] = match text::strong_vowel_class(lexeme) {
+        Some(true) => &["ы", "а"],
+        Some(false) => &["і", "е"],
+        None => &["ы", "і", "а", "е"],
+    };
 
-    for sfx in &candidates {
+    for sfx in candidates {
         if let Some(trial) = concat_on_stack(lexeme, sfx, &mut buf) {
             if lexicon.contains(trial) {
                 return trial.to_string();

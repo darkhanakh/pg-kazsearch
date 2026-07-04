@@ -417,6 +417,26 @@ fn test_converb_reduction_requires_verb_set() {
 }
 
 #[test]
+fn test_glide_only_words_are_harmony_neutral() {
+    use kazsearch_core::lexicon::Lexicon;
+
+    // туризм has no strong vowel (у and и are transparent glides), so it
+    // used to fail every FRONT/BACK-classed suffix check and pass through
+    // case-inflected forms unstemmed.
+    let mut lex = Lexicon::new();
+    lex.insert("туризм".to_string());
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+
+    assert_eq!(stem("туризм", &cfg), "туризм");
+    assert_eq!(stem("туризмді", &cfg), "туризм");
+    assert_eq!(stem("туризмге", &cfg), "туризм");
+    assert_eq!(stem("туризмнің", &cfg), "туризм");
+}
+
+#[test]
 fn test_verbal_noun_reduction_gated_on_verb_set() {
     use kazsearch_core::lexicon::Lexicon;
 

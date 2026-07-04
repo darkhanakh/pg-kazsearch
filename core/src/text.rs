@@ -52,6 +52,10 @@ pub struct PrefixTables {
     pub syll: [i32; TABLE_LEN],
     harm_back: [bool; TABLE_LEN],
     tail_back: [bool; TABLE_LEN],
+    /// Whether the prefix contains any harmony-bearing (non-glide) vowel.
+    /// Glides (у/и/ю) are transparent, so loanwords like `туризм` carry no
+    /// harmony class at all and must accept suffixes of either class.
+    has_strong: [bool; TABLE_LEN],
 }
 
 /// Build prefix tables for [`PrefixTables`]. `s` must be shorter than
@@ -63,12 +67,14 @@ pub fn fill_prefix_tables(s: &str) -> PrefixTables {
     let mut syll = [0i32; TABLE_LEN];
     let mut harm_back = [true; TABLE_LEN];
     let mut tail_back = [true; TABLE_LEN];
+    let mut has_strong = [false; TABLE_LEN];
 
     let mut nchars: i32 = 0;
     let mut nsyll: i32 = 0;
 
     // Incremental state mirroring word_is_back / tail_is_back.
     let mut wb_back = true; // word_is_back: class of last harmony-bearing vowel
+    let mut strong_seen = false; // any non-glide harmony-bearing vowel so far
     let mut last_two = ['\0', '\0']; // tail_is_back: last two non-glide vowels
 
     for (i, cp) in s.char_indices() {
@@ -81,8 +87,10 @@ pub fn fill_prefix_tables(s: &str) -> PrefixTables {
         if !is_glide(cp) {
             if is_back_vowel(cp) || cp == 'я' {
                 wb_back = true;
+                strong_seen = true;
             } else if is_front_vowel(cp) || cp == 'э' {
                 wb_back = false;
+                strong_seen = true;
             }
             if is_back_vowel(cp) || is_front_vowel(cp) || is_loan_vowel(cp) {
                 last_two[0] = last_two[1];
@@ -104,10 +112,11 @@ pub fn fill_prefix_tables(s: &str) -> PrefixTables {
             syll[b] = nsyll;
             harm_back[b] = wb_back;
             tail_back[b] = tb;
+            has_strong[b] = strong_seen;
         }
     }
 
-    PrefixTables { chars, syll, harm_back, tail_back }
+    PrefixTables { chars, syll, harm_back, tail_back, has_strong }
 }
 
 impl PrefixTables {
@@ -118,6 +127,12 @@ impl PrefixTables {
         }
         if b == 0 {
             return false;
+        }
+        // Harmony-neutral prefix (glide-only vowels, e.g. туризм): accept
+        // suffixes of either class, otherwise no FRONT/BACK-classed case
+        // ending can ever attach and the word is unstemmable.
+        if !self.has_strong[b] {
+            return true;
         }
         let full_back = self.harm_back[b];
         if harmony == 1 && full_back {
@@ -136,9 +151,11 @@ impl PrefixTables {
 
 const HARM_ANY_CLASS: u8 = 0;
 
-pub fn word_is_back(s: &str) -> bool {
-    let mut found = false;
-    let mut back = true;
+/// Harmony class of the last harmony-bearing vowel: `Some(true)` = back,
+/// `Some(false)` = front, `None` = no strong vowel at all (glide-only
+/// loanwords like `туризм` are harmony-neutral).
+pub fn strong_vowel_class(s: &str) -> Option<bool> {
+    let mut class: Option<bool> = None;
     for cp in s.chars() {
         if is_glide(cp) {
             continue;
@@ -148,14 +165,16 @@ pub fn word_is_back(s: &str) -> bool {
         // я/э-final loanwords fail every harmony check until the 4-syllable
         // tail fallback kicks in.
         if is_back_vowel(cp) || cp == 'я' {
-            found = true;
-            back = true;
+            class = Some(true);
         } else if is_front_vowel(cp) || cp == 'э' {
-            found = true;
-            back = false;
+            class = Some(false);
         }
     }
-    if found { back } else { true }
+    class
+}
+
+pub fn word_is_back(s: &str) -> bool {
+    strong_vowel_class(s).unwrap_or(true)
 }
 
 fn tail_is_back(s: &str) -> bool {
@@ -194,7 +213,11 @@ pub fn harmony_ok(s: &str, harmony: u8) -> bool {
         return false;
     }
 
-    let full_back = word_is_back(s);
+    // Harmony-neutral word (glide-only vowels): either class attaches.
+    let full_back = match strong_vowel_class(s) {
+        Some(back) => back,
+        None => return true,
+    };
     if harmony == 1 && full_back {
         // KAZ_HARM_BACK
         return true;

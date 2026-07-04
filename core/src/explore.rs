@@ -437,24 +437,25 @@ pub fn candidate_hits_lexicon(c: &Candidate, word: &str, lexicon: &Lexicon) -> b
         return false;
     }
 
-    let stem_back = word_is_back(stem);
-    let v1 = if stem_back { "ы" } else { "і" };
-    let v2 = if stem_back { "а" } else { "е" };
+    // Harmony-neutral stems (glide-only vowels) try both vowel classes.
+    let vowels: &[&str] = match strong_vowel_class(stem) {
+        Some(true) => &["ы", "а"],
+        Some(false) => &["і", "е"],
+        None => &["ы", "і", "а", "е"],
+    };
 
-    if try_append_vowel_check(stem, v1, lexicon) {
-        return true;
-    }
-    if try_append_vowel_check(stem, v2, lexicon) {
-        return true;
+    for v in vowels {
+        if try_append_vowel_check(stem, v, lexicon) {
+            return true;
+        }
     }
 
     let mut buf = [0u8; MAX_STEM_BYTES];
     if let Some(alt) = mutated_on_stack(stem, &mut buf) {
-        if try_append_vowel_check(alt, v1, lexicon) {
-            return true;
-        }
-        if try_append_vowel_check(alt, v2, lexicon) {
-            return true;
+        for v in vowels {
+            if try_append_vowel_check(alt, v, lexicon) {
+                return true;
+            }
         }
     }
 
