@@ -89,6 +89,7 @@ static DERIV_RULES: &[SuffixRule] = &[
     sfx!("тау", HARM_BACK, 0), sfx!("теу", HARM_FRONT, 0), sfx!("лы", HARM_BACK, 1), sfx!("лі", HARM_FRONT, 1),
     sfx!("лық", HARM_BACK, 0), sfx!("лік", HARM_FRONT, 0),
     sfx!("дық", HARM_BACK, 0), sfx!("дік", HARM_FRONT, 0), sfx!("тық", HARM_BACK, 0), sfx!("тік", HARM_FRONT, 0),
+    sfx!("ушы", HARM_BACK, 1), sfx!("уші", HARM_FRONT, 1),
     sfx!("шы", HARM_BACK, 1), sfx!("ші", HARM_FRONT, 1), sfx!("ша", HARM_BACK, 1), sfx!("ше", HARM_FRONT, 1),
     sfx!("сыз", HARM_BACK, 0), sfx!("сіз", HARM_FRONT, 0), sfx!("ғы", HARM_BACK, 1), sfx!("гі", HARM_FRONT, 1),
     sfx!("ншы", HARM_BACK, 0), sfx!("нші", HARM_FRONT, 0), sfx!("дай", HARM_BACK, 0), sfx!("дей", HARM_FRONT, 0),

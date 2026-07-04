@@ -417,6 +417,33 @@ fn test_converb_reduction_requires_verb_set() {
 }
 
 #[test]
+fn test_agent_noun_deriv_and_lexicon_aware_ly_guard() {
+    use kazsearch_core::lexicon::Lexicon;
+
+    let mut lex = Lexicon::new();
+    for w in ["сөндір", "қар", "су", "сулы", "оқушы", "жүргізуші"] {
+        lex.insert(w.to_string());
+    }
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+
+    // Agent noun -уші strips down to the verb stem (dict hit beats the
+    // previous non-word residue сөндіруш).
+    assert_eq!(stem("сөндіруші", &cfg), "сөндір");
+    assert_eq!(stem("сөндірушілер", &cfg), "сөндір");
+    // Lexicalized professions stay whole: dict entry + 1-strong-syllable
+    // base (оқ, жүргіз has 2 but the valve keeps the dict entry).
+    assert_eq!(stem("оқушы", &cfg), "оқушы");
+    // -лы strips off a monosyllabic dictionary base (қарлы → қар "snow",
+    // previously stuck at the non-word қарл)...
+    assert_eq!(stem("қарлы", &cfg), "қар");
+    // ...but сулы is itself a dict entry and the valve keeps it.
+    assert_eq!(stem("сулы", &cfg), "сулы");
+}
+
+#[test]
 fn test_glide_only_words_are_harmony_neutral() {
     use kazsearch_core::lexicon::Lexicon;
 

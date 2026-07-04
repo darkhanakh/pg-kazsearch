@@ -91,7 +91,15 @@ fn visit_key(len: i32, state_idx: i32, steps: i32) -> u64 {
     ((len as u64) << 32) | (((state_idx as u16) as u64) << 16) | ((steps as u16) as u64)
 }
 
-fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32) -> bool {
+/// Strong (non-glide, harmony-bearing) syllable count: glides (у/и/ю) are
+/// transparent and must not make a base look bisyllabic (оқ+ушы, ту+ған).
+fn count_strong_syllables(base: &str) -> i32 {
+    base.chars()
+        .filter(|&c| (is_vowel(c) || is_loan_vowel(c)) && !is_glide(c))
+        .count() as i32
+}
+
+fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Option<&Lexicon>) -> bool {
     match layer_id {
         LAYER_CASE => {
             if sfx == "н" {
@@ -147,8 +155,17 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32) -> bool 
             }
             // Adjectival -лы/-лі ("having X"): only strip from bases that are
             // plausible standalone nominals, mirroring the -лық/-лік guard.
+            // A dictionary base is plausible regardless of length (қарлы →
+            // қар "snow"), otherwise require two syllables.
             if matches!(sfx, "лы" | "лі") {
-                return count_syllables(base) >= 2;
+                return count_syllables(base) >= 2
+                    || lex.is_some_and(|l| l.contains(base));
+            }
+            // Agent nouns -ушы/-уші: the base is a verb stem; require two
+            // strong syllables so lexicalized professions on short verbs
+            // stay whole (оқушы "pupil", жүргізуші "driver" via the valve).
+            if matches!(sfx, "ушы" | "уші") {
+                return count_strong_syllables(base) >= 2;
             }
         }
         _ => {}
@@ -586,7 +603,7 @@ pub fn explore_track_best(
             if !prefix.harmony_ok_at(base_len, rule.harmony) {
                 continue;
             }
-            if !layer_guard(layer.layer_id, rule.suffix, &word[..base_len], st.c.steps) {
+            if !layer_guard(layer.layer_id, rule.suffix, &word[..base_len], st.c.steps, cfg.lexicon.as_ref()) {
                 continue;
             }
 
