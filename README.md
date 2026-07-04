@@ -241,12 +241,12 @@ Recall@10, same corpus, same ranking, only the dictionary differs:
 
 | Query set                  | pg_kazsearch | `simple` (no stem) | Effect |
 | -------------------------- | ------------ | ------------------ | ------ |
-| gold_v2 (human, n=132)     | **0.524**    | 0.187              | ~2.8x recall (95% CI [0.47, 0.58]) |
-| gold (human, n=51)         | **0.215**    | 0.102              | ~2x recall |
-| morpho_variant (inflected) | **0.870**    | 0.005              | stemming is essential for suffixed queries |
+| gold_v2 (human, n=132)     | **0.542**    | 0.187              | ~2.9x recall (95% CI [0.49, 0.60]) |
+| gold (human, n=51)         | **0.225**    | 0.102              | ~2.2x recall |
+| morpho_variant (inflected) | **0.865**    | 0.005              | stemming is essential for suffixed queries |
 | title_keywords (verbatim)  | 0.985        | 0.992              | no stemming needed for exact-word matches |
 
-Human queries in Kazakh naturally contain inflected forms, which is exactly where the stemmer pays off. gold_v2 MRR@10 is 0.724 vs 0.420 without stemming. Stemming is idempotent (`stem(stem(w)) == stem(w)`, enforced by tests), so query-side and document-side inflections of one lexeme always meet at the same index term.
+Human queries in Kazakh naturally contain inflected forms, which is exactly where the stemmer pays off. gold_v2 MRR@10 is 0.743 vs 0.420 without stemming. Stemming is idempotent (`stem(stem(w)) == stem(w)`, enforced by tests), so query-side and document-side inflections of one lexeme always meet at the same index term.
 
 ### PostgreSQL: pg_kazsearch vs pg_trgm
 
@@ -266,9 +266,9 @@ Measured over 45,708 corpus tokens with `python3 eval/measure_stem_coverage.py`:
 
 | Rate | Value | Meaning |
 | ---- | ----- | ------- |
-| Analyzed | 75.6% | a suffix was stripped |
-| Stem in lexicon | 73.9% | final stem is a dictionary lemma |
-| Recognized | **86.8%** | stemmed or already a dictionary lemma |
+| Analyzed | 76.5% | a suffix was stripped |
+| Stem in lexicon | 74.9% | final stem is a dictionary lemma |
+| Recognized | **87.5%** | stemmed or already a dictionary lemma |
 
 
 ### Elasticsearch: kazsearch_stem vs standard analyzer
@@ -278,10 +278,10 @@ On human-written queries, the stemmer finds more relevant articles and ranks the
 
 | Query set                          | Metric    | kazsearch_stem | standard | Improvement |
 | ---------------------------------- | --------- | -------------- | -------- | ----------- |
-| gold (human, n=51)                 | Recall@10 | **0.391**      | 0.309    | +27%        |
-|                                    | MRR@10    | **0.667**      | 0.591    | +13%        |
-| gold_v2 (human, URL-keyed, n=132)  | Recall@10 | **0.518**      | 0.451    | +15%        |
-|                                    | MRR@10    | **0.663**      | 0.569    | +17%        |
+| gold (human, n=51)                 | Recall@10 | **0.396**      | 0.309    | +28%        |
+|                                    | MRR@10    | **0.663**      | 0.591    | +12%        |
+| gold_v2 (human, URL-keyed, n=132)  | Recall@10 | **0.524**      | 0.451    | +16%        |
+|                                    | MRR@10    | **0.669**      | 0.569    | +18%        |
 
 
 ### vs Tengrinews.kz native search

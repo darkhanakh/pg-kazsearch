@@ -48,24 +48,14 @@ unsafe fn load_lexicon_from_pg(lexicon_name: &str) -> Lexicon {
     }
     let path_str = CStr::from_ptr(path_ptr).to_str().unwrap_or("");
 
-    let mut lexicon = Lexicon::new();
-    match std::fs::read_to_string(path_str) {
-        Ok(contents) => {
-            for line in contents.lines() {
-                let trimmed = line.trim();
-                if trimmed.is_empty() || trimmed.starts_with('#') {
-                    continue;
-                }
-                if trimmed.len() >= kazsearch_core::MAX_STEM_BYTES {
-                    pgrx::error!("lexicon entry too long: \"{}\"", trimmed);
-                }
-                lexicon.insert(trimmed.to_string());
-            }
-        }
+    // Lexicon::load also picks up the optional kaz_stems.dict.verbs sibling,
+    // which gates the verb-root reductions (-у/-ю, -ған, converb -п).
+    let lexicon = match Lexicon::load(path_str) {
+        Ok(lex) => lex,
         Err(e) => {
-            pgrx::error!("could not open lexicon file \"{}\": {}", path_str, e);
+            pgrx::error!("could not load lexicon file \"{}\": {}", path_str, e);
         }
-    }
+    };
     pg_sys::pfree(path_ptr as *mut _);
     lexicon
 }
