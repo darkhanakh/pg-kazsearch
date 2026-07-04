@@ -159,6 +159,11 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
 ///   `өзгеруі`→`өзгеру` never met `өзгерді`→`өзгер`.
 /// * denominal verbs `-да/-де/-та/-те/-ла/-ле`: `арзанда`→`арзан`, so
 ///   `арзандады` meets `арзандауы` (which the noun track derives to `арзан`).
+/// * `-ған/-ген/-қан/-кен` participles: frequent participles are lexicalized
+///   as Apertium dictionary entries (`тағайындалған`, `анықталған`), so the
+///   safety valve kept them whole while the finite past (`тағайындалды`)
+///   stemmed to the passive root `тағайындал` — 68 corpus articles carried
+///   `тағайындалған` and none were indexed under the root.
 ///
 /// The base must be a lexicon entry with >= 2 syllables: single-syllable roots
 /// collide with unrelated homographs (`ату`→`ат` "horse", `аю`→`ай` "moon").
@@ -185,6 +190,16 @@ fn reduce_to_lexicon_root(stem: &str, lex: &Lexicon) -> Option<String> {
             }
         }
         return None;
+    }
+    for sfx in ["ған", "ген", "қан", "кен"] {
+        if let Some(base) = stem.strip_suffix(sfx) {
+            // The syllable guard blocks participle-shaped nominal homographs
+            // (қорған "fortress" → қор, туған "native" → ту).
+            if strong_syllables(base) >= 2 && lex.contains(base) {
+                return Some(base.to_string());
+            }
+            return None;
+        }
     }
     for sfx in ["да", "де", "та", "те", "ла", "ле"] {
         if let Some(base) = stem.strip_suffix(sfx) {

@@ -333,6 +333,40 @@ fn test_verbal_noun_conflation() {
 }
 
 #[test]
+fn test_lexicalized_participle_bridge() {
+    use kazsearch_core::lexicon::Lexicon;
+
+    // News text uses lexicalized participles (тағайындалған is an Apertium
+    // dict entry) while queries use finite past (тағайындалды). The dict
+    // entry must not act as a conflation barrier: both reduce to the
+    // passive root тағайындал.
+    let mut lex = Lexicon::new();
+    for w in [
+        "тағайында", "тағайындал", "тағайындалған",
+        "анықта", "анықтал", "анықталған",
+        // participle-shaped nominal homographs that must NOT reduce
+        "қор", "қорған", "ту", "туған",
+    ] {
+        lex.insert(w.to_string());
+    }
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+
+    assert_eq!(stem("тағайындалған", &cfg), "тағайындал");
+    assert_eq!(stem("тағайындалды", &cfg), "тағайындал");
+    assert_eq!(stem("анықталған", &cfg), "анықтал");
+    assert_eq!(stem("анықталды", &cfg), "анықтал");
+    // Substantivized participle plural rides the fixed-point loop.
+    assert_eq!(stem("тағайындалғандар", &cfg), "тағайындал");
+    // Single-strong-syllable bases stay put: қорған is a fortress, not
+    // "қор + participle"; туған is native, not "ту + participle".
+    assert_eq!(stem("қорған", &cfg), "қорған");
+    assert_eq!(stem("туған", &cfg), "туған");
+}
+
+#[test]
 fn test_participle_plural_idempotent() {
     use kazsearch_core::lexicon::Lexicon;
 
