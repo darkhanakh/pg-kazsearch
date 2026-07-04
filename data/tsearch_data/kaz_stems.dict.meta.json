@@ -1,8 +1,9 @@
 {
-  "generated": "2026-07-04",
+  "generated": "2026-07-05",
   "source": "data/raw/apertium-kaz.kaz.lexc",
   "apertium_lexc_sha": "0d82c015ddee75a743e4184b8c7ce9c388576b13",
   "total_lemmas": 21791,
+  "verb_lemmas": 3345,
   "rejected_inflected": 89,
   "pos_counts": {
     "N1": 13587,

@@ -24,7 +24,7 @@ jobs:
       - name: Lexicon builder is reproducible
         run: |
           python3 scripts/build_lexicon.py --stats
-          git diff --exit-code data/tsearch_data/kaz_stems.dict
+          git diff --exit-code data/tsearch_data/kaz_stems.dict data/tsearch_data/kaz_stems.dict.verbs
 
   pg_ext:
     name: PostgreSQL extension (pg${{ matrix.pg }})
@@ -55,7 +55,7 @@ jobs:
             --no-default-features --features pg${{ matrix.pg }} \
             -c /usr/lib/postgresql/${{ matrix.pg }}/bin/pg_config --sudo
           sharedir=$(/usr/lib/postgresql/${{ matrix.pg }}/bin/pg_config --sharedir)
-          sudo cp data/tsearch_data/kaz_stems.dict data/tsearch_data/kaz_stopwords.stop "$sharedir/tsearch_data/"
+          sudo cp data/tsearch_data/kaz_stems.dict data/tsearch_data/kaz_stems.dict.verbs data/tsearch_data/kaz_stopwords.stop "$sharedir/tsearch_data/"
           sudo cp pg_ext/sql/pg_kazsearch--*--*.sql "$sharedir/extension/"
       - name: CREATE EXTENSION + smoke assertions
         run: |

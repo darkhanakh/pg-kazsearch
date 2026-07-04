@@ -31,6 +31,9 @@ dependencies {
 
 def nativeResourcesDir = file("src/main/resources/native")
 def lexiconFile = file("../../data/tsearch_data/kaz_stems.dict")
+// Optional verb-lemma sibling; kazsearch-core auto-loads it when it sits
+// next to the lexicon, enabling verb-root reductions.
+def lexiconVerbsFile = file("../../data/tsearch_data/kaz_stems.dict.verbs")
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
@@ -92,6 +95,9 @@ tasks.register("bundlePlugin", Zip) {
         includeEmptyDirs = false
     }
     from(lexiconFile) {
+        into "data"
+    }
+    from(lexiconVerbsFile) {
         into "data"
     }
 }

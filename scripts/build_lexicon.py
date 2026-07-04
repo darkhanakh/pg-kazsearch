@@ -130,6 +130,12 @@ def pos_counts(lemmas: dict[str, set[str]]) -> dict[str, int]:
     return dict(sorted(counter.items(), key=lambda kv: -kv[1]))
 
 
+# Coarse verb classes. Used to emit the .verbs sibling file: the stemmer's
+# verb-root reductions (-у/-ю verbal nouns, -ған participles, -п converbs)
+# must only land on verb roots, so noun homographs don't get swallowed.
+VERB_CLASSES = {"V-TV", "V-IV", "V-TD", "V-DER"}
+
+
 def write_dict(lemmas: dict[str, set[str]], output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8") as f:
@@ -138,13 +144,31 @@ def write_dict(lemmas: dict[str, set[str]], output: Path) -> None:
             f.write("\n")
 
 
-def write_meta(lemmas: dict[str, set[str]], rejected: int, source: str, output: Path) -> Path:
+def write_verbs(lemmas: dict[str, set[str]], output: Path) -> tuple[Path, int]:
+    """Sibling file `<dict>.verbs` with verb lemmas only.
+
+    kazsearch-core auto-loads it next to the main dict (no config changes in
+    pg_ext / ES / CLI) and uses it to gate verb-root reductions.
+    """
+    verbs_path = output.with_name(output.name + ".verbs")
+    verbs = sorted(w for w, pos in lemmas.items() if pos & VERB_CLASSES)
+    with verbs_path.open("w", encoding="utf-8") as f:
+        for w in verbs:
+            f.write(w)
+            f.write("\n")
+    return verbs_path, len(verbs)
+
+
+def write_meta(
+    lemmas: dict[str, set[str]], rejected: int, source: str, output: Path, verb_count: int
+) -> Path:
     meta_path = output.with_name(output.name + ".meta.json")
     meta = {
         "generated": _dt.date.today().isoformat(),
         "source": source,
         "apertium_lexc_sha": APERTIUM_LEXC_SHA,
         "total_lemmas": len(lemmas),
+        "verb_lemmas": verb_count,
         "rejected_inflected": rejected,
         "pos_counts": pos_counts(lemmas),
     }
@@ -196,9 +220,12 @@ def main() -> None:
         print(f"rejected inflected: {rejected}")
 
     write_dict(clean, args.output)
-    meta_path = write_meta(clean, rejected, source, args.output)
+    verbs_path, verb_count = write_verbs(clean, args.output)
+    meta_path = write_meta(clean, rejected, source, args.output, verb_count)
     print(f"final lemmas:    {len(clean)}")
+    print(f"verb lemmas:     {verb_count}")
     print(f"wrote:           {args.output}")
+    print(f"verbs:           {verbs_path}")
     print(f"meta:            {meta_path}")
 
     if args.stats:

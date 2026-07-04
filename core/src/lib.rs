@@ -164,6 +164,8 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
 ///   safety valve kept them whole while the finite past (`тағайындалды`)
 ///   stemmed to the passive root `тағайындал` — 68 corpus articles carried
 ///   `тағайындалған` and none were indexed under the root.
+/// * converb `-ып/-іп/-п` (verb set required): `асырап`→`асыра`. The bare
+///   `-п` after a vowel has no BFS rule, so these passed through unstemmed.
 ///
 /// The base must be a lexicon entry with >= 2 syllables: single-syllable roots
 /// collide with unrelated homographs (`ату`→`ат` "horse", `аю`→`ай` "moon").
@@ -176,8 +178,11 @@ fn strong_syllables(s: &str) -> i32 {
 }
 
 fn reduce_to_lexicon_root(stem: &str, lex: &Lexicon) -> Option<String> {
+    // -у/-ю verbal nouns and -ған participles attach to verb stems only, so
+    // the reduction target must be a verb root (falls back to plain dict
+    // membership when no .verbs sibling was loaded).
     if let Some(base) = stem.strip_suffix('у') {
-        if strong_syllables(base) >= 2 && lex.contains(base) {
+        if strong_syllables(base) >= 2 && lex.is_verb_root(base) {
             return Some(base.to_string());
         }
         return None;
@@ -185,7 +190,7 @@ fn reduce_to_lexicon_root(stem: &str, lex: &Lexicon) -> Option<String> {
     if let Some(base) = stem.strip_suffix('ю') {
         if strong_syllables(base) >= 2 {
             let root = format!("{base}й");
-            if lex.contains(&root) {
+            if lex.is_verb_root(&root) {
                 return Some(root);
             }
         }
@@ -195,10 +200,24 @@ fn reduce_to_lexicon_root(stem: &str, lex: &Lexicon) -> Option<String> {
         if let Some(base) = stem.strip_suffix(sfx) {
             // The syllable guard blocks participle-shaped nominal homographs
             // (қорған "fortress" → қор, туған "native" → ту).
-            if strong_syllables(base) >= 2 && lex.contains(base) {
+            if strong_syllables(base) >= 2 && lex.is_verb_root(base) {
                 return Some(base.to_string());
             }
             return None;
+        }
+    }
+    // Converb -ып/-іп/-п: only with an explicit verb set — the general dict
+    // is too loose here. Converbs never lexicalize, so a dictionary entry
+    // ending this way is a noun (талап "demand", кітап "book") and is kept.
+    // Suffixes are tried longest-first without early return: оқып parses as
+    // оқ+ып (fails, 1 syllable) and then correctly as оқы+п.
+    if lex.has_verb_set() && !lex.contains(stem) {
+        for sfx in ["ып", "іп", "п"] {
+            if let Some(base) = stem.strip_suffix(sfx) {
+                if strong_syllables(base) >= 2 && lex.is_verb_root(base) {
+                    return Some(base.to_string());
+                }
+            }
         }
     }
     for sfx in ["да", "де", "та", "те", "ла", "ле"] {

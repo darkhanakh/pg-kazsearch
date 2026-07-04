@@ -391,6 +391,51 @@ fn test_participle_plural_idempotent() {
 }
 
 #[test]
+fn test_converb_reduction_requires_verb_set() {
+    use kazsearch_core::lexicon::Lexicon;
+
+    let mut lex = Lexicon::new();
+    lex.insert_verb("асыра".to_string());
+    lex.insert_verb("жоспарла".to_string());
+    lex.insert_verb("тала".to_string());
+    // Dict nouns ending in -п: converbs never lexicalize, so dict membership
+    // blocks the reduction even when the residue is a verb (талап / тала).
+    lex.insert("талап".to_string());
+    lex.insert("кітап".to_string());
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+
+    // Bare -п after a vowel has no BFS rule; the reduction fixes it.
+    // (The -ып/-іп converbs are already stripped inside the BFS itself.)
+    assert_eq!(stem("асырап", &cfg), "асыра");
+    assert_eq!(stem("жоспарлап", &cfg), "жоспарла");
+    // Nouns stay put.
+    assert_eq!(stem("талап", &cfg), "талап");
+    assert_eq!(stem("кітап", &cfg), "кітап");
+}
+
+#[test]
+fn test_verbal_noun_reduction_gated_on_verb_set() {
+    use kazsearch_core::lexicon::Lexicon;
+
+    // With a verb set loaded, -у only reduces onto verb roots: қалау must
+    // not collapse onto a noun-tagged қала.
+    let mut lex = Lexicon::new();
+    lex.insert_verb("өзгер".to_string());
+    lex.insert("қала".to_string());
+    lex.insert("қалау".to_string());
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+
+    assert_eq!(stem("өзгеру", &cfg), "өзгер");
+    assert_eq!(stem("қалау", &cfg), "қалау");
+}
+
+#[test]
 fn test_hyphenated_tokens_stem_last_run() {
     use kazsearch_core::lexicon::Lexicon;
 

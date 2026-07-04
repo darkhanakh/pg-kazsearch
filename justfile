@@ -64,7 +64,7 @@ build:
     just dc-exec cargo pgrx install --release -c /usr/bin/pg_config -p pg_kazsearch
     # Sync dictionary data files: the running server reads from sharedir, not
     # the repo, so a rebuilt lexicon must be copied or dev tests use stale data.
-    docker exec {{ container }} bash -c 'cp /app/data/tsearch_data/kaz_stems.dict /app/data/tsearch_data/kaz_stopwords.stop "$(pg_config --sharedir)/tsearch_data/"'
+    docker exec {{ container }} bash -c 'cp /app/data/tsearch_data/kaz_stems.dict /app/data/tsearch_data/kaz_stems.dict.verbs /app/data/tsearch_data/kaz_stopwords.stop "$(pg_config --sharedir)/tsearch_data/"'
     # Install versioned upgrade scripts (cargo pgrx only emits the current
     # version's schema; ALTER EXTENSION UPDATE needs these).
     docker exec {{ container }} bash -c 'cp /app/pg_ext/sql/pg_kazsearch--*--*.sql "$(pg_config --sharedir)/extension/" 2>/dev/null || true'
