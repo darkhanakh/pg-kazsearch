@@ -37,4 +37,5 @@ elastic/java/src/main/resources/native/*/*.so
 elastic/java/src/main/resources/native/*/*.dylib
 
 # Local toolchains
-.tools/
+.tools/# Generated from META.json.in by the release workflow
+/META.json
