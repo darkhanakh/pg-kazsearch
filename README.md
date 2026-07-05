@@ -205,6 +205,46 @@ ORDER BY ts_rank_cd(fts, websearch_to_tsquery('kazakh_cfg', 'президент�
 LIMIT 10;
 ```
 
+### Recommended query pattern: AND with OR fallback
+
+`websearch_to_tsquery` produces strict AND semantics — one query term with no match anywhere kills the entire result set, even when every other term hits. On our human-query benchmark this is the single largest source of failed searches. Measured on gold_v2 (n=132), same index, same ranking function, only the query construction differs:
+
+| Strategy                    | P@10      | R@10      | MRR@10    | R@50      | Queries with no results |
+| --------------------------- | --------- | --------- | --------- | --------- | ----------------------- |
+| AND (`websearch_to_tsquery`)| 0.352     | 0.542     | 0.743     | 0.668     | 16 / 132                |
+| Pure OR                     | 0.230     | 0.392     | 0.389     | 0.800     | 4 / 132                 |
+| **AND, then OR fallback**   | **0.373** | **0.595** | **0.753** | **0.869** | **4 / 132**             |
+
+Pure OR is not the answer: weak single-term matches flood the ranking and MRR collapses. The winning pattern runs the strict query first, then tops up with OR-ranked results only when it comes back short — precise queries keep their precise results, and queries that died on one missing term get rescued:
+
+```sql
+WITH strict AS (
+    SELECT title, url, ts_rank_cd(fts, websearch_to_tsquery('kazakh_cfg', :q)) AS rank
+    FROM articles
+    WHERE fts @@ websearch_to_tsquery('kazakh_cfg', :q)
+    ORDER BY rank DESC
+    LIMIT 10
+),
+relaxed AS (
+    -- Re-join the stemmed query terms with OR; cover-density ranking
+    -- floats documents matching more terms to the top.
+    SELECT a.title, a.url, ts_rank_cd(a.fts, q.tsq) AS rank
+    FROM articles a,
+         (SELECT to_tsquery('simple', string_agg(lexeme, ' | ')) AS tsq
+          FROM unnest(to_tsvector('kazakh_cfg', :q))) q
+    WHERE a.fts @@ q.tsq
+      AND a.url NOT IN (SELECT url FROM strict)
+    ORDER BY rank DESC
+    LIMIT 10
+)
+SELECT * FROM strict
+UNION ALL
+SELECT * FROM relaxed
+LIMIT 10;
+```
+
+(The `relaxed` CTE uses the `simple` config for `to_tsquery` because the lexemes coming out of `unnest(to_tsvector('kazakh_cfg', …))` are already stemmed.)
+
 ### Tuning weights
 
 Penalty weights are tunable at runtime without restarting PostgreSQL:
