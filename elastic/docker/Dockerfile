@@ -1,4 +1,4 @@
-ARG PLUGIN_VERSION=2.2.0
+ARG PLUGIN_VERSION=2.3.0
 FROM docker.elastic.co/elasticsearch/elasticsearch:8.17.0
 
 ARG PLUGIN_VERSION

@@ -31,9 +31,9 @@ public class KazakhStemTokenFilterFactory extends AbstractTokenFilterFactory {
                                  String name, Settings settings) {
         super(name, settings);
 
-        if (environment != null) {
-            NativeLibraryLoader.hintPluginDirectory(
-                    environment.pluginsFile().resolve(PLUGIN_NAME));
+        Path pluginsPath = pluginsPath(environment);
+        if (pluginsPath != null) {
+            NativeLibraryLoader.hintPluginDirectory(pluginsPath.resolve(PLUGIN_NAME));
         }
 
         String lexiconSetting = settings.get("lexicon_path");
@@ -57,6 +57,25 @@ public class KazakhStemTokenFilterFactory extends AbstractTokenFilterFactory {
                             + ") for lexicon_path=[" + lexiconPath + "], script_mode=["
                             + scriptMode + "]");
         }
+    }
+
+    /**
+     * ES renamed {@code Environment.pluginsFile()} to {@code pluginsDir()}
+     * after 8.17. Resolve whichever exists so one source tree compiles and
+     * runs across all supported ES versions.
+     */
+    private static Path pluginsPath(Environment environment) {
+        if (environment == null) {
+            return null;
+        }
+        for (String method : new String[] {"pluginsDir", "pluginsFile"}) {
+            try {
+                return (Path) Environment.class.getMethod(method).invoke(environment);
+            } catch (ReflectiveOperationException | ClassCastException ignored) {
+                // try the next name
+            }
+        }
+        return null;
     }
 
     private static String bundledLexiconPath() {

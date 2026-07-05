@@ -111,3 +111,5 @@ jobs:
             || { echo "::error::plugin zip is missing the native library"; exit 1; }
           unzip -l "$zip" | grep -q "kaz_stems.dict" \
             || { echo "::error::plugin zip is missing the bundled lexicon"; exit 1; }
+          unzip -l "$zip" | grep -q "kaz_stems.dict.verbs" \
+            || { echo "::error::plugin zip is missing the verb lexicon sibling"; exit 1; }

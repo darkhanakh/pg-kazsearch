@@ -53,8 +53,8 @@ Download the `.deb` for your PostgreSQL version from [GitHub Releases](https://g
 
 ```bash
 # Example: PostgreSQL 18 on amd64
-curl -LO https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/postgresql-18-pg-kazsearch_2.2.0_amd64.deb
-sudo dpkg -i postgresql-18-pg-kazsearch_2.2.0_amd64.deb
+curl -LO https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/postgresql-18-pg-kazsearch_2.3.0_amd64.deb
+sudo dpkg -i postgresql-18-pg-kazsearch_2.3.0_amd64.deb
 ```
 
 Then in psql:
@@ -96,8 +96,9 @@ git clone https://github.com/darkhanakh/pg-kazsearch.git
 cd pg-kazsearch
 cargo pgrx install --release -p pg_kazsearch
 
-# Install lexicon and stopwords
+# Install lexicon (+ verb-lemma sibling) and stopwords
 cp data/tsearch_data/kaz_stems.dict $(pg_config --sharedir)/tsearch_data/
+cp data/tsearch_data/kaz_stems.dict.verbs $(pg_config --sharedir)/tsearch_data/
 cp data/tsearch_data/kaz_stopwords.stop $(pg_config --sharedir)/tsearch_data/
 ```
 
@@ -109,13 +110,14 @@ The same Kazakh stemmer is available as an Elasticsearch analysis plugin (`kazse
 
 ### Install from GitHub Releases
 
-Download the plugin ZIP from [GitHub Releases](https://github.com/darkhanakh/pg-kazsearch/releases) and install:
+Elasticsearch plugins install only on the exact ES version they were built for, so each release ships one ZIP per supported ES version (`8.17.0`, `8.17.10`, `8.18.8`, `8.19.18`). Download the ZIP matching your cluster from [GitHub Releases](https://github.com/darkhanakh/pg-kazsearch/releases) and install:
 
 ```bash
-bin/elasticsearch-plugin install https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/analysis-kazsearch-2.2.0.zip
+# Example: Elasticsearch 8.18.8
+bin/elasticsearch-plugin install https://github.com/darkhanakh/pg-kazsearch/releases/latest/download/analysis-kazsearch-2.3.0-es8.18.8.zip
 ```
 
-The pre-built ZIP includes native libraries for linux/amd64 and linux/aarch64.
+Each pre-built ZIP includes native libraries for linux/amd64 and linux/aarch64 plus the bundled lexicon. If your ES version isn't listed, build from source with `-PesVersion=<your version>` (see below) — the Java bridge compiles unchanged across 8.17–8.19.
 
 ### Configuration
 
@@ -164,13 +166,39 @@ just es-native
 
 # Build ES plugin ZIP (includes Java bridge + native lib)
 just es-build
-# → elastic/java/build/distributions/analysis-kazsearch-2.2.0.zip
+# → elastic/java/build/distributions/analysis-kazsearch-2.3.0.zip
+
+# Target a specific ES version (stamps plugin-descriptor.properties)
+cd elastic/java && gradle bundlePlugin -PesVersion=8.18.8
+# → build/distributions/analysis-kazsearch-2.3.0-es8.18.8.zip
 
 # Run tests
 just es-up
 just es-load-corpus   # index 3000 articles
 just es-eval          # run search quality evaluation
 ```
+
+---
+
+## Upgrading
+
+**Stemmer upgrades require reindexing.** Releases routinely improve the stemmer, which changes its output for some words. Anything indexed with the old version keeps the *old* stems, while queries are stemmed with the *new* code — the two sides silently stop matching for exactly the words the upgrade improved. Upgrading the binary without reindexing makes search quality *worse*, not better.
+
+**PostgreSQL** — after installing the new package:
+
+```sql
+ALTER EXTENSION pg_kazsearch UPDATE;
+
+-- Force recompute of STORED generated tsvector columns; a no-op UPDATE
+-- rewrites each row, regenerating the column (the GIN index follows
+-- automatically):
+UPDATE articles SET title = title;
+VACUUM (ANALYZE) articles;
+```
+
+If you populate tsvector columns with triggers instead of generated columns, re-run your population query. New sessions pick up the new dictionary automatically; long-lived sessions from before the upgrade should reconnect.
+
+**Elasticsearch** — remove the old plugin, install the version-matching new ZIP on every node, restart, then reindex affected indices (`POST _reindex` into a fresh index or re-ingest from source). The `_analyze` endpoint is a quick way to confirm the new stemmer is live before reindexing.
 
 ---
 

@@ -6,5 +6,5 @@ resolver = "2"
 # Postgres extension default_version (@CARGO_VERSION@ in the .control file),
 # the ES plugin gradle build, and README examples must all match this.
 [workspace.package]
-version = "2.2.0"
+version = "2.3.0"
 edition = "2021"

@@ -18,6 +18,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Versions must agree (tag / Cargo.toml / build.gradle)
+        run: |
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          CARGO_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          GRADLE_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' elastic/java/build.gradle | head -1)
+          echo "tag=$TAG_VERSION cargo=$CARGO_VERSION gradle=$GRADLE_VERSION"
+          if [ "$TAG_VERSION" != "$CARGO_VERSION" ] || [ "$TAG_VERSION" != "$GRADLE_VERSION" ]; then
+            echo "::error::version mismatch: tag=$TAG_VERSION Cargo.toml=$CARGO_VERSION build.gradle=$GRADLE_VERSION"
+            exit 1
+          fi
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p kazsearch-core --test stem_tests
@@ -82,6 +92,7 @@ jobs:
           SHAREDIR=$(pg_config --sharedir)
           mkdir -p "${PKG_DIR}${SHAREDIR}/tsearch_data"
           cp data/tsearch_data/kaz_stems.dict "${PKG_DIR}${SHAREDIR}/tsearch_data/"
+          cp data/tsearch_data/kaz_stems.dict.verbs "${PKG_DIR}${SHAREDIR}/tsearch_data/"
           cp data/tsearch_data/kaz_stopwords.stop "${PKG_DIR}${SHAREDIR}/tsearch_data/"
 
           dpkg-deb --build --root-owner-group ${PKG_DIR}
@@ -130,9 +141,15 @@ jobs:
           path: elastic/java/src/main/resources/native/linux-${{ matrix.arch }}/libkazsearch_elastic.so
 
   bundle-es-plugin:
-    name: Bundle ES plugin ZIP
+    name: Bundle ES plugin ZIP (ES ${{ matrix.es }})
     needs: build-es-plugin
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # One zip per supported ES version: classic plugins install only on
+        # the exact version stamped in plugin-descriptor.properties. Latest
+        # patch of each supported minor, plus 8.17.0 (our docker/dev pin).
+        es: ["8.17.0", "8.17.10", "8.18.8", "8.19.18"]
     steps:
       - uses: actions/checkout@v4
 
@@ -159,23 +176,28 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build plugin ZIP
+      - name: Build and verify plugin ZIP
         working-directory: elastic/java
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          gradle bundlePlugin -Pversion=${VERSION}
+          gradle test bundlePlugin -PesVersion=${{ matrix.es }}
           echo "=== Built artifacts ==="
           ls -la build/distributions/
-          # Ensure consistent naming for the release
-          cd build/distributions
-          if [ ! -f "analysis-kazsearch-${VERSION}.zip" ]; then
-            mv analysis-kazsearch-*.zip "analysis-kazsearch-${VERSION}.zip"
-          fi
-          ls -la
+          zip="build/distributions/analysis-kazsearch-${VERSION}-es${{ matrix.es }}.zip"
+          [ -f "$zip" ] || { echo "::error::expected $zip (version mismatch between tag and build.gradle?)"; exit 1; }
+          unzip -l "$zip"
+          for want in "linux-x86_64/libkazsearch_elastic.so" "linux-aarch64/libkazsearch_elastic.so" \
+                      "data/kaz_stems.dict" "data/kaz_stems.dict.verbs"; do
+            unzip -l "$zip" | grep -q "$want" || { echo "::error::plugin zip missing $want"; exit 1; }
+          done
+          unzip -p "$zip" plugin-descriptor.properties | grep -qx "version=${VERSION}" \
+            || { echo "::error::descriptor version not stamped"; exit 1; }
+          unzip -p "$zip" plugin-descriptor.properties | grep -qx "elasticsearch.version=${{ matrix.es }}" \
+            || { echo "::error::descriptor elasticsearch.version not stamped"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
-          name: es-plugin
+          name: es-plugin-${{ matrix.es }}
           path: elastic/java/build/distributions/analysis-kazsearch-*.zip
 
   release:

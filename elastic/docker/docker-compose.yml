@@ -4,7 +4,7 @@ services:
       context: ../java
       dockerfile: ../docker/Dockerfile
       args:
-        PLUGIN_VERSION: "${PLUGIN_VERSION:-2.2.0}"
+        PLUGIN_VERSION: "${PLUGIN_VERSION:-2.3.0}"
     container_name: es-kazsearch
     restart: unless-stopped
     environment:

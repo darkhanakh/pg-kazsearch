@@ -1,0 +1,10 @@
+-- Upgrade pg_kazsearch 2.2.0 -> 2.3.0
+--
+-- No SQL-object changes in this release: all improvements are inside the
+-- stemmer shared library (participle bridge, verb-tagged lexicon sibling,
+-- glide-transparent harmony, agent-noun rules) and the lexicon data files.
+--
+-- IMPORTANT: stemmer output changed for some words. Rebuild stored tsvector
+-- columns after upgrading (see the "Upgrading" section of the README),
+-- otherwise document-side and query-side stems will no longer match for the
+-- words this release improved.

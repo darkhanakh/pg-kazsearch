@@ -869,7 +869,7 @@ dependencies = [
 
 [[package]]
 name = "kazsearch-cli"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "clap",
  "kazsearch-core",
@@ -877,14 +877,14 @@ dependencies = [
 
 [[package]]
 name = "kazsearch-core"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "unicode-normalization",
 ]
 
 [[package]]
 name = "kazsearch-elastic"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "jni",
  "kazsearch-core",
@@ -1107,7 +1107,7 @@ dependencies = [
 
 [[package]]
 name = "pg_kazsearch"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "kazsearch-core",
  "pgrx",
