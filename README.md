@@ -326,17 +326,26 @@ On human-written queries, the stemmer finds more relevant articles and ranks the
 
 ### vs Tengrinews.kz native search
 
-Searching the same articles on tengrinews.kz vs ES with kazsearch_stem:
+Re-benchmarked July 2026 against `kaz.tengrinews.kz/search/?text=…`. Raw counts are not directly comparable — tengrinews searches its full archive while our index holds 2,999 articles — so the meaningful signal is *conflation behavior*, shown by the probe below the table. Matched-count columns use each engine's default semantics (tengrinews as-is, ES `multi_match` OR):
 
+| Search query (Kazakh with suffixes) | tengrinews.kz (full archive) | ES + kazsearch_stem (2,999 docs) |
+| ----------------------------------- | ---------------------------- | -------------------------------- |
+| мектептердегі оқушылар              | 55                           | **182**                          |
+| балалардың денсаулығы               | 203                          | **468**                          |
+| мұғалімдердің наразылығы            | 0                            | **64**                           |
+| спортшылардың жетістіктері          | 14                           | **227**                          |
+| бензиннің бағасын көтеру            | 8                            | **471**                          |
+| мектептеріміздегі мәселелер         | 0                            | **640**                          |
 
-| Search query (Kazakh with suffixes) | tengrinews.kz | ES + kazsearch_stem |
-| ----------------------------------- | ------------- | ------------------- |
-| мектептердегі оқушылар              | 2             | **159**             |
-| балалардың денсаулығы               | 13            | **391**             |
-| мұғалімдердің наразылығы            | 0             | **28**              |
-| спортшылардың жетістіктері          | 0             | **87**              |
-| бензиннің бағасын көтеру            | 0             | **69**              |
-| мектептеріміздегі мәселелер         | 0             | **609**             |
+Tengrinews' search has improved since our first benchmark (several formerly-zero queries now return results), but the morphology probe shows it still matches surface forms, not lexemes — every inflection of "school" is a different search:
+
+| Query form       | tengrinews.kz (full archive) | ES + kazsearch_stem (2,999 docs) |
+| ---------------- | ---------------------------- | -------------------------------- |
+| мектеп           | 906                          | **156**                          |
+| мектептердегі    | 110                          | **156**                          |
+| мектептерімізде  | 1                            | **156**                          |
+
+With stemming, all three forms hit the same 156 articles. Without it, a user who phrases the query with a possessive gets 1 result from an archive that contains 906 school articles.
 
 
 ### Stemmer examples
