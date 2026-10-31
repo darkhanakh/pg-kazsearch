@@ -81,6 +81,27 @@ fn first_person_suffix_obeys_consonant_assimilation() {
 }
 
 #[test]
+fn locative_ta_te_requires_a_t_allomorph_base() {
+    // -та/-те is the т allomorph of -да/-де. After a vowel, liquid or nasal
+    // the letters belong to the word: грамота and плита are loanwords the
+    // lexicon lacks, and the parse грамо+та+лар+ын used to cut them.
+    let cfg = cfg_with(&["ай", "мектеп", "клуб", "қала", "үй", "ес", "жаз"]);
+    assert_eq!(stem("грамоталарын", &cfg), "грамота");
+    assert_eq!(stem("плитаның", &cfg), "плита");
+    assert_eq!(stem("банкнотаға", &cfg), "банкнота");
+    assert_eq!(stem("айта", &cfg), "айта");
+    // Well-formed locatives still strip.
+    assert_eq!(stem("есте", &cfg), "ес");
+    assert_eq!(stem("мектепте", &cfg), "мектеп");
+    assert_eq!(stem("клубта", &cfg), "клуб");
+    assert_eq!(stem("қалада", &cfg), "қала");
+    assert_eq!(stem("үйде", &cfg), "үй");
+    // ж, з, ғ take -да/-де, so жазта is not a locative of жаз.
+    assert_eq!(stem("жазта", &cfg), "жазта");
+    assert_eq!(stem("жазда", &cfg), "жаз");
+}
+
+#[test]
 fn lexicon_vowel_restore_never_extends_a_lexicon_entry() {
     // жыл "year" and жылы "warm" are both lexicon entries. Stripping
     // жылдары to жыл is already a lemma, so it must not be re-extended to
