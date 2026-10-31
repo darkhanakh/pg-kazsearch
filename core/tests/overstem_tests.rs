@@ -82,3 +82,22 @@ fn bare_possessive_after_ul_or_qyz_words_still_strips() {
     let cfg = cfg_with(&["ұл", "қыз"]);
     assert_eq!(stem("ұлы", &cfg), "ұл");
 }
+
+#[test]
+fn tay_derivation_requires_voiceless_final_base() {
+    // қарақы + тай would put -тай after a vowel (it must be -дай), so
+    // қарақытай is a name, not a derived form. It used to be peeled down to
+    // қара across the fixed-point passes.
+    for cfg in [cfg_no_lexicon(), cfg_with(&["қара", "қытай"])] {
+        assert_eq!(stem("қарақытай", &cfg), "қарақытай");
+        assert_eq!(stem("қарақытайлар", &cfg), "қарақытай");
+    }
+}
+
+#[test]
+fn tay_dai_derivation_still_strips_well_formed_bases() {
+    let cfg = cfg_with(&["зат", "сон", "қор"]);
+    assert_eq!(stem("заттай", &cfg), "зат");
+    assert_eq!(stem("сондай", &cfg), "сон");
+    assert_eq!(stem("қордай", &cfg), "қор");
+}
