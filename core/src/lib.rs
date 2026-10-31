@@ -3,6 +3,7 @@ pub mod rules;
 pub mod lexicon;
 pub mod explore;
 pub mod script;
+pub mod kbfold;
 
 use explore::ExploreResult;
 use rules::{is_nominal_suffix_chain, LAYER_VPERSON, LAYER_VVOICE, NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
@@ -60,6 +61,7 @@ pub struct StemConfig {
     pub lexicon: Option<Lexicon>,
     pub weights: PenaltyWeights,
     pub script_mode: ScriptMode,
+    pub keyboard: KeyboardMode,
 }
 
 impl Default for StemConfig {
@@ -70,6 +72,7 @@ impl Default for StemConfig {
             lexicon: None,
             weights: PenaltyWeights::default(),
             script_mode: ScriptMode::Auto,
+            keyboard: KeyboardMode::Exact,
         }
     }
 }
@@ -80,9 +83,22 @@ pub enum ScriptMode {
     CyrillicOnly,
 }
 
+/// How `stem()` treats tokens that may have been typed on a Russian layout.
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+pub enum KeyboardMode {
+    /// Byte-for-byte today's behavior. The library default, so existing
+    /// indexes, parity snapshots and embedders are unaffected.
+    #[default]
+    Exact,
+    /// Restore Kazakh letters typed as their Russian-layout neighbours
+    /// (қ→к ғ→г ң→н ұ/ү→у і→и ә→а ө→о һ→х) before stemming, when the
+    /// lexicon proves the restored reading. Inert without a lexicon.
+    Restore,
+}
+
 #[derive(Clone, Debug)]
-struct StemOutcome {
-    stem: String,
+pub(crate) struct StemOutcome {
+    pub(crate) stem: String,
     best: explore::Candidate,
 }
 
@@ -179,13 +195,13 @@ pub fn stem(word: &str, cfg: &StemConfig) -> String {
 
     if cfg.script_mode == ScriptMode::CyrillicOnly {
         return match analyzed.class {
-            ScriptClass::Cyrillic => stem_cyrillic(&analyzed.lowered, cfg).stem,
+            ScriptClass::Cyrillic => stem_word(&analyzed.lowered, cfg),
             _ => stem_separated_cyrillic(&analyzed.lowered, cfg).unwrap_or(analyzed.lowered),
         };
     }
 
     match analyzed.class {
-        ScriptClass::Cyrillic => stem_cyrillic(&analyzed.lowered, cfg).stem,
+        ScriptClass::Cyrillic => stem_word(&analyzed.lowered, cfg),
         ScriptClass::Latin => {
             let latin = match analyzed.latin.as_ref() {
                 Some(v) => v,
@@ -279,6 +295,17 @@ fn reduce_to_lexicon_root(stem: &str, lex: &Lexicon) -> Option<String> {
     None
 }
 
+/// The single entry point for a whole lowercased Cyrillic token. `stem()`
+/// and the last run of a hyphenated token both come through here, so
+/// keyboard restoration applies to both identically. `Restore` without a
+/// lexicon has no evidence source and degrades to `Exact`.
+fn stem_word(txt: &str, cfg: &StemConfig) -> String {
+    match (cfg.keyboard, cfg.lexicon.as_ref()) {
+        (KeyboardMode::Restore, Some(lex)) => kbfold::resolve(txt, cfg, lex),
+        _ => stem_cyrillic(txt, cfg).stem,
+    }
+}
+
 /// Fixed-point driver for Cyrillic stemming. A single BFS pass is not
 /// idempotent: `stem(таратқандар)` = `таратқан` while `stem(таратқан)` =
 /// `тарат`, so the plural form and the bare participle never met in the
@@ -286,7 +313,7 @@ fn reduce_to_lexicon_root(stem: &str, lex: &Lexicon) -> Option<String> {
 /// [`reduce_to_lexicon_root`]) until it stabilizes makes `stem(stem(w)) ==
 /// stem(w)` hold by construction. Only enabled with a lexicon: the lexicon
 /// safety valve is what keeps repeated passes from compounding overstemming.
-fn stem_cyrillic(txt: &str, cfg: &StemConfig) -> StemOutcome {
+pub(crate) fn stem_cyrillic(txt: &str, cfg: &StemConfig) -> StemOutcome {
     let first = stem_canonical(txt, cfg);
     let lex = match cfg.lexicon {
         Some(ref l) => l,
@@ -353,7 +380,7 @@ fn stem_separated_cyrillic(lowered: &str, cfg: &StemConfig) -> Option<String> {
     }
     let (start, end) = last_run?;
 
-    let stemmed = stem_cyrillic(&lowered[start..end], cfg).stem;
+    let stemmed = stem_word(&lowered[start..end], cfg);
     let mut out = String::with_capacity(start + stemmed.len() + (lowered.len() - end));
     out.push_str(&lowered[..start]);
     out.push_str(&stemmed);

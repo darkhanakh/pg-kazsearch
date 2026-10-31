@@ -17,6 +17,10 @@ import org.elasticsearch.index.analysis.AbstractTokenFilterFactory;
  *       overriding the {@code data/kaz_stems.dict} bundled with the plugin</li>
  *   <li>{@code script_mode} — {@code auto} (default; Latin input is
  *       transliterated and stemmed) or {@code cyrillic_only}</li>
+ *   <li>{@code keyboard} — {@code exact} (default; today's stems, byte for
+ *       byte) or {@code restore} (restore Kazakh letters typed on a Russian
+ *       layout when the lexicon confirms the reading; reindex after
+ *       enabling)</li>
  * </ul>
  *
  * Note: the native stemmer configuration is process-global; if multiple
@@ -42,20 +46,26 @@ public class KazakhStemTokenFilterFactory extends AbstractTokenFilterFactory {
             throw new IllegalArgumentException(
                     "[script_mode] must be 'auto' or 'cyrillic_only', got [" + scriptMode + "]");
         }
-        boolean explicit = lexiconSetting != null || settings.get("script_mode") != null;
+        String keyboard = settings.get("keyboard", "exact");
+        if (!"exact".equals(keyboard) && !"restore".equals(keyboard)) {
+            throw new IllegalArgumentException(
+                    "[keyboard] must be 'exact' or 'restore', got [" + keyboard + "]");
+        }
+        boolean explicit = lexiconSetting != null || settings.get("script_mode") != null
+                || settings.get("keyboard") != null;
         String lexiconPath = lexiconSetting != null ? lexiconSetting : bundledLexiconPath();
 
-        int code = KazakhStemmerNative.configure(lexiconPath, scriptMode, explicit);
+        int code = KazakhStemmerNative.configure(lexiconPath, scriptMode, keyboard, explicit);
         if (code == KazakhStemmerNative.ERR_LEXICON && lexiconSetting == null) {
             // The bundled dict is missing or unreadable; degrade gracefully to
             // stemming without a lexicon rather than failing index creation.
-            code = KazakhStemmerNative.configure("", scriptMode, explicit);
+            code = KazakhStemmerNative.configure("", scriptMode, keyboard, explicit);
         }
         if (code != KazakhStemmerNative.OK) {
             throw new IllegalArgumentException(
                     "kazsearch_stem: native stemmer init failed (code " + code
                             + ") for lexicon_path=[" + lexiconPath + "], script_mode=["
-                            + scriptMode + "]");
+                            + scriptMode + "], keyboard=[" + keyboard + "]");
         }
     }
 

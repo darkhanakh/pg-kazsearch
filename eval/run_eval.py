@@ -216,7 +216,8 @@ def load_queries(path: Path) -> list[dict]:
 
 def evaluate(queries: list[dict], ks: list[int], trgm_thresholds: list[float],
              container: str, db: str, user: str,
-             trgm_sample: int = 0, seed: int = 42) -> dict:
+             trgm_sample: int = 0, seed: int = 42,
+             fts_config: str = "kazakh_cfg", fts_column: str = "fts_vector") -> dict:
     max_k = max(ks)
     t0 = time.monotonic()
 
@@ -233,7 +234,8 @@ def evaluate(queries: list[dict], ks: list[int], trgm_thresholds: list[float],
     fts_all: dict[int, list[int]] = {}
     for batch_start in range(0, len(indexed), BATCH):
         batch = [(idx, qt) for idx, qt, _ in indexed[batch_start:batch_start + BATCH]]
-        fts_all.update(batch_search_fts(batch, max_k, container, db, user))
+        fts_all.update(batch_search_fts(batch, max_k, container, db, user,
+                                        fts_config=fts_config, fts_column=fts_column))
     fts_elapsed = time.monotonic() - t0
     print(f" {fts_elapsed:.1f}s")
 
@@ -472,6 +474,10 @@ def main():
     parser.add_argument("--container", default=CONTAINER)
     parser.add_argument("--db", default=DB)
     parser.add_argument("--user", default=USER)
+    parser.add_argument("--fts-config", default="kazakh_cfg",
+                        help="Text search configuration used to parse queries")
+    parser.add_argument("--fts-column", default="fts_vector",
+                        help="tsvector column on articles built with --fts-config")
     parser.add_argument("--report", default="eval/results/report.json")
     args = parser.parse_args()
 
@@ -491,7 +497,8 @@ def main():
 
     result = evaluate(queries, args.k, args.trgm_thresholds,
                       args.container, args.db, args.user,
-                      trgm_sample=args.trgm_sample, seed=args.seed)
+                      trgm_sample=args.trgm_sample, seed=args.seed,
+                      fts_config=args.fts_config, fts_column=args.fts_column)
     print_report(result)
 
     report_path = Path(args.report)
