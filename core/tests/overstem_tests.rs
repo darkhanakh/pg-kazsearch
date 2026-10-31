@@ -382,3 +382,11 @@ fn consonant_suffix_does_not_restore_a_noun_vowel() {
     };
     assert_eq!(stem("дәрмектер", &cfg), "дәр");
 }
+
+#[test]
+fn locative_ta_te_is_refused_after_z_zh_gh() {
+    // ж, з, ғ take -да/-де (жаз-да), so жазта is not a locative of жаз.
+    let cfg = cfg_with(&["жаз"]);
+    assert_eq!(stem("жазта", &cfg), "жазта");
+    assert_eq!(stem("жазда", &cfg), "жаз");
+}
