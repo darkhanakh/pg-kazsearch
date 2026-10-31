@@ -494,4 +494,5 @@ Key things to know:
 
 - **Code:** [LGPL-3.0](LICENSE)
 - **Lexicon data** derived from [Apertium-kaz](https://github.com/apertium/apertium-kaz) (GPL-3.0).
+- **Snowball algorithm** in [`snowball/`](snowball/): BSD-3-Clause, for submission to [Snowball](https://snowballstem.org/). The word lists there are CC BY-SA 3.0 (from Kazakh Wikipedia).
 
