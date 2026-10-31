@@ -62,6 +62,25 @@ fn verb_track_undoes_stem_final_voicing_before_a_vowel_suffix() {
 }
 
 #[test]
+fn first_person_suffix_obeys_consonant_assimilation() {
+    // талабын is талап+ы+н. -бын after a vowel is impossible (it would be
+    // -мын), so the verb parse тала+бын must not be on offer.
+    let cfg = cfg_with_verbs(
+        &["себеп", "талап", "торап", "студент", "қазақ", "есеп", "кәсіп", "адам"],
+        &["сеп", "тала", "тор", "есе", "кәс"],
+    );
+    assert_eq!(stem("себебін", &cfg), "себеп");
+    assert_eq!(stem("талабын", &cfg), "талап");
+    assert_eq!(stem("торабын", &cfg), "торап");
+    assert_eq!(stem("есебін", &cfg), "есеп");
+    assert_eq!(stem("кәсібін", &cfg), "кәсіп");
+    // Well-formed first-person forms still strip.
+    assert_eq!(stem("студентпін", &cfg), "студент");
+    assert_eq!(stem("қазақпын", &cfg), "қазақ");
+    assert_eq!(stem("адаммын", &cfg), "адам");
+}
+
+#[test]
 fn lexicon_vowel_restore_never_extends_a_lexicon_entry() {
     // жыл "year" and жылы "warm" are both lexicon entries. Stripping
     // жылдары to жыл is already a lemma, so it must not be re-extended to
