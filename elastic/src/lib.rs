@@ -7,6 +7,7 @@ use jni::sys::{jint, jstring};
 use jni::EnvUnowned;
 use kazsearch_core::lexicon::Lexicon;
 pub use kazsearch_core::stem;
+pub use kazsearch_core::KeyboardMode;
 pub use kazsearch_core::ScriptMode;
 pub use kazsearch_core::StemConfig;
 
@@ -43,9 +44,18 @@ fn parse_script_mode(raw: &str) -> Result<ScriptMode, ()> {
     }
 }
 
-fn set_config(lexicon_path: Option<&str>, script_mode: ScriptMode) -> i32 {
+fn parse_keyboard_mode(raw: &str) -> Result<KeyboardMode, ()> {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "" | "exact" => Ok(KeyboardMode::Exact),
+        "restore" => Ok(KeyboardMode::Restore),
+        _ => Err(()),
+    }
+}
+
+fn set_config(lexicon_path: Option<&str>, script_mode: ScriptMode, keyboard: KeyboardMode) -> i32 {
     let mut cfg = StemConfig::default();
     cfg.script_mode = script_mode;
+    cfg.keyboard = keyboard;
 
     if let Some(path) = lexicon_path {
         cfg.lexicon = match load_lexicon(path) {
@@ -78,7 +88,7 @@ pub unsafe extern "C" fn kazsearch_init(lexicon_path: *const c_char) -> i32 {
     // contain any panic and surface it as an error code.
     std::panic::catch_unwind(|| {
         if lexicon_path.is_null() {
-            return set_config(None, ScriptMode::Auto);
+            return set_config(None, ScriptMode::Auto, KeyboardMode::Exact);
         }
 
         let cstr = unsafe { std::ffi::CStr::from_ptr(lexicon_path) };
@@ -87,7 +97,7 @@ pub unsafe extern "C" fn kazsearch_init(lexicon_path: *const c_char) -> i32 {
             Err(_) => return KAZSEARCH_ERR_UTF8,
         };
 
-        set_config(Some(path), ScriptMode::Auto)
+        set_config(Some(path), ScriptMode::Auto, KeyboardMode::Exact)
     })
     .unwrap_or(KAZSEARCH_ERR_PANIC)
 }
@@ -136,6 +146,7 @@ pub extern "system" fn Java_io_github_darkhanakh_kazsearch_KazakhStemmerNative_i
     _class: JClass<'_>,
     lexicon_path: JString<'_>,
     script_mode: JString<'_>,
+    keyboard: JString<'_>,
 ) -> jint {
     let outcome = unowned_env.with_env(|env| -> jni::errors::Result<jint> {
         let mode = if script_mode.is_null() {
@@ -147,12 +158,21 @@ pub extern "system" fn Java_io_github_darkhanakh_kazsearch_KazakhStemmerNative_i
                 Err(_) => return Ok(KAZSEARCH_ERR_CONFIG),
             }
         };
+        let keyboard = if keyboard.is_null() {
+            KeyboardMode::Exact
+        } else {
+            let raw = keyboard.try_to_string(env)?;
+            match parse_keyboard_mode(raw.as_str()) {
+                Ok(v) => v,
+                Err(_) => return Ok(KAZSEARCH_ERR_CONFIG),
+            }
+        };
 
         if lexicon_path.is_null() {
-            return Ok(set_config(None, mode));
+            return Ok(set_config(None, mode, keyboard));
         }
         let path = lexicon_path.try_to_string(env)?;
-        Ok(set_config(Some(path.as_str()), mode))
+        Ok(set_config(Some(path.as_str()), mode, keyboard))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

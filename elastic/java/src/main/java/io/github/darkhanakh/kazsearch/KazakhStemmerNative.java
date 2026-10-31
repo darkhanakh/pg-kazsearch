@@ -26,28 +26,33 @@ public final class KazakhStemmerNative {
     }
 
     /**
-     * Applies the lexicon path and script mode to the native stemmer config.
+     * Applies the lexicon path, script mode and keyboard mode to the native
+     * stemmer config.
      *
      * @param lexiconPath absolute path to a lexicon dict, or empty for none
      * @param scriptMode  "auto" or "cyrillic_only"
+     * @param keyboard    "exact" (today's stems, byte for byte) or "restore"
+     *                    (restore Kazakh letters typed on a Russian layout
+     *                    when the lexicon confirms the reading)
      * @param explicit    true when the values come from user-provided index
      *                    settings; explicit configs may replace previous ones,
      *                    the bundled default only applies when nothing has
      *                    been configured yet
      * @return native status code ({@link #OK} on success)
      */
-    static int configure(String lexiconPath, String scriptMode, boolean explicit) {
+    static int configure(String lexiconPath, String scriptMode, String keyboard, boolean explicit) {
         String lex = lexiconPath == null ? "" : lexiconPath;
         String mode = scriptMode == null || scriptMode.isEmpty() ? "auto" : scriptMode;
+        String kb = keyboard == null || keyboard.isEmpty() ? "exact" : keyboard;
         synchronized (CONFIG_LOCK) {
-            String key = lex + "\u0000" + mode;
+            String key = lex + "\u0000" + mode + "\u0000" + kb;
             if (key.equals(appliedConfigKey)) {
                 return OK;
             }
             if (!explicit && appliedConfigKey != null) {
                 return OK;
             }
-            int code = init0(lex, mode);
+            int code = init0(lex, mode, kb);
             if (code == OK) {
                 appliedConfigKey = key;
             }
@@ -63,7 +68,7 @@ public final class KazakhStemmerNative {
         return stemmed == null ? token : stemmed;
     }
 
-    private static native int init0(String lexiconPath, String scriptMode);
+    private static native int init0(String lexiconPath, String scriptMode, String keyboard);
 
     private static native String stem0(String token);
 }
