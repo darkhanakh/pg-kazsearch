@@ -8,6 +8,10 @@ corpus      := "data/corpus/articles.jsonl"
 auto_q      := "eval/auto_queries.jsonl"
 gold_q      := "eval/gold_queries.jsonl"
 gold_v2_q   := "eval/gold_queries_v2.jsonl"
+hybrid_dc   := "docker compose -f docker-compose.hybrid.yml"
+hybrid_ctr  := "pg-kazsearch-hybrid"
+hybrid_dsn  := "postgresql://postgres:postgres@localhost:55439/kazsearch"
+hybrid_py   := ".venv/bin/python"
 scrape_lim  := "3000"
 eval_max_q  := "0"
 opt_report  := "eval/results/optimized_weights.json"
@@ -170,6 +174,32 @@ apply-weights:
 
 # Full eval pipeline: scrape, load, generate queries, evaluate
 pipeline: scrape load-corpus gen-queries eval-search
+
+# ── Hybrid search (BM25 + dense + RRF) ───────────────────────────────────
+
+# Start PostgreSQL 18 with pg_kazsearch + pg_textsearch (BM25) + pgvector on port 55439
+hybrid-up:
+    {{ hybrid_dc }} up -d --build
+    @until docker exec {{ hybrid_ctr }} pg_isready -U {{ pg_user }} -d {{ pg_db }} -q 2>/dev/null; do sleep 1; done
+    @echo "Hybrid database ready on localhost:55439."
+
+# Stop the hybrid container (keeps the volume)
+hybrid-down:
+    {{ hybrid_dc }} down
+
+# Install eval dependencies into .venv (Python 3.12 recommended for torch wheels)
+hybrid-deps:
+    uv venv --python 3.12 .venv
+    uv pip install --python {{ hybrid_py }} sentence-transformers "psycopg[binary]" numpy
+
+# Run the hybrid benchmark and write eval/results/report_hybrid.json (extra args: --models bge_m3 kaz_embedder)
+hybrid-eval *args:
+    {{ hybrid_py }} eval/run_eval_hybrid.py --dsn "{{ hybrid_dsn }}" --corpus "{{ corpus }}" \
+        --gold "{{ gold_v2_q }}" {{ args }}
+
+# Interactive psql on the hybrid database
+hybrid-psql:
+    docker exec -it {{ hybrid_ctr }} psql -U {{ pg_user }} -d {{ pg_db }}
 
 # ── Release ──────────────────────────────────────────────────────────────
 

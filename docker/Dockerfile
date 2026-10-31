@@ -73,6 +73,29 @@ COPY --from=builder /usr/lib/postgresql/18/lib/pg_kazsearch* /usr/lib/postgresql
 COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stems.dict /usr/share/postgresql/18/tsearch_data/
 COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stopwords.stop /usr/share/postgresql/18/tsearch_data/
 
+# ── pg_textsearch (BM25) build ──────────────────────────────────────────
+FROM base AS textsearch
+
+ARG PG_TEXTSEARCH_REF=v1.5.1
+
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone --depth 1 --branch "${PG_TEXTSEARCH_REF}" https://github.com/timescale/pg_textsearch /tmp/pg_textsearch \
+    && make -C /tmp/pg_textsearch -j"$(nproc)" \
+    && make -C /tmp/pg_textsearch install
+
+# ── Hybrid search image: pg_kazsearch + pg_textsearch (BM25) + pgvector ─
+FROM postgres:18 AS hybrid
+
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-18-pgvector \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/share/postgresql/18/extension/pg_kazsearch* /usr/share/postgresql/18/extension/
+COPY --from=builder /usr/lib/postgresql/18/lib/pg_kazsearch* /usr/lib/postgresql/18/lib/
+COPY --from=builder /build/data/tsearch_data/kaz_stems.dict* /build/data/tsearch_data/kaz_stopwords.stop /usr/share/postgresql/18/tsearch_data/
+COPY --from=textsearch /usr/share/postgresql/18/extension/pg_textsearch* /usr/share/postgresql/18/extension/
+COPY --from=textsearch /usr/lib/postgresql/18/lib/pg_textsearch* /usr/lib/postgresql/18/lib/
+
 # ── Production image (slim, no toolchain) ───────────────────────────────
 FROM postgres:18 AS prod
 
