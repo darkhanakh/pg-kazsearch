@@ -69,6 +69,29 @@ fn natural_and_russian_tokens_unchanged() {
     }
 }
 
+/// Kazakh has no vowel hiatus at a stem-suffix boundary after a vowel-final
+/// base, so `бөле` + `е` is never a word. `более` once restored to `бөле`
+/// because the engine strips a bare `-е` from lexicon verb roots.
+#[test]
+fn russian_word_is_not_restored_through_vowel_hiatus() {
+    let exact = config(KeyboardMode::Exact);
+    let restore = config(KeyboardMode::Restore);
+    assert_eq!(stem("более", &restore), "более");
+    assert_eq!(stem("более", &restore), stem("более", &exact));
+}
+
+/// Controls for the hiatus rule: a glide-initial tail after a vowel-final
+/// anchor (-у) and consonant-initial tails after vowel-final anchors stay
+/// restorable.
+#[test]
+fn hiatus_rule_keeps_glide_boundaries_and_consonant_tails() {
+    let cfg = config(KeyboardMode::Restore);
+    assert_eq!(stem("коргауы", &cfg), "қорға");
+    assert_eq!(stem("коргауына", &cfg), "қорға");
+    assert_eq!(stem("республикасынын", &cfg), "республика");
+    assert_eq!(stem("ауылдагы", &cfg), "ауыл");
+}
+
 #[test]
 fn partial_fold_respects_typed_letters() {
     let cfg = config(KeyboardMode::Restore);

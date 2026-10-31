@@ -609,4 +609,24 @@ mod tests {
         assert_eq!(kinds("кітап"), vec!["кітап", "кітаб"]);
         assert_eq!(kinds("көк"), vec!["көк"]);
     }
+
+    fn candidate_texts(word: &str, entries: &[&str]) -> Vec<String> {
+        let entries: Vec<String> = entries.iter().map(|e| e.to_string()).collect();
+        let index = FoldIndex::build(entries.iter());
+        let mut out = Vec::new();
+        candidates(word, &index, &mut out);
+        out.into_iter().map(|c| c.text).collect()
+    }
+
+    #[test]
+    fn no_candidate_joins_a_vowel_final_anchor_to_a_vowel_initial_tail() {
+        assert!(candidate_texts("более", &["бөле"]).is_empty());
+        assert_eq!(candidate_texts("болен", &["бөле"]), vec!["бөлен"]);
+    }
+
+    #[test]
+    fn glides_are_not_vowels_for_the_hiatus_rule() {
+        assert_eq!(candidate_texts("коргауы", &["қорға"]), vec!["қорғауы"]);
+        assert_eq!(candidate_texts("карауы", &["қарау"]), vec!["қарауы"]);
+    }
 }
