@@ -54,6 +54,19 @@ pub fn final_sound(cp: char) -> FinalSound {
     }
 }
 
+/// Whether a suffix with a д/т alternation (-ты/-ті, -тай/-тей, -та/-те,
+/// -тық/-тік) takes its т allomorph after a base ending in `cp`. Voiceless
+/// finals do, and so do the voiced stops б в г д of loanwords and names
+/// (клуб-тық, сауд-тың, штаб-та). The other voiced obstruents ж з ғ, vowels,
+/// liquids and nasals take д. Unknown finals cannot be ruled out.
+pub fn takes_t_allomorph(cp: char) -> bool {
+    match final_sound(cp) {
+        FinalSound::Voiceless | FinalSound::Unknown => true,
+        FinalSound::Voiced => matches!(cp, 'б' | 'в' | 'г' | 'д'),
+        FinalSound::Vocalic | FinalSound::Liquid | FinalSound::Nasal => false,
+    }
+}
+
 pub fn utf8_last_cp(s: &str) -> Option<char> {
     s.chars().last()
 }

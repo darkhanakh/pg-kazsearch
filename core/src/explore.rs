@@ -128,8 +128,7 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
         return false;
     }
     if layer_id == LAYER_VTENSE && matches!(sfx, "ты" | "ті") {
-        return utf8_last_cp(base)
-            .map_or(false, |cp| matches!(final_sound(cp), FinalSound::Voiceless | FinalSound::Unknown));
+        return utf8_last_cp(base).map_or(false, takes_t_allomorph);
     }
     match layer_id {
         LAYER_CASE => {
@@ -191,12 +190,11 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
             if matches!(sfx, "лық" | "лік" | "дық" | "дік" | "тық" | "тік") {
                 return count_syllables(base) >= 2;
             }
-            // -тай/-тей ("like X") is the voiceless allomorph of -дай/-дей: after a
-            // vowel or voiced stem the same letters are part of a word or name
-            // (Қарақытай, жазатайым).
+            // -тай/-тей ("like X") is the т allomorph of -дай/-дей: after a
+            // vowel, liquid, nasal or ж/з/ғ stem the same letters are part of a
+            // word or name (Қарақытай, жазатайым).
             if matches!(sfx, "тай" | "тей") {
-                return utf8_last_cp(base)
-                    .map_or(false, |cp| matches!(final_sound(cp), FinalSound::Voiceless | FinalSound::Unknown));
+                return utf8_last_cp(base).map_or(false, takes_t_allomorph);
             }
             // Adjectival -лы/-лі ("having X"): only strip from bases that are
             // plausible standalone nominals, mirroring the -лық/-лік guard.
