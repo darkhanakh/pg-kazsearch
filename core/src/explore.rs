@@ -127,6 +127,10 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
     if matches!(layer_id, LAYER_VTENSE | LAYER_VNEG) && !negation_allomorph_ok(sfx, base) {
         return false;
     }
+    if layer_id == LAYER_VTENSE && matches!(sfx, "ты" | "ті") {
+        return utf8_last_cp(base)
+            .map_or(false, |cp| matches!(final_sound(cp), FinalSound::Voiceless | FinalSound::Unknown));
+    }
     match layer_id {
         LAYER_CASE => {
             if sfx == "н" {

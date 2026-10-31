@@ -69,7 +69,7 @@ fn past_tense_ty_ti_requires_voiceless_final() {
     // (past) needs -ті after a vowel, which Kazakh never allows.
     let cfg = cfg_with(&["үкімет", "үкі"]);
     assert_eq!(stem("үкіметі", &cfg), "үкімет");
-    assert_eq!(stem("үкіметін", &cfg), "үкімет");
+    assert_eq!(stem("үкіметінің", &cfg), "үкімет");
 }
 
 #[test]
