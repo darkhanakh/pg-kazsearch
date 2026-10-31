@@ -5,7 +5,7 @@ pub mod explore;
 pub mod script;
 
 use explore::ExploreResult;
-use rules::{LAYER_VVOICE, NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
+use rules::{is_nominal_suffix_chain, LAYER_VPERSON, LAYER_VVOICE, NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
 use script::{LatinAnalysis, ScriptClass};
 use text::{count_syllables, fill_prefix_tables, utf8_char_count, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
@@ -102,10 +102,12 @@ fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> O
 /// only when the result is a lexicon entry.
 ///
 /// A lexeme that is already a lexicon entry is a complete lemma, so негіз-і-нде
-/// and ел-ім-із stay put. The one exception is the reflexive -ын/-ін peeled
-/// off a non-verb (жыл-ын-ады): a vowel-final stem takes plain -н there, so
-/// the BFS parse is жылы + -н. A verb root stays (ұр-ын-ып, not ұры).
-fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, best: &explore::Candidate) -> String {
+/// and ел-ім-із stay put. Two verbal readings are overturned. The reflexive
+/// -ын/-ін peeled off a non-verb (жыл-ын-ады) is really a vowel-final stem
+/// with plain -н, so it becomes жылы. A verb root cut by a verbal suffix
+/// (бер-іл-ді) stays unless the rest of the word is a noun inflection chain,
+/// which marks the verbal parse as spurious (жел-іс-ін is желі-сі-н).
+fn restore_lexicon_vowel(word: &str, lexeme: &str, lexicon: &Lexicon, best: &explore::Candidate) -> String {
     if best.steps < 2 || lexeme.is_empty() || lexeme.len() >= MAX_STEM_BYTES {
         return lexeme.to_string();
     }
@@ -121,20 +123,27 @@ fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, best: &explore::Candid
         return lexeme.to_string();
     };
 
+    let mut vowel = [0u8; 4];
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    let Some(trial) = concat_on_stack(lexeme, first.encode_utf8(&mut vowel), &mut buf) else {
+        return lexeme.to_string();
+    };
+    if !lexicon.contains(trial) {
+        return lexeme.to_string();
+    }
+
     if lexicon.contains(lexeme) {
-        let reflexive = best.last_layer == LAYER_VVOICE && matches!(suffix, "ын" | "ін");
         let verb_root = lexicon.has_verb_set() && lexicon.is_verb_root(lexeme);
-        if !reflexive || verb_root {
+        let reflexive = best.last_layer == LAYER_VVOICE && matches!(suffix, "ын" | "ін");
+        let spurious_verbal =
+            best.last_layer >= LAYER_VPERSON && is_nominal_suffix_chain(word.get(trial.len()..).unwrap_or(""));
+        let restore = if verb_root { spurious_verbal } else { reflexive };
+        if !restore {
             return lexeme.to_string();
         }
     }
 
-    let mut vowel = [0u8; 4];
-    let mut buf = [0u8; MAX_STEM_BYTES];
-    match concat_on_stack(lexeme, first.encode_utf8(&mut vowel), &mut buf) {
-        Some(trial) if lexicon.contains(trial) => trial.to_string(),
-        _ => lexeme.to_string(),
-    }
+    trial.to_string()
 }
 
 // main function to stem a word, entrypoint for the library
@@ -379,7 +388,7 @@ fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     }
 
     if let Some(ref lex) = cfg.lexicon {
-        lexeme = restore_lexicon_vowel(&lexeme, lex, &best);
+        lexeme = restore_lexicon_vowel(&txt, &lexeme, lex, &best);
     }
 
     StemOutcome { stem: lexeme, best }
