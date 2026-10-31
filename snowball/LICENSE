@@ -10,12 +10,10 @@ the Apertium kaz lexicon or any other GPL source; the suffix tables are
 written from the standard grammar of Kazakh, and the design choices were
 made from retrieval measurements described in stemmer.tt.
 
-They are intended to be licensed under the 3-clause BSD licence that
-Snowball uses, reproduced below.  The repository owner must confirm this
-before the files are submitted upstream; until then they are covered by the
-licence of the repository as a whole.
+They are licensed under the 3-clause BSD licence that Snowball uses,
+reproduced below, rather than the licence of the rest of this repository.
 
-    Copyright (c) 2026, the pg_kazsearch authors
+    Copyright (c) 2026, Darkhan Akhmetov
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
