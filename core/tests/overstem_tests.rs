@@ -64,6 +64,24 @@ fn well_formed_negative_and_intentive_verbs_still_strip() {
 }
 
 #[test]
+fn past_tense_ty_ti_requires_voiceless_final() {
+    // үкіметі is үкімет + possessive. The verb parse -ме (negation) + -ті
+    // (past) needs -ті after a vowel, which Kazakh never allows.
+    let cfg = cfg_with(&["үкімет", "үкі"]);
+    assert_eq!(stem("үкіметі", &cfg), "үкімет");
+    assert_eq!(stem("үкіметін", &cfg), "үкімет");
+}
+
+#[test]
+fn well_formed_past_tense_after_voiceless_still_strips() {
+    let cfg = cfg_no_lexicon();
+    assert_eq!(stem("кетті", &cfg), "кет");
+    assert_eq!(stem("қашты", &cfg), "қаш");
+    assert_eq!(stem("тоқтатты", &cfg), "тоқтат");
+    assert_eq!(stem("көрсетті", &cfg), "көрсет");
+}
+
+#[test]
 fn patronymic_suffix_is_not_a_possessive() {
     let cfg = cfg_no_lexicon();
     assert_eq!(stem("төлегенұлы", &cfg), "төлегенұлы");
