@@ -47,6 +47,17 @@ DATASET_REPO = "https://github.com/IS2AI/KazQAD"
 DATASET_COMMIT = "ab8684a667109f2a7345f4f89ab3b123e8d78e1f"
 RAW_BASE = f"https://raw.githubusercontent.com/IS2AI/KazQAD/{DATASET_COMMIT}/data/information-retrieval"
 CORPUS_FILES = [f"corpus/kazqad-corpus-v1.0-kk-part-{i}.jsonl.gz" for i in (1, 2, 3)]
+DATASET_SHA256 = {
+    "corpus/kazqad-corpus-v1.0-kk-part-1.jsonl.gz": "22e176f9b66c238144d73c3f35a30b62b2a310891faf17039d736fb2973f286b",
+    "corpus/kazqad-corpus-v1.0-kk-part-2.jsonl.gz": "fd8f8014670f65a902424f1cf9ba679ef76a2aa24e5746467c83254a5e7b73e8",
+    "corpus/kazqad-corpus-v1.0-kk-part-3.jsonl.gz": "d6289d96abd7e0643fd7385460c03e531eeb8e4accb4893d9f80bab2752349bf",
+    "topics/kazqad-topics-v1.0-kk-test.tsv": "30b48eb772346207274211d1bee5cebdc12d355a938e962552bd162bfac55d5e",
+    "topics/kazqad-topics-v1.0-kk-validation.tsv": "87d17c8c69ab0c936d477527c7562488e8434d4eacb8438d982b48b162bb3eb0",
+    "topics/kazqad-topics-v1.0-kk-train.tsv": "bb5534905423c4ac0091688bf7f6171e421e68473951de311142a7d5992cf2ac",
+    "qrels/kazqad-qrels-v1.0-test.tsv": "0b930a55ffc600c7c694e51c71db53ea7f3890fd828e253cd659899ca9a9902b",
+    "qrels/kazqad-qrels-v1.0-validation.tsv": "502465bea5b0fb9926cf33c9dcdf78d74e8b0dc8ed3277830d121f3a23af92d0",
+    "qrels/kazqad-qrels-v1.0-train.tsv": "13edbbf35b66c524a196ffda655fc40c004da40c736f5e898f4d30f87b8b6a4c",
+}
 SPLITS = ("test", "validation")
 ALL_SPLITS = ("test", "validation", "train")
 
@@ -133,20 +144,38 @@ def run(cmd, **kw):
 
 
 def fetch_dataset():
-    """Download the pinned KazQAD files into the cache; return {relpath: sha256}."""
+    """Download the pinned KazQAD files into the cache and verify each against DATASET_SHA256.
+
+    Exits non-zero on the first file whose SHA-256 differs. A bad download is
+    deleted and never enters the cache. A bad cached file is left in place for
+    inspection.
+    """
     wanted = list(CORPUS_FILES)
     wanted += [f"topics/kazqad-topics-v1.0-kk-{s}.tsv" for s in ALL_SPLITS]
     wanted += [f"qrels/kazqad-qrels-v1.0-{s}.tsv" for s in ALL_SPLITS]
-    shas = {}
+    assert sorted(wanted) == sorted(DATASET_SHA256), "DATASET_SHA256 does not cover the files fetched"
     for rel in wanted:
         path = CACHE / rel
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             print(f"  downloading {rel}", flush=True)
-            run(["curl", "-sfL", "--retry", "3", "-o", str(path) + ".part", f"{RAW_BASE}/{rel}"])
-            os.replace(str(path) + ".part", path)
-        shas[rel] = sha256(path)
-    return shas
+            part = Path(str(path) + ".part")
+            run(["curl", "-sfL", "--retry", "3", "-o", str(part), f"{RAW_BASE}/{rel}"])
+            verify_sha256(part, rel, f"downloaded from {RAW_BASE}/{rel}", delete_on_mismatch=True)
+            os.replace(part, path)
+        else:
+            verify_sha256(path, rel, f"cached at {path}; delete it to download again", delete_on_mismatch=False)
+    return dict(DATASET_SHA256)
+
+
+def verify_sha256(path, rel, where, delete_on_mismatch):
+    expected = DATASET_SHA256[rel]
+    actual = sha256(path)
+    if actual == expected:
+        return
+    if delete_on_mismatch:
+        os.unlink(path)
+    sys.exit(f"SHA-256 mismatch for {rel} ({where})\n  expected {expected}\n  actual   {actual}")
 
 
 def ensure_snowball_compiler():
