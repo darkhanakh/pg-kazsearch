@@ -1,0 +1,904 @@
+{
+  "benchmark": {
+    "repo": "https://github.com/Tim2190/Kaz-RAG-search-benchmark",
+    "commit": "08bc105c093be16c714b6ba3c363beb54ac0ad16",
+    "retrieval": "BM25 k1=1.5 b=0.75 (benchmark src/retrieval/bm25.py), top_k=10",
+    "tokenizer": "benchmark src/preprocess/tokenize.py"
+  },
+  "pg_kazsearch": {
+    "commit": "428466e2ac23d88991050311d25b5582e58bf9fc",
+    "lexicon": "data/tsearch_data/kaz_stems.dict",
+    "lexicon_sha256": "19997c75d74c394fbc5708504eb77720ebf616e609a0c077957f50e02f3cf13a"
+  },
+  "bootstrap": {
+    "resamples": 10000,
+    "seed": 13,
+    "metric": "ndcg@10",
+    "ci": "percentile 95% of paired per-query deltas",
+    "p_value": "benchmark's paired_bootstrap (one-sided sign-flip share)"
+  },
+  "reproduction": {
+    "identity": {
+      "published_ndcg10": {
+        "overall": 0.690347946861989,
+        "inflected": 0.6265950177257094,
+        "natural": 0.7034070006312786,
+        "vocabulary-gap": 0.7410418222289802
+      },
+      "max_abs_gap": 4.440892098500626e-16,
+      "reproduced": true
+    },
+    "their": {
+      "published_ndcg10": {
+        "overall": 0.7543195148397789,
+        "inflected": 0.7272693924298421,
+        "natural": 0.7716051872456526,
+        "vocabulary-gap": 0.7640839648438426
+      },
+      "max_abs_gap": 5.551115123125783e-16,
+      "reproduced": true
+    },
+    "akorda_identity": {
+      "published_ndcg10": 0.4843716280318237,
+      "max_abs_gap": 6.106226635438361e-16,
+      "reproduced": true
+    },
+    "akorda_their_reference": {
+      "published_full_cache_ndcg10": 0.516648043497184,
+      "ours_partial_cache_ndcg10": 0.4980939261949,
+      "note": "committed stem cache covers 78.03% of the akorda vocabulary; uncached tokens fall back to identity, as in the benchmark's own cache-only mode, so this run is not the published full-cache run"
+    }
+  },
+  "datasets": {
+    "wiki": {
+      "n_passages": 8370,
+      "n_queries": 300,
+      "vocab_size": 102440,
+      "their_cache_vocab_coverage_pct": 100.0,
+      "metrics": {
+        "identity": {
+          "overall": {
+            "recall@1": 0.54,
+            "recall@5": 0.79,
+            "recall@10": 0.83,
+            "mrr@10": 0.6447910052910053,
+            "ndcg@10": 0.6903479468619894,
+            "n": 300
+          },
+          "by_category": {
+            "inflected": {
+              "recall@1": 0.49,
+              "recall@5": 0.71,
+              "recall@10": 0.76,
+              "mrr@10": 0.5838611111111112,
+              "ndcg@10": 0.6265950177257094,
+              "n": 100
+            },
+            "natural": {
+              "recall@1": 0.53,
+              "recall@5": 0.82,
+              "recall@10": 0.87,
+              "mrr@10": 0.6492619047619047,
+              "ndcg@10": 0.7034070006312786,
+              "n": 100
+            },
+            "vocabulary-gap": {
+              "recall@1": 0.6,
+              "recall@5": 0.84,
+              "recall@10": 0.86,
+              "mrr@10": 0.70125,
+              "ndcg@10": 0.7410418222289803,
+              "n": 100
+            }
+          }
+        },
+        "their": {
+          "overall": {
+            "recall@1": 0.6033333333333334,
+            "recall@5": 0.8466666666666667,
+            "recall@10": 0.8933333333333333,
+            "mrr@10": 0.70919708994709,
+            "ndcg@10": 0.7543195148397794,
+            "n": 300
+          },
+          "by_category": {
+            "inflected": {
+              "recall@1": 0.59,
+              "recall@5": 0.82,
+              "recall@10": 0.84,
+              "mrr@10": 0.6895952380952381,
+              "ndcg@10": 0.7272693924298425,
+              "n": 100
+            },
+            "natural": {
+              "recall@1": 0.61,
+              "recall@5": 0.88,
+              "recall@10": 0.92,
+              "mrr@10": 0.7231944444444445,
+              "ndcg@10": 0.771605187245653,
+              "n": 100
+            },
+            "vocabulary-gap": {
+              "recall@1": 0.61,
+              "recall@5": 0.84,
+              "recall@10": 0.92,
+              "mrr@10": 0.7148015873015874,
+              "ndcg@10": 0.7640839648438429,
+              "n": 100
+            }
+          }
+        },
+        "pg_kazsearch": {
+          "overall": {
+            "recall@1": 0.62,
+            "recall@5": 0.8566666666666667,
+            "recall@10": 0.9033333333333333,
+            "mrr@10": 0.7227301587301587,
+            "ndcg@10": 0.7670246506569917,
+            "n": 300
+          },
+          "by_category": {
+            "inflected": {
+              "recall@1": 0.64,
+              "recall@5": 0.86,
+              "recall@10": 0.9,
+              "mrr@10": 0.7319722222222222,
+              "ndcg@10": 0.7729747719400301,
+              "n": 100
+            },
+            "natural": {
+              "recall@1": 0.59,
+              "recall@5": 0.86,
+              "recall@10": 0.9,
+              "mrr@10": 0.7020833333333333,
+              "ndcg@10": 0.7507704903215611,
+              "n": 100
+            },
+            "vocabulary-gap": {
+              "recall@1": 0.63,
+              "recall@5": 0.85,
+              "recall@10": 0.91,
+              "mrr@10": 0.7341349206349206,
+              "ndcg@10": 0.7773286897093838,
+              "n": 100
+            }
+          }
+        }
+      },
+      "bootstrap": {
+        "pg_kazsearch_vs_identity": {
+          "overall": {
+            "delta_ndcg10": 0.07667670379500229,
+            "ci95": [
+              0.04044890036448889,
+              0.11261816298829842
+            ],
+            "p_value": 0.0,
+            "wins": 79,
+            "losses": 41,
+            "ties": 180,
+            "n": 300
+          },
+          "inflected": {
+            "delta_ndcg10": 0.14637975421432073,
+            "ci95": [
+              0.07701512415313139,
+              0.21842483413669722
+            ],
+            "p_value": 0.0001,
+            "wins": 38,
+            "losses": 12,
+            "ties": 50,
+            "n": 100
+          },
+          "natural": {
+            "delta_ndcg10": 0.047363489690282624,
+            "ci95": [
+              -0.006620901853487397,
+              0.10457856285955403
+            ],
+            "p_value": 0.0443,
+            "wins": 20,
+            "losses": 13,
+            "ties": 67,
+            "n": 100
+          },
+          "vocabulary-gap": {
+            "delta_ndcg10": 0.03628686748040351,
+            "ci95": [
+              -0.0232784199491096,
+              0.09445863978438986
+            ],
+            "p_value": 0.1146,
+            "wins": 21,
+            "losses": 16,
+            "ties": 63,
+            "n": 100
+          }
+        },
+        "pg_kazsearch_vs_their": {
+          "overall": {
+            "delta_ndcg10": 0.012705135817212294,
+            "ci95": [
+              -0.010886441586592695,
+              0.036183192416743885
+            ],
+            "p_value": 0.1498,
+            "wins": 37,
+            "losses": 33,
+            "ties": 230,
+            "n": 300
+          },
+          "inflected": {
+            "delta_ndcg10": 0.0457053795101877,
+            "ci95": [
+              -0.005164512125578646,
+              0.09851901599661499
+            ],
+            "p_value": 0.0417,
+            "wins": 16,
+            "losses": 10,
+            "ties": 74,
+            "n": 100
+          },
+          "natural": {
+            "delta_ndcg10": -0.020834696924091727,
+            "ci95": [
+              -0.06086036074733264,
+              0.019451114391951407
+            ],
+            "p_value": 0.1539,
+            "wins": 8,
+            "losses": 13,
+            "ties": 79,
+            "n": 100
+          },
+          "vocabulary-gap": {
+            "delta_ndcg10": 0.013244724865540902,
+            "ci95": [
+              -0.011228595667006687,
+              0.039556577044864094
+            ],
+            "p_value": 0.1465,
+            "wins": 13,
+            "losses": 10,
+            "ties": 77,
+            "n": 100
+          }
+        },
+        "their_vs_identity": {
+          "overall": {
+            "delta_ndcg10": 0.06397156797778998,
+            "ci95": [
+              0.029793285972593453,
+              0.09872164202459445
+            ],
+            "p_value": 0.0001,
+            "wins": 71,
+            "losses": 41,
+            "ties": 188,
+            "n": 300
+          },
+          "inflected": {
+            "delta_ndcg10": 0.10067437470413301,
+            "ci95": [
+              0.03464128717819931,
+              0.17075586264701137
+            ],
+            "p_value": 0.0017,
+            "wins": 29,
+            "losses": 12,
+            "ties": 59,
+            "n": 100
+          },
+          "natural": {
+            "delta_ndcg10": 0.06819818661437435,
+            "ci95": [
+              0.014246634359328634,
+              0.12448910354039971
+            ],
+            "p_value": 0.0063,
+            "wins": 23,
+            "losses": 13,
+            "ties": 64,
+            "n": 100
+          },
+          "vocabulary-gap": {
+            "delta_ndcg10": 0.02304214261486261,
+            "ci95": [
+              -0.03345250592135042,
+              0.07781393137174858
+            ],
+            "p_value": 0.2092,
+            "wins": 19,
+            "losses": 16,
+            "ties": 65,
+            "n": 100
+          }
+        }
+      },
+      "stemmer_disagreement": {
+        "vocab_size": 102440,
+        "stems_differ": 29760,
+        "stems_differ_pct": 29.05,
+        "query_token_examples": [
+          {
+            "token": "қайсы",
+            "their": "қайыс",
+            "pg_kazsearch": "қайсы",
+            "queries": 60
+          },
+          {
+            "token": "жылдары",
+            "their": "жыл",
+            "pg_kazsearch": "жылы",
+            "queries": 11
+          },
+          {
+            "token": "туралы",
+            "their": "турал",
+            "pg_kazsearch": "тура",
+            "queries": 7
+          },
+          {
+            "token": "атауы",
+            "their": "атау",
+            "pg_kazsearch": "ата",
+            "queries": 5
+          },
+          {
+            "token": "туған",
+            "their": "ту",
+            "pg_kazsearch": "туған",
+            "queries": 5
+          },
+          {
+            "token": "атағын",
+            "their": "атағ",
+            "pg_kazsearch": "ата",
+            "queries": 4
+          },
+          {
+            "token": "шыға",
+            "their": "шыға",
+            "pg_kazsearch": "шы",
+            "queries": 4
+          },
+          {
+            "token": "ғылымдарының",
+            "their": "ғылымдары",
+            "pg_kazsearch": "ғылым",
+            "queries": 4
+          },
+          {
+            "token": "құрылды",
+            "their": "құрыл",
+            "pg_kazsearch": "құры",
+            "queries": 4
+          },
+          {
+            "token": "автономиялық",
+            "their": "автономиялық",
+            "pg_kazsearch": "автономия",
+            "queries": 3
+          },
+          {
+            "token": "байланысты",
+            "their": "байланыс",
+            "pg_kazsearch": "байлан",
+            "queries": 3
+          },
+          {
+            "token": "дейін",
+            "their": "дей",
+            "pg_kazsearch": "дейін",
+            "queries": 3
+          },
+          {
+            "token": "жылға",
+            "their": "жыл",
+            "pg_kazsearch": "жылға",
+            "queries": 3
+          },
+          {
+            "token": "кіші",
+            "their": "кіш",
+            "pg_kazsearch": "кіші",
+            "queries": 3
+          },
+          {
+            "token": "орны",
+            "their": "ор",
+            "pg_kazsearch": "орын",
+            "queries": 3
+          },
+          {
+            "token": "шағын",
+            "their": "шақ",
+            "pg_kazsearch": "шағын",
+            "queries": 3
+          },
+          {
+            "token": "қабылданды",
+            "their": "қабыл",
+            "pg_kazsearch": "қабылдан",
+            "queries": 3
+          },
+          {
+            "token": "алмайтын",
+            "their": "алмайтын",
+            "pg_kazsearch": "алма",
+            "queries": 2
+          },
+          {
+            "token": "алматы",
+            "their": "алма",
+            "pg_kazsearch": "алматы",
+            "queries": 2
+          },
+          {
+            "token": "аралдары",
+            "their": "аралдары",
+            "pg_kazsearch": "ара",
+            "queries": 2
+          },
+          {
+            "token": "аралының",
+            "their": "арал",
+            "pg_kazsearch": "ара",
+            "queries": 2
+          },
+          {
+            "token": "астаналы",
+            "their": "астаналы",
+            "pg_kazsearch": "астана",
+            "queries": 2
+          },
+          {
+            "token": "аты",
+            "their": "ат",
+            "pg_kazsearch": "аты",
+            "queries": 2
+          },
+          {
+            "token": "бойындағы",
+            "their": "бой",
+            "pg_kazsearch": "бойы",
+            "queries": 2
+          },
+          {
+            "token": "бойынша",
+            "their": "бойынша",
+            "pg_kazsearch": "бой",
+            "queries": 2
+          }
+        ]
+      }
+    },
+    "akorda": {
+      "n_passages": 471,
+      "n_queries": 244,
+      "vocab_size": 10642,
+      "their_cache_vocab_coverage_pct": 78.03,
+      "metrics": {
+        "identity": {
+          "overall": {
+            "recall@1": 0.3729508196721312,
+            "recall@5": 0.5245901639344263,
+            "recall@10": 0.6229508196721312,
+            "mrr@10": 0.44208951340098884,
+            "ndcg@10": 0.4843716280318243,
+            "n": 244
+          },
+          "by_category": {
+            "factoid": {
+              "recall@1": 0.8271604938271605,
+              "recall@5": 0.9382716049382716,
+              "recall@10": 0.9506172839506173,
+              "mrr@10": 0.8840877914951989,
+              "ndcg@10": 0.9009802194790999,
+              "n": 81
+            },
+            "low_overlap": {
+              "recall@1": 0.14634146341463414,
+              "recall@5": 0.34146341463414637,
+              "recall@10": 0.43902439024390244,
+              "mrr@10": 0.2270276809910956,
+              "ndcg@10": 0.2769596360963583,
+              "n": 82
+            },
+            "paraphrase": {
+              "recall@1": 0.14814814814814814,
+              "recall@5": 0.2962962962962963,
+              "recall@10": 0.48148148148148145,
+              "mrr@10": 0.21780815206741136,
+              "ndcg@10": 0.2777356703957612,
+              "n": 81
+            }
+          }
+        },
+        "their": {
+          "overall": {
+            "recall@1": 0.4016393442622951,
+            "recall@5": 0.5368852459016393,
+            "recall@10": 0.6065573770491803,
+            "mrr@10": 0.4642157819411918,
+            "ndcg@10": 0.4980939261949,
+            "n": 244
+          },
+          "by_category": {
+            "factoid": {
+              "recall@1": 0.8148148148148148,
+              "recall@5": 0.9629629629629629,
+              "recall@10": 0.9876543209876543,
+              "mrr@10": 0.8782039976484421,
+              "ndcg@10": 0.9051050914629702,
+              "n": 81
+            },
+            "low_overlap": {
+              "recall@1": 0.21951219512195122,
+              "recall@5": 0.35365853658536583,
+              "recall@10": 0.4024390243902439,
+              "mrr@10": 0.28282520325203253,
+              "ndcg@10": 0.31188171131194004,
+              "n": 82
+            },
+            "paraphrase": {
+              "recall@1": 0.1728395061728395,
+              "recall@5": 0.2962962962962963,
+              "recall@10": 0.43209876543209874,
+              "mrr@10": 0.2338575347834607,
+              "ndcg@10": 0.2795938920429127,
+              "n": 81
+            }
+          }
+        },
+        "pg_kazsearch": {
+          "overall": {
+            "recall@1": 0.4098360655737705,
+            "recall@5": 0.5614754098360656,
+            "recall@10": 0.6352459016393442,
+            "mrr@10": 0.48053441321883944,
+            "ndcg@10": 0.5175209696979102,
+            "n": 244
+          },
+          "by_category": {
+            "factoid": {
+              "recall@1": 0.8271604938271605,
+              "recall@5": 0.9506172839506173,
+              "recall@10": 0.9876543209876543,
+              "mrr@10": 0.8836713697824808,
+              "ndcg@10": 0.9090007800126905,
+              "n": 81
+            },
+            "low_overlap": {
+              "recall@1": 0.1951219512195122,
+              "recall@5": 0.4024390243902439,
+              "recall@10": 0.4634146341463415,
+              "mrr@10": 0.2892421602787456,
+              "ndcg@10": 0.33186971852309977,
+              "n": 82
+            },
+            "paraphrase": {
+              "recall@1": 0.20987654320987653,
+              "recall@5": 0.3333333333333333,
+              "recall@10": 0.4567901234567901,
+              "mrr@10": 0.2710513423476386,
+              "ndcg@10": 0.31398440131318467,
+              "n": 81
+            }
+          }
+        }
+      },
+      "bootstrap": {
+        "pg_kazsearch_vs_identity": {
+          "overall": {
+            "delta_ndcg10": 0.033149341666085796,
+            "ci95": [
+              -0.0009661043157654415,
+              0.06811332394271334
+            ],
+            "p_value": 0.0291,
+            "wins": 45,
+            "losses": 40,
+            "ties": 159,
+            "n": 244
+          },
+          "factoid": {
+            "delta_ndcg10": 0.008020560533590466,
+            "ci95": [
+              -0.021724803986161775,
+              0.039933021371496645
+            ],
+            "p_value": 0.2991,
+            "wins": 5,
+            "losses": 5,
+            "ties": 71,
+            "n": 81
+          },
+          "low_overlap": {
+            "delta_ndcg10": 0.05491008242674147,
+            "ci95": [
+              -0.00809271268075405,
+              0.12070533490314121
+            ],
+            "p_value": 0.0455,
+            "wins": 21,
+            "losses": 17,
+            "ties": 44,
+            "n": 82
+          },
+          "paraphrase": {
+            "delta_ndcg10": 0.03624873091742353,
+            "ci95": [
+              -0.03772554652889929,
+              0.11000383916098745
+            ],
+            "p_value": 0.1738,
+            "wins": 19,
+            "losses": 18,
+            "ties": 44,
+            "n": 81
+          }
+        },
+        "pg_kazsearch_vs_their": {
+          "overall": {
+            "delta_ndcg10": 0.0194270435030101,
+            "ci95": [
+              -0.00266977529930274,
+              0.042190756801301695
+            ],
+            "p_value": 0.0418,
+            "wins": 33,
+            "losses": 24,
+            "ties": 187,
+            "n": 244
+          },
+          "factoid": {
+            "delta_ndcg10": 0.0038956885497201748,
+            "ci95": [
+              -0.01241440427182648,
+              0.02116569726631179
+            ],
+            "p_value": 0.3253,
+            "wins": 5,
+            "losses": 4,
+            "ties": 72,
+            "n": 81
+          },
+          "low_overlap": {
+            "delta_ndcg10": 0.019988007211159755,
+            "ci95": [
+              -0.02012041778318934,
+              0.059680563569618594
+            ],
+            "p_value": 0.152,
+            "wins": 14,
+            "losses": 7,
+            "ties": 61,
+            "n": 82
+          },
+          "paraphrase": {
+            "delta_ndcg10": 0.03439050927027199,
+            "ci95": [
+              -0.013775657147499617,
+              0.08618546780087015
+            ],
+            "p_value": 0.088,
+            "wins": 14,
+            "losses": 13,
+            "ties": 54,
+            "n": 81
+          }
+        },
+        "their_vs_identity": {
+          "overall": {
+            "delta_ndcg10": 0.013722298163075693,
+            "ci95": [
+              -0.017078868396406093,
+              0.04502389266524599
+            ],
+            "p_value": 0.1957,
+            "wins": 34,
+            "losses": 34,
+            "ties": 176,
+            "n": 244
+          },
+          "factoid": {
+            "delta_ndcg10": 0.004124871983870291,
+            "ci95": [
+              -0.018482324918222576,
+              0.03060036155502045
+            ],
+            "p_value": 0.3772,
+            "wins": 4,
+            "losses": 4,
+            "ties": 73,
+            "n": 81
+          },
+          "low_overlap": {
+            "delta_ndcg10": 0.03492207521558171,
+            "ci95": [
+              -0.03477945297020204,
+              0.1072463584488824
+            ],
+            "p_value": 0.1728,
+            "wins": 14,
+            "losses": 16,
+            "ties": 52,
+            "n": 82
+          },
+          "paraphrase": {
+            "delta_ndcg10": 0.001858221647151545,
+            "ci95": [
+              -0.05365914890888365,
+              0.05620312080179363
+            ],
+            "p_value": 0.4668,
+            "wins": 16,
+            "losses": 14,
+            "ties": 51,
+            "n": 81
+          }
+        }
+      },
+      "stemmer_disagreement": {
+        "vocab_size": 10642,
+        "stems_differ": 4509,
+        "stems_differ_pct": 42.37,
+        "query_token_examples": [
+          {
+            "token": "еліміздің",
+            "their": "ел",
+            "pg_kazsearch": "еле",
+            "queries": 9
+          },
+          {
+            "token": "қатысты",
+            "their": "қатыс",
+            "pg_kazsearch": "қатысты",
+            "queries": 9
+          },
+          {
+            "token": "басты",
+            "their": "бас",
+            "pg_kazsearch": "басты",
+            "queries": 8
+          },
+          {
+            "token": "елімізде",
+            "their": "ел",
+            "pg_kazsearch": "еле",
+            "queries": 8
+          },
+          {
+            "token": "және",
+            "their": "және",
+            "pg_kazsearch": "жә",
+            "queries": 8
+          },
+          {
+            "token": "маңызды",
+            "their": "маңыз",
+            "pg_kazsearch": "маңызды",
+            "queries": 5
+          },
+          {
+            "token": "туралы",
+            "their": "турал",
+            "pg_kazsearch": "тура",
+            "queries": 5
+          },
+          {
+            "token": "экологиялық",
+            "their": "экологиялық",
+            "pg_kazsearch": "экология",
+            "queries": 5
+          },
+          {
+            "token": "қосылды",
+            "their": "қосыл",
+            "pg_kazsearch": "қоса",
+            "queries": 5
+          },
+          {
+            "token": "ұсынылды",
+            "their": "ұсыныл",
+            "pg_kazsearch": "ұсын",
+            "queries": 5
+          },
+          {
+            "token": "бекітілді",
+            "their": "бекітілді",
+            "pg_kazsearch": "бекіт",
+            "queries": 4
+          },
+          {
+            "token": "бойынша",
+            "their": "бойынша",
+            "pg_kazsearch": "бой",
+            "queries": 4
+          },
+          {
+            "token": "дейін",
+            "their": "дей",
+            "pg_kazsearch": "дейін",
+            "queries": 4
+          },
+          {
+            "token": "жасанды",
+            "their": "жасан",
+            "pg_kazsearch": "жасанды",
+            "queries": 4
+          },
+          {
+            "token": "жаһандық",
+            "their": "жаһандық",
+            "pg_kazsearch": "жаһан",
+            "queries": 4
+          },
+          {
+            "token": "сақтау",
+            "their": "сақтау",
+            "pg_kazsearch": "сақта",
+            "queries": 4
+          },
+          {
+            "token": "түркі",
+            "their": "түрк",
+            "pg_kazsearch": "түркі",
+            "queries": 4
+          },
+          {
+            "token": "қаржы",
+            "their": "қарж",
+            "pg_kazsearch": "қаржы",
+            "queries": 4
+          },
+          {
+            "token": "асты",
+            "their": "ас",
+            "pg_kazsearch": "асты",
+            "queries": 3
+          },
+          {
+            "token": "ашу",
+            "their": "ашы",
+            "pg_kazsearch": "ашу",
+            "queries": 3
+          },
+          {
+            "token": "ақпараттық",
+            "their": "ақпараттық",
+            "pg_kazsearch": "ақпарат",
+            "queries": 3
+          },
+          {
+            "token": "байланысты",
+            "their": "байланыс",
+            "pg_kazsearch": "байлан",
+            "queries": 3
+          },
+          {
+            "token": "барысында",
+            "their": "бар",
+            "pg_kazsearch": "барысында",
+            "queries": 3
+          },
+          {
+            "token": "басқару",
+            "their": "басқару",
+            "pg_kazsearch": "басқар",
+            "queries": 3
+          },
+          {
+            "token": "биылғы",
+            "their": "биылғы",
+            "pg_kazsearch": "биыл",
+            "queries": 3
+          }
+        ]
+      }
+    }
+  }
+}
