@@ -140,3 +140,24 @@ fn sound_change_repair_still_restores_non_lemma_stems() {
     assert_eq!(stem("ауызы", &cfg), "ауыз");
     assert_eq!(stem("мұрны", &cfg), "мұрын");
 }
+
+#[test]
+fn t_initial_suffixes_attach_after_voiced_stop_finals() {
+    // б, в, г, д take the т-initial allomorphs like voiceless consonants
+    // (клуб-тық, сауд-тың), so these are well-formed derivations.
+    let cfg = cfg_with(&["клуб", "штаб", "форвард", "сауд", "көпмиллиард"]);
+    assert_eq!(stem("клубтық", &cfg), "клуб");
+    assert_eq!(stem("штабтық", &cfg), "штаб");
+    assert_eq!(stem("форвардтық", &cfg), "форвард");
+    assert_eq!(stem("көпмиллиардтық", &cfg), "көпмиллиард");
+    assert_eq!(stem("саудтың", &cfg), "сауд");
+    assert_eq!(stem("штабтың", &cfg), "штаб");
+}
+
+#[test]
+fn name_overstem_fixes_still_hold_with_voiced_stop_guard() {
+    let cfg = cfg_with(&["үкімет", "үкі", "апат", "қара", "қытай"]);
+    assert_eq!(stem("үкіметі", &cfg), "үкімет");
+    assert_eq!(stem("апаты", &cfg), "апат");
+    assert_eq!(stem("қарақытайлар", &cfg), "қарақытай");
+}
