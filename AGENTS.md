@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Kazakh stemmer for PostgreSQL full-text search. BFS suffix-stripping over ordered morphological layers (noun: DERIV→PLUR→POSS→CASE→PRED, verb: VVOICE→VNEG→VTENSE→VPERSON) with vowel harmony enforcement, penalty-based candidate scoring, optional lexicon verification, morphophonological stem repair, and an idempotent fixed-point pass (with lexicon) that conflates verbal nouns, denominal verbs, lexicalized participles (-ған/-ген/-қан/-кен), and converbs (-п, gated on the verb-tagged lexicon sibling `kaz_stems.dict.verbs`) onto their lexicon root. Glide-only words (туризм) are harmony-neutral. Token coverage (measured by `eval/measure_stem_coverage.py` over 45.7k corpus tokens): 76.5% analyzed, 87.5% recognized (stemmed or dictionary lemma).
+Kazakh stemmer for PostgreSQL full-text search. BFS suffix-stripping over ordered morphological layers (noun: DERIV→PLUR→POSS→CASE→PRED, verb: VVOICE→VNEG→VTENSE→VPERSON) with vowel harmony enforcement, penalty-based candidate scoring, optional lexicon verification, morphophonological stem repair, and an idempotent fixed-point pass (with lexicon) that conflates verbal nouns, denominal verbs, lexicalized participles (-ған/-ген/-қан/-кен), and converbs (-п, gated on the verb-tagged lexicon sibling `kaz_stems.dict.verbs`) onto their lexicon root. Glide-only words (туризм) are harmony-neutral. Token coverage (measured by `eval/measure_stem_coverage.py` over 45.7k corpus tokens): 75.9% analyzed, 86.9% recognized (stemmed or dictionary lemma).
 
 No prior Kazakh stemmer exists for PostgreSQL or Elasticsearch. This is the first.
 
@@ -13,7 +13,7 @@ Cargo workspace with a shared core library and multiple consumers:
 - `core/` — `kazsearch-core`: pure Rust stemmer (BFS engine, suffix rules, vowel harmony, penalty scoring, lexicon, stem repair). No Postgres dependencies.
 - `pg_ext/` — `pg_kazsearch`: pgrx-based PostgreSQL extension. Thin wrapper that calls `kazsearch_core::stem()`.
 - `cli/` — `kazsearch-cli`: CLI tool (`kazsearch stem`, `analyze`, `bench`, `lexicon validate`).
-- `elastic/` — `kazsearch-elastic`: Elasticsearch plugin (placeholder).
+- `elastic/` — `kazsearch-elastic`: Elasticsearch plugin (Rust cdylib with C ABI + JNI exports; Java bridge and Lucene TokenFilter in `elastic/java/`).
 - `legacy/pg_kazsearch_c/` — archived original C implementation (reference only, not built).
 
 Key core modules:

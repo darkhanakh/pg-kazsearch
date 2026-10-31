@@ -32,18 +32,18 @@
       "note": "pg_textsearch defaults"
     },
     "text_index_build_seconds": {
-      "gin": 0.09,
-      "bm25_kazakh": 2.145,
-      "bm25_simple": 0.322,
-      "bm25_kazakh_title2": 2.261
+      "gin": 0.099,
+      "bm25_kazakh": 2.281,
+      "bm25_simple": 0.339,
+      "bm25_kazakh_title2": 2.373
     },
     "index_bytes": {
+      "idx_articles_bm25_simple": 56344576,
+      "idx_articles_bm25_kaz_t2": 26910720,
       "articles_pkey": 155648,
       "articles_url_key": 638976,
-      "idx_articles_fts": 8421376,
-      "idx_articles_bm25_kaz": 26984448,
-      "idx_articles_bm25_simple": 56344576,
-      "idx_articles_bm25_kaz_t2": 26992640,
+      "idx_articles_fts": 8413184,
+      "idx_articles_bm25_kaz": 26902528,
       "idx_articles_emb_bge_m3_hnsw": 24559616,
       "idx_articles_emb_kaz_embedder_hnsw": 24559616
     },
@@ -54,7 +54,7 @@
         "doc_max_length": 512,
         "query_max_length": 64,
         "doc_embedding": {
-          "seconds": 143.2,
+          "seconds": 149.8,
           "device": "mps",
           "n": 2999,
           "dim": 1024,
@@ -63,7 +63,7 @@
           "cache_hit": true
         },
         "query_embedding": {
-          "seconds": 0.7,
+          "seconds": 0.3,
           "device": "mps",
           "n": 132,
           "dim": 1024,
@@ -71,7 +71,7 @@
           "hf_id": "BAAI/bge-m3",
           "cache_hit": true
         },
-        "hnsw_build_seconds": 0.784
+        "hnsw_build_seconds": 0.935
       },
       "kaz_embedder": {
         "hf_id": "BekbolatShanakbay/kaz-embedder",
@@ -79,7 +79,7 @@
         "doc_max_length": 512,
         "query_max_length": 64,
         "doc_embedding": {
-          "seconds": 116.9,
+          "seconds": 144.3,
           "device": "mps",
           "n": 2999,
           "dim": 1024,
@@ -88,7 +88,7 @@
           "cache_hit": true
         },
         "query_embedding": {
-          "seconds": 0.7,
+          "seconds": 0.3,
           "device": "mps",
           "n": 132,
           "dim": 1024,
@@ -96,7 +96,7 @@
           "hf_id": "BekbolatShanakbay/kaz-embedder",
           "cache_hit": true
         },
-        "hnsw_build_seconds": 0.786
+        "hnsw_build_seconds": 0.946
       }
     },
     "notes": [
@@ -106,18 +106,18 @@
     ],
     "baseline_reproduction": {
       "R@10": {
-        "readme": 0.595,
-        "measured": 0.5909,
+        "query_strategies": 0.5957,
+        "measured": 0.5957,
         "match": true
       },
       "MRR@10": {
-        "readme": 0.753,
-        "measured": 0.7528,
+        "query_strategies": 0.7446,
+        "measured": 0.7446,
         "match": true
       },
       "R@50": {
-        "readme": 0.869,
-        "measured": 0.8715,
+        "query_strategies": 0.8754,
+        "measured": 0.8754,
         "match": true
       }
     }
@@ -126,121 +126,121 @@
     "ts_rank_cd (AND+OR)": {
       "description": "strict websearch AND, OR top-up, ts_rank_cd",
       "metrics": {
-        "R@10": 0.5909,
-        "MRR@10": 0.7528,
-        "nDCG@10": 0.6344,
-        "R@50": 0.8715
+        "R@10": 0.5957,
+        "MRR@10": 0.7446,
+        "nDCG@10": 0.6336,
+        "R@50": 0.8754
       },
       "ci95": {
         "R@10": [
-          0.5363,
-          0.6449
+          0.5411,
+          0.6494
         ],
         "MRR@10": [
-          0.6901,
-          0.814
+          0.6811,
+          0.806
         ],
         "nDCG@10": [
-          0.5798,
-          0.6877
+          0.5785,
+          0.687
         ],
         "R@50": [
-          0.8305,
-          0.9087
+          0.836,
+          0.9113
         ]
       },
       "delta_vs_baseline": {},
       "delta_ci95": {},
       "delta_p_le_0": {},
       "delta_vs_bm25_kazakh": {
-        "R@10": -0.0504,
-        "MRR@10": -0.0404,
-        "nDCG@10": -0.0112,
-        "R@50": -0.0613
+        "R@10": -0.0478,
+        "MRR@10": -0.0458,
+        "nDCG@10": -0.0138,
+        "R@50": -0.0494
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          -0.0969,
-          -0.0069
+          -0.0945,
+          -0.004
         ],
         "MRR@10": [
-          -0.097,
-          0.0156
+          -0.1031,
+          0.0096
         ],
         "nDCG@10": [
-          -0.0525,
-          0.032
+          -0.0562,
+          0.0304
         ],
         "R@50": [
-          -0.0966,
-          -0.0295
+          -0.0801,
+          -0.0213
         ]
       },
-      "median_latency_ms": 2.33,
+      "median_latency_ms": 3.21,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=1619.07..1619.13 rows=23 width=12)\n  CTE q\n    ->  Result  (cost=0.42..0.43 rows=1 width=64)\n          InitPlan 1\n            ->  Aggregate  (cost=0.15..0.42 rows=1 width=32)\n                  ->  Function Scan on unnest  (cost=0.00..0.10 rows=10 width=32)\n  CTE strict\n    ->  Limit  (cost=808.73..808.77 rows=15 width=8)\n          ->  Sort  (cost=808.73..808.77 rows=15 width=8)\n                Sort Key: (ts_rank_cd(a_1.fts_vector, q_1.strict_q)) DESC, a_1.id\n                ->  Nested Loop  (cost=752.41..808.44 rows=15 width=8)\n                      ->  CTE Scan on q q_1  (cost=0.00..0.02 rows=1 width=32)\n                      ->  Bitmap Heap Scan on articles a_1  (cost=752.41..808.23 rows=15 width=36)\n                            Recheck Cond: (fts_vector @@ q_1.strict_q)\n                            ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..752.41 rows=15 width=0)\n                                  Index Cond: (fts_vector @@ q_1.strict_q)\n  ->  Sort  (cost=809.87..809.93 rows=23 width=12)\n        Sort Key: (1), strict.r DESC, strict.id\n        ->  Append  (cost=0.00..809.35 rows=23 width=12)\n              ->  CTE Scan on strict  (cost=0.00..0.30 rows=15 width=12)\n              ->  Subquery Scan on relaxed  (cost=808.84..808.94 rows=8 width=12)\n                    ->  Limit  (cost=808.84..808.86 rows=8 width=8)\n                          ->  Sort  (cost=808.84..808.86 rows=8 width=8)\n                                Sort Key: (ts_rank_cd(a.fts_vector, q.relaxed_q)) DESC, a.id\n                                ->  Nested Loop  (cost=752.75..808.72 rows=8 width=8)\n                                      ->  CTE Scan on q  (cost=0.00..0.02 rows=1 width=32)\n                                      ->  Bitmap Heap Scan on articles a  (cost=752.75..808.61 rows=7 width=36)\n                                            Recheck Cond: (fts_vector @@ q.relaxed_q)\n                                            Filter: (NOT (ANY (id = (hashed SubPlan 4).col1)))\n                                            ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..752.41 rows=15 width=0)\n                                                  Index Cond: (fts_vector @@ q.relaxed_q)\n                                            SubPlan 4\n                                              ->  CTE Scan on strict strict_1  (cost=0.00..0.30 rows=15 width=4)"
+      "plan": "Limit  (cost=1449.07..1449.13 rows=23 width=12)\n  CTE q\n    ->  Result  (cost=0.42..0.43 rows=1 width=64)\n          InitPlan 1\n            ->  Aggregate  (cost=0.15..0.42 rows=1 width=32)\n                  ->  Function Scan on unnest  (cost=0.00..0.10 rows=10 width=32)\n  CTE strict\n    ->  Limit  (cost=723.73..723.77 rows=15 width=8)\n          ->  Sort  (cost=723.73..723.77 rows=15 width=8)\n                Sort Key: (ts_rank_cd(a_1.fts_vector, q_1.strict_q)) DESC, a_1.id\n                ->  Nested Loop  (cost=667.41..723.44 rows=15 width=8)\n                      ->  CTE Scan on q q_1  (cost=0.00..0.02 rows=1 width=32)\n                      ->  Bitmap Heap Scan on articles a_1  (cost=667.41..723.23 rows=15 width=36)\n                            Recheck Cond: (fts_vector @@ q_1.strict_q)\n                            ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..667.41 rows=15 width=0)\n                                  Index Cond: (fts_vector @@ q_1.strict_q)\n  ->  Sort  (cost=724.87..724.93 rows=23 width=12)\n        Sort Key: (1), strict.r DESC, strict.id\n        ->  Append  (cost=0.00..724.35 rows=23 width=12)\n              ->  CTE Scan on strict  (cost=0.00..0.30 rows=15 width=12)\n              ->  Subquery Scan on relaxed  (cost=723.84..723.94 rows=8 width=12)\n                    ->  Limit  (cost=723.84..723.86 rows=8 width=8)\n                          ->  Sort  (cost=723.84..723.86 rows=8 width=8)\n                                Sort Key: (ts_rank_cd(a.fts_vector, q.relaxed_q)) DESC, a.id\n                                ->  Nested Loop  (cost=667.75..723.72 rows=8 width=8)\n                                      ->  CTE Scan on q  (cost=0.00..0.02 rows=1 width=32)\n                                      ->  Bitmap Heap Scan on articles a  (cost=667.75..723.61 rows=7 width=36)\n                                            Recheck Cond: (fts_vector @@ q.relaxed_q)\n                                            Filter: (NOT (ANY (id = (hashed SubPlan 4).col1)))\n                                            ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..667.41 rows=15 width=0)\n                                                  Index Cond: (fts_vector @@ q.relaxed_q)\n                                            SubPlan 4\n                                              ->  CTE Scan on strict strict_1  (cost=0.00..0.30 rows=15 width=4)"
     },
     "bm25_kazakh": {
       "description": "pg_textsearch BM25, kazakh_cfg",
       "metrics": {
-        "R@10": 0.6413,
-        "MRR@10": 0.7932,
-        "nDCG@10": 0.6457,
-        "R@50": 0.9328
+        "R@10": 0.6436,
+        "MRR@10": 0.7904,
+        "nDCG@10": 0.6475,
+        "R@50": 0.9248
       },
       "ci95": {
         "R@10": [
-          0.5874,
-          0.6932
+          0.5894,
+          0.6957
         ],
         "MRR@10": [
-          0.7353,
-          0.8488
+          0.7321,
+          0.8456
         ],
         "nDCG@10": [
-          0.598,
-          0.6937
+          0.5994,
+          0.6958
         ],
         "R@50": [
-          0.9044,
-          0.958
+          0.8939,
+          0.9517
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.0504,
-        "MRR@10": 0.0404,
-        "nDCG@10": 0.0112,
-        "R@50": 0.0613
+        "R@10": 0.0478,
+        "MRR@10": 0.0458,
+        "nDCG@10": 0.0138,
+        "R@50": 0.0494
       },
       "delta_ci95": {
         "R@10": [
-          0.0069,
-          0.0969
+          0.004,
+          0.0945
         ],
         "MRR@10": [
-          -0.0156,
-          0.097
+          -0.0096,
+          0.1031
         ],
         "nDCG@10": [
-          -0.032,
-          0.0525
+          -0.0304,
+          0.0562
         ],
         "R@50": [
-          0.0295,
-          0.0966
+          0.0213,
+          0.0801
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.0118,
-        "MRR@10": 0.0809,
-        "nDCG@10": 0.3024,
-        "R@50": 0.0
+        "R@10": 0.0159,
+        "MRR@10": 0.056,
+        "nDCG@10": 0.2652,
+        "R@50": 0.0002
       },
       "delta_vs_bm25_kazakh": {},
       "delta_vs_bm25_kazakh_ci95": {},
-      "median_latency_ms": 0.57,
+      "median_latency_ms": 0.64,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=49.90..382.37 rows=100 width=12)\n  ->  Incremental Sort  (cost=49.90..10020.41 rows=2999 width=12)\n        Sort Key: (bm25_get_current_score()), id\n        Presorted Key: (bm25_get_current_score())\n        ->  Index Scan using idx_articles_bm25_kaz on articles  (cost=0.01..9920.35 rows=2999 width=12)\n              Order By: (doc <@> 'idx_articles_bm25_kaz:мал шаруашылығын дамыту'::bm25query)"
+      "plan": "Limit  (cost=49.88..382.21 rows=100 width=12)\n  ->  Incremental Sort  (cost=49.88..10016.41 rows=2999 width=12)\n        Sort Key: (bm25_get_current_score()), id\n        Presorted Key: (bm25_get_current_score())\n        ->  Index Scan using idx_articles_bm25_kaz on articles  (cost=0.01..9916.35 rows=2999 width=12)\n              Order By: (doc <@> 'idx_articles_bm25_kaz:мал шаруашылығын дамыту'::bm25query)"
     },
     "bm25_simple": {
       "description": "pg_textsearch BM25, simple",
@@ -269,146 +269,146 @@
         ]
       },
       "delta_vs_baseline": {
-        "R@10": -0.0875,
-        "MRR@10": -0.059,
-        "nDCG@10": -0.1026,
-        "R@50": -0.0881
+        "R@10": -0.0923,
+        "MRR@10": -0.0507,
+        "nDCG@10": -0.1018,
+        "R@50": -0.0919
       },
       "delta_ci95": {
         "R@10": [
-          -0.1571,
-          -0.0174
+          -0.1605,
+          -0.023
         ],
         "MRR@10": [
-          -0.1351,
-          0.0148
+          -0.1256,
+          0.022
         ],
         "nDCG@10": [
-          -0.1653,
-          -0.0407
+          -0.1639,
+          -0.0408
         ],
         "R@50": [
-          -0.1468,
-          -0.0285
+          -0.1502,
+          -0.0344
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.9929,
-        "MRR@10": 0.9421,
+        "R@10": 0.9957,
+        "MRR@10": 0.9116,
         "nDCG@10": 0.9992,
-        "R@50": 0.9978
+        "R@50": 0.9986
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": -0.1379,
-        "MRR@10": -0.0994,
-        "nDCG@10": -0.1138,
-        "R@50": -0.1494
+        "R@10": -0.1401,
+        "MRR@10": -0.0965,
+        "nDCG@10": -0.1156,
+        "R@50": -0.1414
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          -0.1974,
-          -0.0812
+          -0.1995,
+          -0.0835
         ],
         "MRR@10": [
-          -0.1621,
-          -0.0351
+          -0.1594,
+          -0.0321
         ],
         "nDCG@10": [
-          -0.1702,
-          -0.0597
+          -0.1713,
+          -0.0617
         ],
         "R@50": [
-          -0.2,
-          -0.1003
+          -0.1928,
+          -0.0914
         ]
       },
-      "median_latency_ms": 0.52,
+      "median_latency_ms": 0.73,
       "queries_without_results": 0,
       "plan": "Limit  (cost=57.07..437.10 rows=100 width=12)\n  ->  Incremental Sort  (cost=57.07..11454.01 rows=2999 width=12)\n        Sort Key: (bm25_get_current_score()), id\n        Presorted Key: (bm25_get_current_score())\n        ->  Index Scan using idx_articles_bm25_simple on articles  (cost=0.01..11353.95 rows=2999 width=12)\n              Order By: (doc_simple <@> 'idx_articles_bm25_simple:мал шаруашылығын дамыту'::bm25query)"
     },
     "bm25_kazakh_title2": {
       "description": "BM25 kazakh_cfg, title counted twice",
       "metrics": {
-        "R@10": 0.6592,
-        "MRR@10": 0.7873,
-        "nDCG@10": 0.6655,
-        "R@50": 0.9375
+        "R@10": 0.6621,
+        "MRR@10": 0.7826,
+        "nDCG@10": 0.6644,
+        "R@50": 0.935
       },
       "ci95": {
         "R@10": [
-          0.6071,
-          0.7096
+          0.6089,
+          0.7132
         ],
         "MRR@10": [
-          0.7303,
-          0.8421
+          0.7255,
+          0.8374
         ],
         "nDCG@10": [
-          0.6178,
-          0.7123
+          0.6169,
+          0.7116
         ],
         "R@50": [
-          0.9106,
-          0.9612
+          0.9076,
+          0.9593
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.0683,
-        "MRR@10": 0.0346,
-        "nDCG@10": 0.0311,
-        "R@50": 0.066
+        "R@10": 0.0664,
+        "MRR@10": 0.038,
+        "nDCG@10": 0.0308,
+        "R@50": 0.0597
       },
       "delta_ci95": {
         "R@10": [
-          0.0265,
-          0.1134
+          0.0242,
+          0.1116
         ],
         "MRR@10": [
-          -0.0206,
-          0.0901
+          -0.0176,
+          0.0935
         ],
         "nDCG@10": [
-          -0.0101,
-          0.0718
+          -0.0105,
+          0.0715
         ],
         "R@50": [
-          0.0349,
-          0.1004
+          0.0307,
+          0.0909
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.0003,
-        "MRR@10": 0.1119,
-        "nDCG@10": 0.0697,
+        "R@10": 0.0011,
+        "MRR@10": 0.0865,
+        "nDCG@10": 0.0709,
         "R@50": 0.0
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": 0.0179,
-        "MRR@10": -0.0059,
-        "nDCG@10": 0.0199,
-        "R@50": 0.0047
+        "R@10": 0.0185,
+        "MRR@10": -0.0077,
+        "nDCG@10": 0.017,
+        "R@50": 0.0103
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          0.0082,
-          0.0287
+          0.0084,
+          0.03
         ],
         "MRR@10": [
-          -0.0305,
-          0.0206
+          -0.0328,
+          0.0189
         ],
         "nDCG@10": [
-          0.01,
-          0.0304
+          0.0067,
+          0.0276
         ],
         "R@50": [
-          0.0001,
-          0.0101
+          0.0015,
+          0.0218
         ]
       },
-      "median_latency_ms": 0.6,
+      "median_latency_ms": 0.64,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=49.91..382.38 rows=100 width=12)\n  ->  Incremental Sort  (cost=49.91..10020.81 rows=2999 width=12)\n        Sort Key: (bm25_get_current_score()), id\n        Presorted Key: (bm25_get_current_score())\n        ->  Index Scan using idx_articles_bm25_kaz_t2 on articles  (cost=0.01..9920.75 rows=2999 width=12)\n              Order By: (doc_t2 <@> 'idx_articles_bm25_kaz_t2:мал шаруашылығын дамыту'::bm25query)"
+      "plan": "Limit  (cost=49.89..382.23 rows=100 width=12)\n  ->  Incremental Sort  (cost=49.89..10016.81 rows=2999 width=12)\n        Sort Key: (bm25_get_current_score()), id\n        Presorted Key: (bm25_get_current_score())\n        ->  Index Scan using idx_articles_bm25_kaz_t2 on articles  (cost=0.01..9916.75 rows=2999 width=12)\n              Order By: (doc_t2 <@> 'idx_articles_bm25_kaz_t2:мал шаруашылығын дамыту'::bm25query)"
     },
     "dense_bge_m3": {
       "description": "pgvector cosine HNSW, BAAI/bge-m3",
@@ -437,83 +437,83 @@
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.0018,
-        "MRR@10": -0.0221,
-        "nDCG@10": -0.0552,
-        "R@50": 0.0038
+        "R@10": -0.003,
+        "MRR@10": -0.0139,
+        "nDCG@10": -0.0543,
+        "R@50": -0.0001
       },
       "delta_ci95": {
         "R@10": [
-          -0.0624,
-          0.068
+          -0.0668,
+          0.0632
         ],
         "MRR@10": [
-          -0.1017,
-          0.0566
+          -0.0945,
+          0.0652
         ],
         "nDCG@10": [
-          -0.12,
-          0.0096
+          -0.119,
+          0.0104
         ],
         "R@50": [
-          -0.0467,
-          0.0566
+          -0.0498,
+          0.0511
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.4848,
-        "MRR@10": 0.7076,
-        "nDCG@10": 0.9483,
-        "R@50": 0.4432
+        "R@10": 0.5454,
+        "MRR@10": 0.6335,
+        "nDCG@10": 0.9482,
+        "R@50": 0.506
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": -0.0486,
-        "MRR@10": -0.0625,
-        "nDCG@10": -0.0664,
-        "R@50": -0.0575
+        "R@10": -0.0508,
+        "MRR@10": -0.0597,
+        "nDCG@10": -0.0682,
+        "R@50": -0.0495
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          -0.1024,
-          0.0069
+          -0.1045,
+          0.0048
         ],
         "MRR@10": [
-          -0.1347,
-          0.0103
+          -0.1328,
+          0.0134
         ],
         "nDCG@10": [
-          -0.1208,
-          -0.0115
+          -0.1226,
+          -0.0136
         ],
         "R@50": [
-          -0.096,
-          -0.0187
+          -0.0906,
+          -0.0082
         ]
       },
-      "median_latency_ms": 2.52,
+      "median_latency_ms": 2.82,
       "queries_without_results": 0,
       "plan": "Limit  (cost=6651.86..7041.46 rows=100 width=12)\n  ->  Incremental Sort  (cost=6651.86..18336.04 rows=2999 width=12)\n        Sort Key: ((emb_bge_m3 <=> '[...]'::vector)), id\n        Presorted Key: ((emb_bge_m3 <=> '[...]'::vector))\n        ->  Index Scan using idx_articles_emb_bge_m3_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n              Order By: (emb_bge_m3 <=> '[...]'::vector)"
     },
     "rrf_bge_m3": {
       "description": "RRF(k=60) of bm25_kazakh + dense_bge_m3",
       "metrics": {
-        "R@10": 0.6965,
-        "MRR@10": 0.8125,
-        "nDCG@10": 0.7036,
+        "R@10": 0.691,
+        "MRR@10": 0.814,
+        "nDCG@10": 0.6995,
         "R@50": 0.9348
       },
       "ci95": {
         "R@10": [
-          0.6455,
-          0.7463
+          0.6394,
+          0.7412
         ],
         "MRR@10": [
-          0.7573,
-          0.8655
+          0.7585,
+          0.8683
         ],
         "nDCG@10": [
-          0.6574,
-          0.7485
+          0.6527,
+          0.7445
         ],
         "R@50": [
           0.9062,
@@ -521,83 +521,83 @@
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.1055,
-        "MRR@10": 0.0597,
-        "nDCG@10": 0.0691,
-        "R@50": 0.0632
+        "R@10": 0.0953,
+        "MRR@10": 0.0694,
+        "nDCG@10": 0.0659,
+        "R@50": 0.0594
       },
       "delta_ci95": {
         "R@10": [
-          0.0553,
-          0.1583
+          0.0461,
+          0.1478
         ],
         "MRR@10": [
-          -0.0124,
-          0.1302
+          -0.0027,
+          0.1422
         ],
         "nDCG@10": [
-          0.0122,
-          0.1269
+          0.0087,
+          0.1237
         ],
         "R@50": [
-          0.0243,
-          0.1053
+          0.0213,
+          0.0997
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.0,
-        "MRR@10": 0.052,
-        "nDCG@10": 0.0088,
-        "R@50": 0.0006
+        "R@10": 0.0002,
+        "MRR@10": 0.0288,
+        "nDCG@10": 0.0124,
+        "R@50": 0.001
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": 0.0551,
-        "MRR@10": 0.0193,
-        "nDCG@10": 0.0579,
-        "R@50": 0.0019
+        "R@10": 0.0475,
+        "MRR@10": 0.0236,
+        "nDCG@10": 0.0521,
+        "R@50": 0.01
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          0.0236,
-          0.0886
+          0.0166,
+          0.0804
         ],
         "MRR@10": [
-          -0.0324,
-          0.0716
+          -0.0283,
+          0.0762
         ],
         "nDCG@10": [
-          0.0216,
-          0.0947
+          0.0153,
+          0.0887
         ],
         "R@50": [
-          -0.0188,
-          0.023
+          -0.0133,
+          0.0351
         ]
       },
-      "median_latency_ms": 2.09,
+      "median_latency_ms": 3.18,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=7324.57..7324.82 rows=100 width=36)\n  ->  Sort  (cost=7324.57..7324.82 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t_1.id, t.id))\n        ->  Hash Full Join  (cost=6927.65..7321.24 rows=100 width=36)\n              Hash Cond: (t.id = t_1.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_bge_m3_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_bge_m3 <=> '[...]'::vector)\n              ->  Hash  (cost=333.05..333.05 rows=100 width=12)\n                    ->  WindowAgg  (cost=0.01..333.05 rows=100 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t_1  (cost=0.01..331.80 rows=100 width=4)\n                                ->  Limit  (cost=0.01..330.80 rows=100 width=12)\n                                      ->  Index Scan using idx_articles_bm25_kaz on articles articles_1  (cost=0.01..9920.35 rows=2999 width=12)\n                                            Order By: (doc <@> 'idx_articles_bm25_kaz:мал шаруашылығын дамыту'::bm25query)"
+      "plan": "Limit  (cost=7324.43..7324.68 rows=100 width=36)\n  ->  Sort  (cost=7324.43..7324.68 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t_1.id, t.id))\n        ->  Hash Full Join  (cost=6927.52..7321.11 rows=100 width=36)\n              Hash Cond: (t.id = t_1.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_bge_m3_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_bge_m3 <=> '[...]'::vector)\n              ->  Hash  (cost=332.91..332.91 rows=100 width=12)\n                    ->  WindowAgg  (cost=0.01..332.91 rows=100 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t_1  (cost=0.01..331.66 rows=100 width=4)\n                                ->  Limit  (cost=0.01..330.66 rows=100 width=12)\n                                      ->  Index Scan using idx_articles_bm25_kaz on articles articles_1  (cost=0.01..9916.35 rows=2999 width=12)\n                                            Order By: (doc <@> 'idx_articles_bm25_kaz:мал шаруашылығын дамыту'::bm25query)"
     },
     "rrf_ts_bge_m3": {
       "description": "RRF(k=60) of ts_rank_cd (AND+OR) + dense_bge_m3",
       "metrics": {
-        "R@10": 0.6689,
+        "R@10": 0.6694,
         "MRR@10": 0.8395,
-        "nDCG@10": 0.7098,
+        "nDCG@10": 0.7083,
         "R@50": 0.9415
       },
       "ci95": {
         "R@10": [
-          0.6184,
-          0.7174
+          0.6189,
+          0.7188
         ],
         "MRR@10": [
-          0.7853,
-          0.8913
+          0.785,
+          0.8917
         ],
         "nDCG@10": [
-          0.6615,
-          0.7563
+          0.66,
+          0.7548
         ],
         "R@50": [
           0.9212,
@@ -605,62 +605,62 @@
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.0779,
-        "MRR@10": 0.0867,
-        "nDCG@10": 0.0754,
-        "R@50": 0.07
+        "R@10": 0.0737,
+        "MRR@10": 0.0949,
+        "nDCG@10": 0.0746,
+        "R@50": 0.0661
       },
       "delta_ci95": {
         "R@10": [
-          0.033,
-          0.1251
+          0.0288,
+          0.1205
         ],
         "MRR@10": [
-          0.0348,
-          0.1384
+          0.044,
+          0.1461
         ],
         "nDCG@10": [
-          0.0337,
-          0.1152
+          0.0332,
+          0.1147
         ],
         "R@50": [
-          0.0352,
-          0.1087
+          0.033,
+          0.1037
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.0003,
-        "MRR@10": 0.0005,
+        "R@10": 0.0006,
+        "MRR@10": 0.0,
         "nDCG@10": 0.0004,
         "R@50": 0.0
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": 0.0275,
-        "MRR@10": 0.0463,
-        "nDCG@10": 0.0642,
-        "R@50": 0.0087
+        "R@10": 0.0258,
+        "MRR@10": 0.0492,
+        "nDCG@10": 0.0608,
+        "R@50": 0.0167
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          -0.011,
-          0.0651
+          -0.0135,
+          0.0636
         ],
         "MRR@10": [
-          -0.0036,
-          0.096
+          -0.0018,
+          0.1003
         ],
         "nDCG@10": [
-          0.0259,
-          0.1019
+          0.021,
+          0.1001
         ],
         "R@50": [
-          -0.0143,
-          0.0348
+          -0.0088,
+          0.0461
         ]
       },
-      "median_latency_ms": 4.63,
+      "median_latency_ms": 5.87,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=8609.43..8609.68 rows=100 width=36)\n  ->  Sort  (cost=8609.43..8609.68 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t0.id, t.id))\n        ->  Hash Full Join  (cost=8213.28..8606.11 rows=100 width=36)\n              Hash Cond: (t.id = t0.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_bge_m3_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_bge_m3 <=> '[...]'::vector)\n              ->  Hash  (cost=1619.64..1619.64 rows=23 width=12)\n                    ->  WindowAgg  (cost=1619.07..1619.64 rows=23 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t0  (cost=1619.07..1619.36 rows=23 width=4)\n                                ->  Limit  (cost=1619.07..1619.13 rows=23 width=12)\n                                      CTE q\n                                        ->  Result  (cost=0.42..0.43 rows=1 width=64)\n                                              InitPlan 1\n                                                ->  Aggregate  (cost=0.15..0.42 rows=1 width=32)\n                                                      ->  Function Scan on unnest  (cost=0.00..0.10 rows=10 width=32)\n                                      CTE strict\n                                        ->  Limit  (cost=808.73..808.77 rows=15 width=8)\n                                              ->  Sort  (cost=808.73..808.77 rows=15 width=8)\n                                                    Sort Key: (ts_rank_cd(a_1.fts_vector, q_1.strict_q)) DESC, a_1.id\n                                                    ->  Nested Loop  (cost=752.41..808.44 rows=15 width=8)\n                                                          ->  CTE Scan on q q_1  (cost=0.00..0.02 rows=1 width=32)\n                                                          ->  Bitmap Heap Scan on articles a_1  (cost=752.41..808.23 rows=15 width=36)\n                                                                Recheck Cond: (fts_vector @@ q_1.strict_q)\n                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..752.41 rows=15 width=0)\n                                                                      Index Cond: (fts_vector @@ q_1.strict_q)\n                                      ->  Sort  (cost=809.87..809.93 rows=23 width=12)\n                                            Sort Key: (1), strict.r DESC, strict.id\n                                            ->  Append  (cost=0.00..809.35 rows=23 width=12)\n                                                  ->  CTE Scan on strict  (cost=0.00..0.30 rows=15 width=12)\n                                                  ->  Subquery Scan on relaxed  (cost=808.84..808.94 rows=8 width=12)\n                                                        ->  Limit  (cost=808.84..808.86 rows=8 width=8)\n                                                              ->  Sort  (cost=808.84..808.86 rows=8 width=8)\n                                                                    Sort Key: (ts_rank_cd(a.fts_vector, q.relaxed_q)) DESC, a.id\n                                                                    ->  Nested Loop  (cost=752.75..808.72 rows=8 width=8)\n                                                                          ->  CTE Scan on q  (cost=0.00..0.02 rows=1 width=32)\n                                                                          ->  Bitmap Heap Scan on articles a  (cost=752.75..808.61 rows=7 width=36)\n                                                                                Recheck Cond: (fts_vector @@ q.relaxed_q)\n                                                                                Filter: (NOT (ANY (id = (hashed SubPlan 4).col1)))\n                                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..752.41 rows=15 width=0)\n                                                                                      Index Cond: (fts_vector @@ q.relaxed_q)\n                                                                                SubPlan 4\n                                                                                  ->  CTE Scan on strict strict_1  (cost=0.00..0.30 rows=15 width=4)"
+      "plan": "Limit  (cost=8439.43..8439.68 rows=100 width=36)\n  ->  Sort  (cost=8439.43..8439.68 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t0.id, t.id))\n        ->  Hash Full Join  (cost=8043.28..8436.11 rows=100 width=36)\n              Hash Cond: (t.id = t0.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_bge_m3_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_bge_m3 <=> '[...]'::vector)\n              ->  Hash  (cost=1449.64..1449.64 rows=23 width=12)\n                    ->  WindowAgg  (cost=1449.07..1449.64 rows=23 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t0  (cost=1449.07..1449.36 rows=23 width=4)\n                                ->  Limit  (cost=1449.07..1449.13 rows=23 width=12)\n                                      CTE q\n                                        ->  Result  (cost=0.42..0.43 rows=1 width=64)\n                                              InitPlan 1\n                                                ->  Aggregate  (cost=0.15..0.42 rows=1 width=32)\n                                                      ->  Function Scan on unnest  (cost=0.00..0.10 rows=10 width=32)\n                                      CTE strict\n                                        ->  Limit  (cost=723.73..723.77 rows=15 width=8)\n                                              ->  Sort  (cost=723.73..723.77 rows=15 width=8)\n                                                    Sort Key: (ts_rank_cd(a_1.fts_vector, q_1.strict_q)) DESC, a_1.id\n                                                    ->  Nested Loop  (cost=667.41..723.44 rows=15 width=8)\n                                                          ->  CTE Scan on q q_1  (cost=0.00..0.02 rows=1 width=32)\n                                                          ->  Bitmap Heap Scan on articles a_1  (cost=667.41..723.23 rows=15 width=36)\n                                                                Recheck Cond: (fts_vector @@ q_1.strict_q)\n                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..667.41 rows=15 width=0)\n                                                                      Index Cond: (fts_vector @@ q_1.strict_q)\n                                      ->  Sort  (cost=724.87..724.93 rows=23 width=12)\n                                            Sort Key: (1), strict.r DESC, strict.id\n                                            ->  Append  (cost=0.00..724.35 rows=23 width=12)\n                                                  ->  CTE Scan on strict  (cost=0.00..0.30 rows=15 width=12)\n                                                  ->  Subquery Scan on relaxed  (cost=723.84..723.94 rows=8 width=12)\n                                                        ->  Limit  (cost=723.84..723.86 rows=8 width=8)\n                                                              ->  Sort  (cost=723.84..723.86 rows=8 width=8)\n                                                                    Sort Key: (ts_rank_cd(a.fts_vector, q.relaxed_q)) DESC, a.id\n                                                                    ->  Nested Loop  (cost=667.75..723.72 rows=8 width=8)\n                                                                          ->  CTE Scan on q  (cost=0.00..0.02 rows=1 width=32)\n                                                                          ->  Bitmap Heap Scan on articles a  (cost=667.75..723.61 rows=7 width=36)\n                                                                                Recheck Cond: (fts_vector @@ q.relaxed_q)\n                                                                                Filter: (NOT (ANY (id = (hashed SubPlan 4).col1)))\n                                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..667.41 rows=15 width=0)\n                                                                                      Index Cond: (fts_vector @@ q.relaxed_q)\n                                                                                SubPlan 4\n                                                                                  ->  CTE Scan on strict strict_1  (cost=0.00..0.30 rows=15 width=4)"
     },
     "dense_kaz_embedder": {
       "description": "pgvector cosine HNSW, BekbolatShanakbay/kaz-embedder",
@@ -689,230 +689,230 @@
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.0257,
-        "MRR@10": -0.0402,
-        "nDCG@10": -0.0397,
-        "R@50": 0.0065
+        "R@10": 0.0209,
+        "MRR@10": -0.032,
+        "nDCG@10": -0.0388,
+        "R@50": 0.0027
       },
       "delta_ci95": {
         "R@10": [
-          -0.0349,
-          0.0902
+          -0.0392,
+          0.084
         ],
         "MRR@10": [
-          -0.1176,
-          0.0361
+          -0.1094,
+          0.0433
         ],
         "nDCG@10": [
-          -0.1012,
-          0.0231
+          -0.1,
+          0.0234
         ],
         "R@50": [
-          -0.0452,
-          0.0607
+          -0.0479,
+          0.0544
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.2047,
-        "MRR@10": 0.8482,
-        "nDCG@10": 0.8959,
-        "R@50": 0.3973
+        "R@10": 0.2523,
+        "MRR@10": 0.793,
+        "nDCG@10": 0.8914,
+        "R@50": 0.4578
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": -0.0247,
-        "MRR@10": -0.0806,
-        "nDCG@10": -0.0509,
-        "R@50": -0.0548
+        "R@10": -0.0269,
+        "MRR@10": -0.0778,
+        "nDCG@10": -0.0527,
+        "R@50": -0.0468
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          -0.0753,
-          0.0285
+          -0.0772,
+          0.026
         ],
         "MRR@10": [
-          -0.1451,
-          -0.0148
+          -0.143,
+          -0.0118
         ],
         "nDCG@10": [
-          -0.1005,
-          0.0001
+          -0.1019,
+          -0.0019
         ],
         "R@50": [
-          -0.0948,
-          -0.0151
+          -0.0883,
+          -0.0043
         ]
       },
-      "median_latency_ms": 2.75,
+      "median_latency_ms": 2.47,
       "queries_without_results": 0,
       "plan": "Limit  (cost=6651.86..7041.46 rows=100 width=12)\n  ->  Incremental Sort  (cost=6651.86..18336.04 rows=2999 width=12)\n        Sort Key: ((emb_kaz_embedder <=> '[...]'::vector)), id\n        Presorted Key: ((emb_kaz_embedder <=> '[...]'::vector))\n        ->  Index Scan using idx_articles_emb_kaz_embedder_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n              Order By: (emb_kaz_embedder <=> '[...]'::vector)"
     },
     "rrf_kaz_embedder": {
       "description": "RRF(k=60) of bm25_kazakh + dense_kaz_embedder",
       "metrics": {
-        "R@10": 0.6909,
-        "MRR@10": 0.8244,
-        "nDCG@10": 0.709,
-        "R@50": 0.9356
+        "R@10": 0.6883,
+        "MRR@10": 0.82,
+        "nDCG@10": 0.7053,
+        "R@50": 0.9331
       },
       "ci95": {
         "R@10": [
-          0.6404,
-          0.7407
+          0.6382,
+          0.7381
         ],
         "MRR@10": [
-          0.7708,
-          0.8756
+          0.7665,
+          0.8715
         ],
         "nDCG@10": [
-          0.6645,
-          0.7536
+          0.6608,
+          0.7503
         ],
         "R@50": [
-          0.9069,
-          0.9613
+          0.9042,
+          0.9591
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.1,
-        "MRR@10": 0.0716,
-        "nDCG@10": 0.0745,
-        "R@50": 0.0641
+        "R@10": 0.0926,
+        "MRR@10": 0.0754,
+        "nDCG@10": 0.0717,
+        "R@50": 0.0577
       },
       "delta_ci95": {
         "R@10": [
-          0.0534,
-          0.1496
+          0.047,
+          0.1419
         ],
         "MRR@10": [
-          0.0039,
-          0.1392
+          0.0078,
+          0.1428
         ],
         "nDCG@10": [
-          0.0216,
-          0.1284
+          0.0197,
+          0.1257
         ],
         "R@50": [
-          0.0249,
-          0.106
+          0.0194,
+          0.0971
         ]
       },
       "delta_p_le_0": {
-        "R@10": 0.0,
-        "MRR@10": 0.0195,
-        "nDCG@10": 0.0038,
-        "R@50": 0.0006
+        "R@10": 0.0001,
+        "MRR@10": 0.0132,
+        "nDCG@10": 0.0043,
+        "R@50": 0.0013
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": 0.0496,
-        "MRR@10": 0.0312,
-        "nDCG@10": 0.0633,
-        "R@50": 0.0028
+        "R@10": 0.0448,
+        "MRR@10": 0.0296,
+        "nDCG@10": 0.0578,
+        "R@50": 0.0083
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          0.0159,
-          0.0842
+          0.0116,
+          0.0789
         ],
         "MRR@10": [
-          -0.0186,
-          0.0815
+          -0.0197,
+          0.0793
         ],
         "nDCG@10": [
-          0.0307,
-          0.0963
+          0.0256,
+          0.0905
         ],
         "R@50": [
-          -0.018,
-          0.0238
+          -0.0149,
+          0.0328
         ]
       },
-      "median_latency_ms": 3.23,
+      "median_latency_ms": 3.48,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=7324.57..7324.82 rows=100 width=36)\n  ->  Sort  (cost=7324.57..7324.82 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t_1.id, t.id))\n        ->  Hash Full Join  (cost=6927.65..7321.24 rows=100 width=36)\n              Hash Cond: (t.id = t_1.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_kaz_embedder_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_kaz_embedder <=> '[...]'::vector)\n              ->  Hash  (cost=333.05..333.05 rows=100 width=12)\n                    ->  WindowAgg  (cost=0.01..333.05 rows=100 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t_1  (cost=0.01..331.80 rows=100 width=4)\n                                ->  Limit  (cost=0.01..330.80 rows=100 width=12)\n                                      ->  Index Scan using idx_articles_bm25_kaz on articles articles_1  (cost=0.01..9920.35 rows=2999 width=12)\n                                            Order By: (doc <@> 'idx_articles_bm25_kaz:мал шаруашылығын дамыту'::bm25query)"
+      "plan": "Limit  (cost=7324.43..7324.68 rows=100 width=36)\n  ->  Sort  (cost=7324.43..7324.68 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t_1.id, t.id))\n        ->  Hash Full Join  (cost=6927.52..7321.11 rows=100 width=36)\n              Hash Cond: (t.id = t_1.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_kaz_embedder_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_kaz_embedder <=> '[...]'::vector)\n              ->  Hash  (cost=332.91..332.91 rows=100 width=12)\n                    ->  WindowAgg  (cost=0.01..332.91 rows=100 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t_1  (cost=0.01..331.66 rows=100 width=4)\n                                ->  Limit  (cost=0.01..330.66 rows=100 width=12)\n                                      ->  Index Scan using idx_articles_bm25_kaz on articles articles_1  (cost=0.01..9916.35 rows=2999 width=12)\n                                            Order By: (doc <@> 'idx_articles_bm25_kaz:мал шаруашылығын дамыту'::bm25query)"
     },
     "rrf_ts_kaz_embedder": {
       "description": "RRF(k=60) of ts_rank_cd (AND+OR) + dense_kaz_embedder",
       "metrics": {
-        "R@10": 0.692,
-        "MRR@10": 0.8525,
-        "nDCG@10": 0.725,
-        "R@50": 0.9365
+        "R@10": 0.6905,
+        "MRR@10": 0.8511,
+        "nDCG@10": 0.7228,
+        "R@50": 0.934
       },
       "ci95": {
         "R@10": [
-          0.6442,
-          0.7406
+          0.6417,
+          0.7401
         ],
         "MRR@10": [
-          0.7999,
-          0.9026
+          0.7982,
+          0.9015
         ],
         "nDCG@10": [
-          0.6785,
-          0.7702
+          0.676,
+          0.7684
         ],
         "R@50": [
-          0.9108,
-          0.959
+          0.9079,
+          0.9571
         ]
       },
       "delta_vs_baseline": {
-        "R@10": 0.1011,
-        "MRR@10": 0.0997,
-        "nDCG@10": 0.0906,
-        "R@50": 0.065
+        "R@10": 0.0948,
+        "MRR@10": 0.1065,
+        "nDCG@10": 0.0892,
+        "R@50": 0.0586
       },
       "delta_ci95": {
         "R@10": [
-          0.0593,
-          0.1461
+          0.0533,
+          0.1401
         ],
         "MRR@10": [
-          0.0487,
-          0.1525
+          0.0549,
+          0.159
         ],
         "nDCG@10": [
-          0.0505,
-          0.1311
+          0.049,
+          0.1298
         ],
         "R@50": [
-          0.032,
-          0.1016
+          0.0273,
+          0.0933
         ]
       },
       "delta_p_le_0": {
         "R@10": 0.0,
-        "MRR@10": 0.0001,
-        "nDCG@10": 0.0001,
+        "MRR@10": 0.0,
+        "nDCG@10": 0.0,
         "R@50": 0.0
       },
       "delta_vs_bm25_kazakh": {
-        "R@10": 0.0507,
-        "MRR@10": 0.0593,
-        "nDCG@10": 0.0794,
-        "R@50": 0.0037
+        "R@10": 0.0469,
+        "MRR@10": 0.0607,
+        "nDCG@10": 0.0754,
+        "R@50": 0.0092
       },
       "delta_vs_bm25_kazakh_ci95": {
         "R@10": [
-          0.0155,
-          0.0871
+          0.0119,
+          0.0837
         ],
         "MRR@10": [
-          0.0135,
-          0.107
+          0.0138,
+          0.1091
         ],
         "nDCG@10": [
-          0.045,
-          0.1153
+          0.0395,
+          0.1122
         ],
         "R@50": [
-          -0.015,
-          0.0244
+          -0.0117,
+          0.0332
         ]
       },
-      "median_latency_ms": 4.73,
+      "median_latency_ms": 5.65,
       "queries_without_results": 0,
-      "plan": "Limit  (cost=8609.43..8609.68 rows=100 width=36)\n  ->  Sort  (cost=8609.43..8609.68 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t0.id, t.id))\n        ->  Hash Full Join  (cost=8213.28..8606.11 rows=100 width=36)\n              Hash Cond: (t.id = t0.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_kaz_embedder_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_kaz_embedder <=> '[...]'::vector)\n              ->  Hash  (cost=1619.64..1619.64 rows=23 width=12)\n                    ->  WindowAgg  (cost=1619.07..1619.64 rows=23 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t0  (cost=1619.07..1619.36 rows=23 width=4)\n                                ->  Limit  (cost=1619.07..1619.13 rows=23 width=12)\n                                      CTE q\n                                        ->  Result  (cost=0.42..0.43 rows=1 width=64)\n                                              InitPlan 1\n                                                ->  Aggregate  (cost=0.15..0.42 rows=1 width=32)\n                                                      ->  Function Scan on unnest  (cost=0.00..0.10 rows=10 width=32)\n                                      CTE strict\n                                        ->  Limit  (cost=808.73..808.77 rows=15 width=8)\n                                              ->  Sort  (cost=808.73..808.77 rows=15 width=8)\n                                                    Sort Key: (ts_rank_cd(a_1.fts_vector, q_1.strict_q)) DESC, a_1.id\n                                                    ->  Nested Loop  (cost=752.41..808.44 rows=15 width=8)\n                                                          ->  CTE Scan on q q_1  (cost=0.00..0.02 rows=1 width=32)\n                                                          ->  Bitmap Heap Scan on articles a_1  (cost=752.41..808.23 rows=15 width=36)\n                                                                Recheck Cond: (fts_vector @@ q_1.strict_q)\n                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..752.41 rows=15 width=0)\n                                                                      Index Cond: (fts_vector @@ q_1.strict_q)\n                                      ->  Sort  (cost=809.87..809.93 rows=23 width=12)\n                                            Sort Key: (1), strict.r DESC, strict.id\n                                            ->  Append  (cost=0.00..809.35 rows=23 width=12)\n                                                  ->  CTE Scan on strict  (cost=0.00..0.30 rows=15 width=12)\n                                                  ->  Subquery Scan on relaxed  (cost=808.84..808.94 rows=8 width=12)\n                                                        ->  Limit  (cost=808.84..808.86 rows=8 width=8)\n                                                              ->  Sort  (cost=808.84..808.86 rows=8 width=8)\n                                                                    Sort Key: (ts_rank_cd(a.fts_vector, q.relaxed_q)) DESC, a.id\n                                                                    ->  Nested Loop  (cost=752.75..808.72 rows=8 width=8)\n                                                                          ->  CTE Scan on q  (cost=0.00..0.02 rows=1 width=32)\n                                                                          ->  Bitmap Heap Scan on articles a  (cost=752.75..808.61 rows=7 width=36)\n                                                                                Recheck Cond: (fts_vector @@ q.relaxed_q)\n                                                                                Filter: (NOT (ANY (id = (hashed SubPlan 4).col1)))\n                                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..752.41 rows=15 width=0)\n                                                                                      Index Cond: (fts_vector @@ q.relaxed_q)\n                                                                                SubPlan 4\n                                                                                  ->  CTE Scan on strict strict_1  (cost=0.00..0.30 rows=15 width=4)"
+      "plan": "Limit  (cost=8439.43..8439.68 rows=100 width=36)\n  ->  Sort  (cost=8439.43..8439.68 rows=100 width=36)\n        Sort Key: ((COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + (row_number() OVER w1)))::numeric), '0'::numeric))) DESC, (COALESCE(t0.id, t.id))\n        ->  Hash Full Join  (cost=8043.28..8436.11 rows=100 width=36)\n              Hash Cond: (t.id = t0.id)\n              ->  WindowAgg  (cost=6593.35..6983.82 rows=100 width=12)\n                    Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                    ->  Subquery Scan on t  (cost=6593.35..6982.57 rows=100 width=4)\n                          ->  Limit  (cost=6593.35..6981.57 rows=100 width=12)\n                                ->  Index Scan using idx_articles_emb_kaz_embedder_hnsw on articles  (cost=6593.35..18235.98 rows=2999 width=12)\n                                      Order By: (emb_kaz_embedder <=> '[...]'::vector)\n              ->  Hash  (cost=1449.64..1449.64 rows=23 width=12)\n                    ->  WindowAgg  (cost=1449.07..1449.64 rows=23 width=12)\n                          Window: w1 AS (ROWS UNBOUNDED PRECEDING)\n                          ->  Subquery Scan on t0  (cost=1449.07..1449.36 rows=23 width=4)\n                                ->  Limit  (cost=1449.07..1449.13 rows=23 width=12)\n                                      CTE q\n                                        ->  Result  (cost=0.42..0.43 rows=1 width=64)\n                                              InitPlan 1\n                                                ->  Aggregate  (cost=0.15..0.42 rows=1 width=32)\n                                                      ->  Function Scan on unnest  (cost=0.00..0.10 rows=10 width=32)\n                                      CTE strict\n                                        ->  Limit  (cost=723.73..723.77 rows=15 width=8)\n                                              ->  Sort  (cost=723.73..723.77 rows=15 width=8)\n                                                    Sort Key: (ts_rank_cd(a_1.fts_vector, q_1.strict_q)) DESC, a_1.id\n                                                    ->  Nested Loop  (cost=667.41..723.44 rows=15 width=8)\n                                                          ->  CTE Scan on q q_1  (cost=0.00..0.02 rows=1 width=32)\n                                                          ->  Bitmap Heap Scan on articles a_1  (cost=667.41..723.23 rows=15 width=36)\n                                                                Recheck Cond: (fts_vector @@ q_1.strict_q)\n                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..667.41 rows=15 width=0)\n                                                                      Index Cond: (fts_vector @@ q_1.strict_q)\n                                      ->  Sort  (cost=724.87..724.93 rows=23 width=12)\n                                            Sort Key: (1), strict.r DESC, strict.id\n                                            ->  Append  (cost=0.00..724.35 rows=23 width=12)\n                                                  ->  CTE Scan on strict  (cost=0.00..0.30 rows=15 width=12)\n                                                  ->  Subquery Scan on relaxed  (cost=723.84..723.94 rows=8 width=12)\n                                                        ->  Limit  (cost=723.84..723.86 rows=8 width=8)\n                                                              ->  Sort  (cost=723.84..723.86 rows=8 width=8)\n                                                                    Sort Key: (ts_rank_cd(a.fts_vector, q.relaxed_q)) DESC, a.id\n                                                                    ->  Nested Loop  (cost=667.75..723.72 rows=8 width=8)\n                                                                          ->  CTE Scan on q  (cost=0.00..0.02 rows=1 width=32)\n                                                                          ->  Bitmap Heap Scan on articles a  (cost=667.75..723.61 rows=7 width=36)\n                                                                                Recheck Cond: (fts_vector @@ q.relaxed_q)\n                                                                                Filter: (NOT (ANY (id = (hashed SubPlan 4).col1)))\n                                                                                ->  Bitmap Index Scan on idx_articles_fts  (cost=0.00..667.41 rows=15 width=0)\n                                                                                      Index Cond: (fts_vector @@ q.relaxed_q)\n                                                                                SubPlan 4\n                                                                                  ->  CTE Scan on strict strict_1  (cost=0.00..0.30 rows=15 width=4)"
     }
   }
 }

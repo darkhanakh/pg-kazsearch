@@ -49,9 +49,11 @@ def build(sbl):
     subprocess.run([os.path.join(SNOWBALL_DIR, "snowball"), sbl, "-o",
                     os.path.join(out, "kazakh"), "-u", "-ep", "kazakh_UTF_8_"], check=True)
     runtime = os.path.join(SNOWBALL_DIR, "runtime")
+    runtime_sources = [f for f in ("api.c", "utilities.c", "snowball_runtime.c")
+                       if os.path.exists(os.path.join(runtime, f))]
     subprocess.run(["cc", "-O2", "-I", runtime, "-I", out, "-o", binary,
                     os.path.join(HERE, "stemwords.c"), os.path.join(out, "kazakh.c"),
-                    os.path.join(runtime, "api.c"), os.path.join(runtime, "utilities.c")],
+                    *(os.path.join(runtime, f) for f in runtime_sources)],
                    check=True)
     return binary
 

@@ -1,0 +1,91 @@
+{
+  "gold": "eval/gold_queries_v2.jsonl",
+  "num_queries": 132,
+  "ks": [
+    10,
+    50
+  ],
+  "strategies": {
+    "and": {
+      "metrics": {
+        "10": {
+          "precision": 0.4546,
+          "recall": 0.5468,
+          "mrr": 0.7371,
+          "ndcg": 0.6053
+        },
+        "50": {
+          "precision": 0.3457,
+          "recall": 0.6747,
+          "mrr": 0.7371,
+          "ndcg": 0.6294
+        }
+      },
+      "ci95": {
+        "recall@10": [
+          0.4921,
+          0.6019
+        ],
+        "mrr@10": [
+          0.6686,
+          0.8
+        ]
+      },
+      "no_result_queries": 4
+    },
+    "or": {
+      "metrics": {
+        "10": {
+          "precision": 0.228,
+          "recall": 0.3883,
+          "mrr": 0.3938,
+          "ndcg": 0.344
+        },
+        "50": {
+          "precision": 0.111,
+          "recall": 0.8018,
+          "mrr": 0.4037,
+          "ndcg": 0.4853
+        }
+      },
+      "ci95": {
+        "recall@10": [
+          0.3294,
+          0.4509
+        ],
+        "mrr@10": [
+          0.3326,
+          0.457
+        ]
+      },
+      "no_result_queries": 0
+    },
+    "and_or": {
+      "metrics": {
+        "10": {
+          "precision": 0.3773,
+          "recall": 0.5957,
+          "mrr": 0.7446,
+          "ndcg": 0.6336
+        },
+        "50": {
+          "precision": 0.1302,
+          "recall": 0.8754,
+          "mrr": 0.7474,
+          "ndcg": 0.7116
+        }
+      },
+      "ci95": {
+        "recall@10": [
+          0.5431,
+          0.6496
+        ],
+        "mrr@10": [
+          0.6783,
+          0.8054
+        ]
+      },
+      "no_result_queries": 0
+    }
+  }
+}
