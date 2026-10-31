@@ -37,3 +37,26 @@ fn lexicon_vowel_restore_still_recovers_elided_final_vowel() {
     assert_eq!(stem("алматыда", &cfg), "алматы");
     assert_eq!(stem("отбасының", &cfg), "отбасы");
 }
+
+#[test]
+fn negative_and_intentive_suffixes_obey_consonant_assimilation() {
+    // -бе/-бек follow voiced obstruents only. After a vowel the same letters
+    // are part of a Turkic personal name, not a negated verb.
+    for cfg in [cfg_no_lexicon(), cfg_with(&["әлі"])] {
+        assert_eq!(stem("жәнібек", &cfg), "жәнібек");
+        assert_eq!(stem("жәнібектің", &cfg), "жәнібек");
+        assert_eq!(stem("жәнібектер", &cfg), "жәнібек");
+        assert_eq!(stem("әлібек", &cfg), "әлібек");
+        assert_eq!(stem("әділбек", &cfg), "әділбек");
+    }
+}
+
+#[test]
+fn well_formed_negative_and_intentive_verbs_still_strip() {
+    let cfg = cfg_no_lexicon();
+    assert_eq!(stem("кетпек", &cfg), "кет");
+    assert_eq!(stem("жазбайды", &cfg), "жаз");
+    assert_eq!(stem("бармайды", &cfg), "бар");
+    assert_eq!(stem("білмеймін", &cfg), "біл");
+    assert_eq!(stem("өткізбек", &cfg), "өткіз");
+}
