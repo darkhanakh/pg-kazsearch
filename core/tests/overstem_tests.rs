@@ -390,3 +390,16 @@ fn locative_ta_te_is_refused_after_z_zh_gh() {
     assert_eq!(stem("жазта", &cfg), "жазта");
     assert_eq!(stem("жазда", &cfg), "жаз");
 }
+
+#[test]
+fn first_person_k_follows_only_past_or_conditional() {
+    // созақ is a place name, not соз + present -а + 1pl -қ: the short plural
+    // person ending attaches after past -ды/-ті or conditional -са/-се only.
+    let cfg = cfg_with_verbs(&[], &["соз", "бар", "кел"]);
+    for w in ["созақ", "созақта", "созақтағы", "созақтықтар"] {
+        assert_eq!(stem(w, &cfg), "созақ", "{w}");
+    }
+    assert_eq!(stem("бардық", &cfg), "бар");
+    assert_eq!(stem("келдік", &cfg), "кел");
+    assert_eq!(stem("барсақ", &cfg), "бар");
+}
