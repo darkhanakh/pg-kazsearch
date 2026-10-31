@@ -120,7 +120,7 @@ fn restore_lexicon_vowel(word: &str, lexeme: &str, lexicon: &Lexicon, best: &exp
         return lexeme.to_string();
     };
     let Some(first) = suffix.chars().next().filter(|c| is_vowel(*c)) else {
-        return lexeme.to_string();
+        return restore_verb_stem_vowel(lexeme, lexicon);
     };
 
     let mut vowel = [0u8; 4];
@@ -129,7 +129,7 @@ fn restore_lexicon_vowel(word: &str, lexeme: &str, lexicon: &Lexicon, best: &exp
         return lexeme.to_string();
     };
     if !lexicon.contains(trial) {
-        return lexeme.to_string();
+        return restore_verb_stem_vowel(lexeme, lexicon);
     }
 
     if lexicon.contains(lexeme) {
@@ -144,6 +144,29 @@ fn restore_lexicon_vowel(word: &str, lexeme: &str, lexicon: &Lexicon, best: &exp
     }
 
     trial.to_string()
+}
+
+/// A consonant suffix cannot hand back a vowel, but a verb stem ending in the
+/// -а/-е of a denominal or passive base (қорғала-, міндетте-) is still cut
+/// before it. Only a verb root of the lexicon qualifies.
+fn restore_verb_stem_vowel(lexeme: &str, lexicon: &Lexicon) -> String {
+    if lexicon.contains(lexeme) || !lexicon.has_verb_set() {
+        return lexeme.to_string();
+    }
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    let vowels: &[&str] = match text::strong_vowel_class(lexeme) {
+        Some(true) => &["а"],
+        Some(false) => &["е"],
+        None => &["а", "е"],
+    };
+    for vowel in vowels {
+        if let Some(trial) = concat_on_stack(lexeme, vowel, &mut buf) {
+            if lexicon.is_verb_root(trial) {
+                return trial.to_string();
+            }
+        }
+    }
+    lexeme.to_string()
 }
 
 // main function to stem a word, entrypoint for the library
