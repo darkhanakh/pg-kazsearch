@@ -161,3 +161,10 @@ fn name_overstem_fixes_still_hold_with_voiced_stop_guard() {
     assert_eq!(stem("апаты", &cfg), "апат");
     assert_eq!(stem("қарақытайлар", &cfg), "қарақытай");
 }
+
+#[test]
+fn tay_derivation_attaches_after_voiced_stop_finals() {
+    let cfg = cfg_with(&["клуб", "сауд"]);
+    assert_eq!(stem("клубтай", &cfg), "клуб");
+    assert_eq!(stem("саудтай", &cfg), "сауд");
+}
