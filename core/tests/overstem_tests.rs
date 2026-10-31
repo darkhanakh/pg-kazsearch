@@ -81,6 +81,27 @@ fn present_tense_a_e_reaches_a_single_syllable_lexicon_verb_root() {
 }
 
 #[test]
+fn locative_ta_te_requires_an_obstruent_final_base() {
+    // -та/-те is the obstruent allomorph of -да/-де. After a vowel, liquid
+    // or nasal the letters belong to the word: айта is айт+а, грамота is a
+    // noun. The noun parse ай+та used to beat the verb root on айта.
+    let cfg = cfg_with_verbs(
+        &["ай", "ар", "же", "ес", "грамота", "мектеп", "клуб", "қала", "үй"],
+        &["айт", "арт", "жет"],
+    );
+    assert_eq!(stem("айта", &cfg), "айт");
+    assert_eq!(stem("арта", &cfg), "арт");
+    assert_eq!(stem("жете", &cfg), "жет");
+    assert_eq!(stem("грамоталарын", &cfg), "грамота");
+    // Well-formed locatives still strip.
+    assert_eq!(stem("есте", &cfg), "ес");
+    assert_eq!(stem("мектепте", &cfg), "мектеп");
+    assert_eq!(stem("клубта", &cfg), "клуб");
+    assert_eq!(stem("қалада", &cfg), "қала");
+    assert_eq!(stem("үйде", &cfg), "үй");
+}
+
+#[test]
 fn lexicon_vowel_restore_never_extends_a_lexicon_entry() {
     // жыл "year" and жылы "warm" are both lexicon entries. Stripping
     // жылдары to жыл is already a lemma, so it must not be re-extended to
