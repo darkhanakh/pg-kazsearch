@@ -62,7 +62,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     find core pg_ext -name '*.rs' -exec touch {} + \
     && cargo pgrx install --release -c /usr/bin/pg_config -p pg_kazsearch
 
-RUN cp data/tsearch_data/kaz_stems.dict "$(pg_config --sharedir)/tsearch_data/" \
+RUN cp data/tsearch_data/kaz_stems.dict data/tsearch_data/kaz_stems.dict.verbs "$(pg_config --sharedir)/tsearch_data/" \
     && cp data/tsearch_data/kaz_stopwords.stop "$(pg_config --sharedir)/tsearch_data/"
 
 # ── Dev image (toolchain included for `just build` iteration) ───────────
@@ -70,7 +70,7 @@ FROM base AS dev
 
 COPY --from=builder /usr/share/postgresql/18/extension/pg_kazsearch* /usr/share/postgresql/18/extension/
 COPY --from=builder /usr/lib/postgresql/18/lib/pg_kazsearch* /usr/lib/postgresql/18/lib/
-COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stems.dict /usr/share/postgresql/18/tsearch_data/
+COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stems.dict /usr/share/postgresql/18/tsearch_data/kaz_stems.dict.verbs /usr/share/postgresql/18/tsearch_data/
 COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stopwords.stop /usr/share/postgresql/18/tsearch_data/
 
 # ── pg_textsearch (BM25) build ──────────────────────────────────────────
@@ -101,5 +101,5 @@ FROM postgres:18 AS prod
 
 COPY --from=builder /usr/share/postgresql/18/extension/pg_kazsearch* /usr/share/postgresql/18/extension/
 COPY --from=builder /usr/lib/postgresql/18/lib/pg_kazsearch* /usr/lib/postgresql/18/lib/
-COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stems.dict /usr/share/postgresql/18/tsearch_data/
+COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stems.dict /usr/share/postgresql/18/tsearch_data/kaz_stems.dict.verbs /usr/share/postgresql/18/tsearch_data/
 COPY --from=builder /usr/share/postgresql/18/tsearch_data/kaz_stopwords.stop /usr/share/postgresql/18/tsearch_data/
