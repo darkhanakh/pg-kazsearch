@@ -141,10 +141,19 @@ fn test_parity_5k_words_with_lexicon() {
     // than C does; those divergences are covered by
     // test_stem_idempotent_over_5k_corpus and the gold_v2 eval instead.
     //
-    // Rust now deliberately departs from the C reference on 145 of these
-    // words (5000-word sample, 4317 -> 4176 matches):
+    // Rust now deliberately departs from the C reference on 154 of these
+    // words (5000-word sample, 4317 -> 4161 matches):
     //  * 129: C re-extends a stripped stem that is already a lemma (елдер →
     //    еле, жолында → жола, берілді → бері); Rust keeps ел, жол, бер.
+    //  *   3: C stops a verb parse before the lexicon root when the suffix
+    //    voiced the stem-final consonant (жабу, жабуға, егіп); Rust reaches
+    //    жап, ек.
+    //  *   2: C strips first-person -бын/-бін after a vowel (айыбын → ай,
+    //    алқабын → алқа); Rust enforces -мын/-бын/-пын assimilation and keeps
+    //    айып, алқап.
+    //  *   4: C strips locative -та/-те after a vowel, liquid or nasal
+    //    (грамоталарын → грамо, граната → гра, ақбота → ақбо); Rust keeps
+    //    грамота, граната, ақбота.
     //  *   9: patronymics -ұлы/-қызы stay whole (төлегенұлы, not төлегенұл).
     //  *   7: -бек names (әлібек), -тай words (жазатайым) and -ты/-ті after a
     //    vowel (апаты, автоматы) are no longer parsed as verb or derived forms.

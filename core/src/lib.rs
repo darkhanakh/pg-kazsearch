@@ -407,7 +407,7 @@ fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     // "repaired" into негііз or клуп.
     let is_lemma = cfg.lexicon.as_ref().is_some_and(|lex| lex.contains(&lexeme));
     if !is_lemma {
-        undo_sound_changes(&mut lexeme, &best);
+        undo_sound_changes(&mut lexeme, &best, cfg.lexicon.as_ref());
     }
 
     if let Some(ref lex) = cfg.lexicon {
@@ -574,13 +574,17 @@ fn select_best(
     }
 }
 
-fn undo_sound_changes(lexeme: &mut String, best: &explore::Candidate) {
+fn undo_sound_changes(lexeme: &mut String, best: &explore::Candidate, lex: Option<&Lexicon>) {
     let needs_restore = best.nominal_inf > 0
         && best.last_suffix.map_or(false, |s| POSS_VOWEL_SUFFIXES.contains(&s));
 
     if needs_restore {
         explore::apply_mutation(lexeme);
         *lexeme = explore::apply_elision_restore(lexeme);
+        return;
+    }
+    if let Some(root) = lex.and_then(|l| explore::voiced_verb_root(lexeme, best, l)) {
+        *lexeme = root;
     }
 }
 

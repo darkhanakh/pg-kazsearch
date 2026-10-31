@@ -123,8 +123,34 @@ fn negation_allomorph_ok(sfx: &str, base: &str) -> bool {
     }
 }
 
+/// First-person -мын/-бын/-пын (and -мін/-бін/-пін) pick their consonant
+/// like negation does, except that nasals take м (адаммын): м after vowels,
+/// liquids and nasals, б after voiced obstruents, п after voiceless ones.
+/// талап+ы+н must not be read as тала+бын.
+fn person_allomorph_ok(sfx: &str, base: &str) -> bool {
+    let mut chars = sfx.chars();
+    let first = chars.next();
+    if !matches!(chars.next(), Some('ы' | 'і')) {
+        return true;
+    }
+    let Some(last) = utf8_last_cp(base) else {
+        return false;
+    };
+    match (first, final_sound(last)) {
+        (_, FinalSound::Unknown) => true,
+        (Some('м'), FinalSound::Vocalic | FinalSound::Liquid | FinalSound::Nasal) => true,
+        (Some('б'), FinalSound::Voiced) => true,
+        (Some('п'), FinalSound::Voiceless) => true,
+        (Some('м' | 'б' | 'п'), _) => false,
+        _ => true,
+    }
+}
+
 fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Option<&Lexicon>) -> bool {
     if matches!(layer_id, LAYER_VTENSE | LAYER_VNEG) && !negation_allomorph_ok(sfx, base) {
+        return false;
+    }
+    if matches!(layer_id, LAYER_VPERSON | LAYER_PRED) && !person_allomorph_ok(sfx, base) {
         return false;
     }
     if layer_id == LAYER_VTENSE && matches!(sfx, "ты" | "ті") {
@@ -157,6 +183,10 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
                 Some(cp) => match sfx {
                     "ны" | "ні" => return is_vocalic(cp),
                     "ын" | "ін" | "ды" | "ді" | "ты" | "ті" => return !is_vocalic(cp),
+                    // Locative -та/-те is the т allomorph of -да/-де.
+                    // After a vowel, liquid or nasal the letters are part of
+                    // the word (айта, арта, жете are converbs of айт/арт/жет).
+                    "та" | "те" => return takes_t_allomorph(cp),
                     _ => {}
                 },
                 None => return false,
@@ -440,6 +470,36 @@ fn elision_restored_on_stack<'a>(s: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> 
     Some(std::str::from_utf8(&buf[..total]).unwrap())
 }
 
+/// `stem` with its final consonant devoiced (ғ→қ, г→к, б→п), when that form
+/// is a lexicon verb root.
+fn devoiced_verb_root<'a>(stem: &str, buf: &'a mut [u8; MAX_STEM_BYTES], lex: &Lexicon) -> Option<&'a str> {
+    let alt = mutated_on_stack(stem, buf)?;
+    (alt != stem && lex.is_verb_root(alt)).then_some(alt)
+}
+
+/// A vowel-initial tense or converb suffix voices a stem-final қ/к/п
+/// (соқ+ады → соғады, тап+у → табу), so the stem it was stripped from may
+/// need devoicing before it matches the lexicon. Voice suffixes (-ыс, -ыл)
+/// are left out: the noun track reads the same word as a nominal in -ыс
+/// (соқтығыс "collision"), and devoicing past it would split соқтығысқан
+/// from соқтығысты.
+fn verb_suffix_voices_stem(c: &Candidate) -> bool {
+    c.last_layer == LAYER_VTENSE
+        && c.last_suffix
+            .and_then(|s| s.chars().next())
+            .is_some_and(is_vowel)
+}
+
+/// The lexicon verb root behind a verb-track candidate whose last stripped
+/// suffix voiced the stem-final consonant (соғ → соқ).
+pub fn voiced_verb_root(stem: &str, c: &Candidate, lex: &Lexicon) -> Option<String> {
+    if !verb_suffix_voices_stem(c) {
+        return None;
+    }
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    devoiced_verb_root(stem, &mut buf, lex).map(str::to_string)
+}
+
 fn try_append_vowel_check(stem: &str, suffix: &str, lexicon: &Lexicon) -> bool {
     if stem.is_empty() {
         return false;
@@ -490,6 +550,10 @@ pub fn candidate_hits_lexicon(c: &Candidate, word: &str, lexicon: &Lexicon) -> b
                 }
             }
         }
+    }
+
+    if voiced_verb_root(stem, c, lexicon).is_some() {
+        return true;
     }
 
     if c.steps < 2 {
