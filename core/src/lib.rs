@@ -5,7 +5,7 @@ pub mod explore;
 pub mod script;
 
 use explore::ExploreResult;
-use rules::{NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
+use rules::{LAYER_VVOICE, NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
 use script::{LatinAnalysis, ScriptClass};
 use text::{count_syllables, fill_prefix_tables, utf8_char_count, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
@@ -96,39 +96,45 @@ fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> O
     Some(std::str::from_utf8(&buf[..total]).unwrap())
 }
 
-fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, steps: i32) -> String {
-    if steps < 2 || lexeme.is_empty() || lexeme.len() >= MAX_STEM_BYTES {
+/// Re-segments a stem the BFS cut one vowel too early. Stripping -ын from
+/// жылына leaves жыл, but the stem is жылы and its final vowel was taken as
+/// the first letter of the suffix. Only that letter can be handed back, and
+/// only when the result is a lexicon entry.
+///
+/// A lexeme that is already a lexicon entry is a complete lemma, so негіз-і-нде
+/// and ел-ім-із stay put. The one exception is the reflexive -ын/-ін peeled
+/// off a non-verb (жыл-ын-ады): a vowel-final stem takes plain -н there, so
+/// the BFS parse is жылы + -н. A verb root stays (ұр-ын-ып, not ұры).
+fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, best: &explore::Candidate) -> String {
+    if best.steps < 2 || lexeme.is_empty() || lexeme.len() >= MAX_STEM_BYTES {
         return lexeme.to_string();
     }
 
-    // A stripped form that is already a lemma needs no vowel back: appending
-    // one lands on an unrelated word (жыл "year" → жылы "warm", ел → еле).
-    if lexicon.contains(lexeme) {
+    if utf8_last_cp(lexeme).map_or(true, |cp| is_vowel(cp)) {
         return lexeme.to_string();
     }
 
-    let ends_with_vowel = utf8_last_cp(lexeme).map_or(true, |cp| is_vowel(cp));
-    if ends_with_vowel {
+    let Some(suffix) = best.last_suffix else {
         return lexeme.to_string();
-    }
-
-    let mut buf = [0u8; MAX_STEM_BYTES];
-    // Harmony-neutral stems (glide-only vowels) try both classes.
-    let candidates: &[&str] = match text::strong_vowel_class(lexeme) {
-        Some(true) => &["ы", "а"],
-        Some(false) => &["і", "е"],
-        None => &["ы", "і", "а", "е"],
+    };
+    let Some(first) = suffix.chars().next().filter(|c| is_vowel(*c)) else {
+        return lexeme.to_string();
     };
 
-    for sfx in candidates {
-        if let Some(trial) = concat_on_stack(lexeme, sfx, &mut buf) {
-            if lexicon.contains(trial) {
-                return trial.to_string();
-            }
+    if lexicon.contains(lexeme) {
+        let reflexive = best.last_layer == LAYER_VVOICE && matches!(suffix, "ын" | "ін");
+        let verb_root = lexicon.has_verb_set() && lexicon.is_verb_root(lexeme);
+        if !reflexive || verb_root {
+            return lexeme.to_string();
         }
     }
 
-    lexeme.to_string()
+    let mut vowel = [0u8; 4];
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    match concat_on_stack(lexeme, first.encode_utf8(&mut vowel), &mut buf) {
+        Some(trial) if lexicon.contains(trial) => trial.to_string(),
+        _ => lexeme.to_string(),
+    }
 }
 
 // main function to stem a word, entrypoint for the library
@@ -373,7 +379,7 @@ fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     }
 
     if let Some(ref lex) = cfg.lexicon {
-        lexeme = restore_lexicon_vowel(&lexeme, lex, best.steps);
+        lexeme = restore_lexicon_vowel(&lexeme, lex, &best);
     }
 
     StemOutcome { stem: lexeme, best }
