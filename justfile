@@ -16,6 +16,8 @@ scrape_lim  := "3000"
 eval_max_q  := "0"
 kazrag_dir  := ".cache/kazrag"
 kazrag_sha  := "08bc105c093be16c714b6ba3c363beb54ac0ad16"
+snowball_dir := ".cache/snowball"
+snowball_sha := "6389c79f91cd67ed2de3ebdcf84ec8c2d2d23c11"
 opt_report  := "eval/results/optimized_weights.json"
 opt_evals   := "2000"
 opt_obj     := "combined"
@@ -155,8 +157,9 @@ eval-search:
     python3 eval/run_eval.py --auto "{{ auto_q }}" --gold "{{ gold_q }}" \
         --gold-v2 "{{ gold_v2_q }}" --max-queries {{ eval_max_q }}
 
-# Run pg_kazsearch through the external Kaz-RAG-search-benchmark (pinned commit, their harness)
-eval-external: cli
+# Clone Kaz-RAG-search-benchmark into .cache/kazrag and check out the pinned commit
+[private]
+fetch-kazrag:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ ! -d "{{ kazrag_dir }}/.git" ]; then
@@ -166,8 +169,32 @@ eval-external: cli
         git -C "{{ kazrag_dir }}" fetch --quiet origin "{{ kazrag_sha }}" || true
         git -C "{{ kazrag_dir }}" checkout --quiet "{{ kazrag_sha }}"
     fi
+
+# Clone and build the pinned Snowball compiler into .cache/snowball if it is missing
+[private]
+fetch-snowball:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -x "{{ snowball_dir }}/snowball" ]; then
+        if [ ! -d "{{ snowball_dir }}/.git" ]; then
+            git clone --quiet https://github.com/snowballstem/snowball "{{ snowball_dir }}"
+        fi
+        git -C "{{ snowball_dir }}" checkout --quiet "{{ snowball_sha }}"
+        make -C "{{ snowball_dir }}" snowball -j4 >/dev/null
+    fi
+
+# Run pg_kazsearch through the external Kaz-RAG-search-benchmark (pinned commit, their harness)
+eval-external: cli fetch-kazrag
     python3 eval/run_external_kazrag.py --repo "{{ kazrag_dir }}" \
         --lexicon data/tsearch_data/kaz_stems.dict --out eval/results/external_kazrag.json
+
+# Score snowball/kazakh.sbl against the Rust engine on gold_v2 and Kaz-RAG (pinned Snowball compiler)
+eval-snowball: cli fetch-snowball fetch-kazrag
+    python3 snowball/eval_snowball.py --kazrag "{{ kazrag_dir }}"
+
+# Compare stemmers on KazQAD passage retrieval (pinned commit, judgments independent of this project)
+eval-kazqad: cli
+    uv run --no-project --with numpy --with scipy python eval/run_kazqad.py --out eval/results/kazqad.json
 
 # Validate the gold_v2 dataset gates
 validate-gold:

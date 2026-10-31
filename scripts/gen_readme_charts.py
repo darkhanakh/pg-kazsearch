@@ -196,6 +196,30 @@ def chart_external(report: dict) -> None:
     save(fig, "external_kazrag.png")
 
 
+def chart_kazqad(report: dict) -> None:
+    params = report["parameters"]
+    harness = params["primary_harness"]["name"]
+    split = report["results"][harness]["splits"]["test"]
+    metrics = split["params"][params["primary_params"]]["metrics"]
+    keys = ["ndcg@10", "mrr@10", "recall@10", "recall@100"]
+    groups = ["nDCG@10", "MRR@10", "Recall@10", "Recall@100"]
+    systems = [
+        ("no stemming", "BM25, no stemming", BASE),
+        ("snowball", "BM25 + Snowball kazakh.sbl", ALT),
+        ("rust", "BM25 + Rust, no lexicon", ALT2),
+        ("rust+lexicon", "BM25 + Rust + lexicon (pg_kazsearch)", KAZ),
+    ]
+    fig, ax = plt.subplots(figsize=(9, 4.4))
+    grouped_bars(ax, groups, [(label, [metrics[s][k] for k in keys], color) for s, label, color in systems])
+    ax.set_ylim(0, 0.85)
+    n = split["queries"]
+    passages = report["corpus"]["passages"]
+    ax.set_title(f"KazQAD test split, {n:,} exam questions over {passages:,} Wikipedia passages, "
+                 f"BM25 {params['primary_params']}")
+    ax.legend(loc="upper left", ncol=2)
+    save(fig, "kazqad.png")
+
+
 def chart_keyboard(folded_exact: dict, folded_restore: dict, proper_exact: dict, proper_restore: dict) -> None:
     def pair(report: dict) -> tuple[float, float]:
         m = report["fts"]["10"]
@@ -223,6 +247,7 @@ def main() -> None:
     chart_trgm(report)
     chart_hybrid(load("report_hybrid.json"))
     chart_external(load("external_kazrag.json"))
+    chart_kazqad(load("kazqad.json"))
     chart_keyboard(load("kb_exact_folded.json"), load("kb_restore_folded.json"),
                    load("kb_exact_proper.json"), load("kb_restore_proper.json"))
 
