@@ -352,6 +352,20 @@ On human-written queries, the stemmer finds more relevant articles and ranks the
 |                                    | MRR@10    | **0.669**      | 0.569    | +18%        |
 
 
+### External benchmark: Kaz-RAG-search-benchmark
+
+[Kaz-RAG-search-benchmark](https://github.com/Tim2190/Kaz-RAG-search-benchmark) is an independent Kazakh retrieval benchmark with 300 queries over 8,370 Kazakh Wikipedia passages, in three categories. We run pg_kazsearch through the benchmark's own tokenizer, BM25 (k1=1.5, b=0.75), metrics and bootstrap, pinned to commit `08bc105`. Only the stemmer changes. The no-stemming and the benchmark's own stemmer runs reproduce its published nDCG@10 exactly (0.690 and 0.754).
+
+| nDCG@10 (n=300)       | overall   | inflected | natural   | vocabulary-gap |
+| --------------------- | --------- | --------- | --------- | -------------- |
+| BM25, no stemming     | 0.690     | 0.627     | 0.703     | 0.741          |
+| BM25 + benchmark's stemmer | 0.754 | 0.727   | **0.772** | 0.764          |
+| BM25 + pg_kazsearch   | **0.767** | **0.773** | 0.751     | **0.777**      |
+
+pg_kazsearch beats no stemming by +0.077 (95% CI [+0.040, +0.113]), with the largest gain on inflected queries (+0.146). Against the benchmark's own stemmer the difference is +0.013 (95% CI [−0.011, +0.036]), which is a tie on this set, not a win. The benchmark also reports dense BGE-M3 at 0.866 on the same queries, so for question-style Wikipedia search an embedding model is stronger than any BM25 configuration.
+
+Reproduce with `just eval-external` (results in `eval/results/external_kazrag.json`).
+
 ### vs Tengrinews.kz native search
 
 Re-benchmarked July 2026 against `kaz.tengrinews.kz/search/?text=…`. Raw counts are not directly comparable — tengrinews searches its full archive while our index holds 2,999 articles — so the meaningful signal is *conflation behavior*, shown by the probe below the table. Matched-count columns use each engine's default semantics (tengrinews as-is, ES `multi_match` OR):
