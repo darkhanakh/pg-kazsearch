@@ -123,8 +123,34 @@ fn negation_allomorph_ok(sfx: &str, base: &str) -> bool {
     }
 }
 
+/// First-person -мын/-бын/-пын (and -мін/-бін/-пін) pick their consonant
+/// like negation does, except that nasals take м (адаммын): м after vowels,
+/// liquids and nasals, б after voiced obstruents, п after voiceless ones.
+/// талап+ы+н must not be read as тала+бын.
+fn person_allomorph_ok(sfx: &str, base: &str) -> bool {
+    let mut chars = sfx.chars();
+    let first = chars.next();
+    if !matches!(chars.next(), Some('ы' | 'і')) {
+        return true;
+    }
+    let Some(last) = utf8_last_cp(base) else {
+        return false;
+    };
+    match (first, final_sound(last)) {
+        (_, FinalSound::Unknown) => true,
+        (Some('м'), FinalSound::Vocalic | FinalSound::Liquid | FinalSound::Nasal) => true,
+        (Some('б'), FinalSound::Voiced) => true,
+        (Some('п'), FinalSound::Voiceless) => true,
+        (Some('м' | 'б' | 'п'), _) => false,
+        _ => true,
+    }
+}
+
 fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Option<&Lexicon>) -> bool {
     if matches!(layer_id, LAYER_VTENSE | LAYER_VNEG) && !negation_allomorph_ok(sfx, base) {
+        return false;
+    }
+    if matches!(layer_id, LAYER_VPERSON | LAYER_PRED) && !person_allomorph_ok(sfx, base) {
         return false;
     }
     if layer_id == LAYER_VTENSE && matches!(sfx, "ты" | "ті") {
