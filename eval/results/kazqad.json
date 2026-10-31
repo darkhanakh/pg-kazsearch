@@ -28,6 +28,7 @@
       ]
     },
     "primary_params": "k1=0.9,b=0.4",
+    "primary_params_basis": "The Pyserini and Anserini BM25 defaults, fixed before any run. Not selected by test or validation scores. The KazQAD paper's k1=1.2, b=0.75 is reported next to it on both splits.",
     "top_k": 100,
     "bootstrap_resamples": 10000,
     "bootstrap_seed": 20260501,

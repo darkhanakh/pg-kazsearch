@@ -80,6 +80,10 @@ PAIRS = (
 METRICS = ("ndcg@10", "mrr@10", "recall@10", "recall@100")
 PARAM_SETS = {"k1=0.9,b=0.4": (0.9, 0.4), "k1=1.2,b=0.75": (1.2, 0.75)}
 PRIMARY_PARAMS = "k1=0.9,b=0.4"
+PRIMARY_PARAMS_BASIS = (
+    "The Pyserini and Anserini BM25 defaults, fixed before any run. Not selected by test or validation "
+    "scores. The KazQAD paper's k1=1.2, b=0.75 is reported next to it on both splits."
+)
 TOP_K = 100
 MAX_TOKEN_CHARS = 100
 
@@ -598,7 +602,8 @@ def main():
     result = {
         "dataset": {"name": "KazQAD information-retrieval", "repo": DATASET_REPO, "commit": DATASET_COMMIT,
                     "license": "CC BY-SA 4.0", "files_sha256": dataset_shas},
-        "parameters": {"param_sets": PARAM_SETS, "primary_params": PRIMARY_PARAMS, "top_k": TOP_K,
+        "parameters": {"param_sets": PARAM_SETS, "primary_params": PRIMARY_PARAMS,
+                       "primary_params_basis": PRIMARY_PARAMS_BASIS, "top_k": TOP_K,
                        "bootstrap_resamples": args.boot, "bootstrap_seed": args.seed,
                        "primary_harness": PRIMARY.__dict__, "stopword_file": "data/tsearch_data/kaz_stopwords.stop",
                        "document_text": "title + passage text", "max_token_chars": MAX_TOKEN_CHARS,

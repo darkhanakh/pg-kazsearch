@@ -184,7 +184,7 @@ Human queries contain inflected forms, and that is where the stemmer helps. Verb
 
 ### On KazQAD, an independent benchmark, stemming adds +0.069 nDCG@10
 
-[KazQAD](https://github.com/IS2AI/KazQAD) is a Kazakh question answering and passage retrieval dataset from ISSAI, released under CC BY-SA 4.0. Its retrieval task has 1,929 test questions taken from the Kazakh national university-entrance exam, judged against 825,309 Kazakh Wikipedia passages. Nobody on this project wrote the questions or the judgments, so this is the strongest evidence in this file. `just eval-kazqad` (`eval/run_kazqad.py`) indexes the passages with BM25 (k1=0.9, b=0.4), an alphanumeric tokenizer, and the shipped stopword list, and changes only the stemmer between runs. It writes `eval/results/kazqad.json`, which records the dataset commit (`ab8684a`) and the SHA-256 of every file it read.
+[KazQAD](https://github.com/IS2AI/KazQAD) is a Kazakh question answering and passage retrieval dataset from ISSAI, released under CC BY-SA 4.0. Its retrieval task has 1,929 test questions taken from the Kazakh national university-entrance exam, judged against 825,309 Kazakh Wikipedia passages. Nobody on this project wrote the questions or the judgments, so this is the strongest evidence in this file. `just eval-kazqad` (`eval/run_kazqad.py`) indexes the passages with BM25 (k1=0.9, b=0.4, the Pyserini and Anserini defaults), an alphanumeric tokenizer, and the shipped stopword list, and changes only the stemmer between runs. It writes `eval/results/kazqad.json`, which records the dataset commit (`ab8684a`) and the SHA-256 of every file it read.
 
 ![KazQAD nDCG@10, MRR@10, Recall@10, and Recall@100 by stemmer](docs/img/kazqad.png)
 
@@ -201,9 +201,20 @@ Paired bootstrap over questions (10,000 resamples) on nDCG@10:
 - Rust + lexicon against Rust without it is +0.015 (95% CI +0.007 to +0.024).
 - Rust + lexicon against Snowball is −0.002 (95% CI −0.009 to +0.005). The dictionary-free algorithm and the lexicon-backed engine score the same on this set. Snowball is +0.017 above the engine without the lexicon (95% CI +0.009 to +0.026).
 
-Three things qualify the table.
+Four things qualify the first table.
 
-The harness reproduces the paper. With the untuned parameters the KazQAD paper used (k1=1.2, b=0.75) and no stopword list, the no-stemming run scores 0.140 nDCG@10 against the 0.1446 the paper reports for its BM25 candidate generator, so the harness reads the data the way the authors did. The table uses k1=0.9, b=0.4 because the paper's parameters leave every system lower (no stemming 0.143, Rust + lexicon 0.209) while the deltas stay the same (+0.066 for stemming, −0.001 against Snowball).
+The harness reproduces the paper. With the parameters the KazQAD paper used (k1=1.2, b=0.75) and no stopword list, the no-stemming run scores 0.140 nDCG@10 against the 0.1446 the paper reports for its BM25 candidate generator, so the harness reads the data the way the authors did.
+
+The table uses k1=0.9, b=0.4, the Pyserini and Anserini BM25 defaults. They were fixed before any run, and no score from either split chose them. The next table gives nDCG@10 for both parameter sets on both splits, with paired 95% intervals, so the choice can be checked against the validation questions as well as the test ones.
+
+| Split | Parameters | No stemming | Snowball | Rust | Rust + lexicon | Rust + lexicon vs no stemming | Rust + lexicon vs Snowball |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| test (n=1,929) | k1=0.9, b=0.4 | 0.219 | 0.290 | 0.273 | 0.288 | +0.069 [+0.056, +0.081] | −0.002 [−0.009, +0.005] |
+| test (n=1,929) | k1=1.2, b=0.75 | 0.143 | 0.210 | 0.190 | 0.209 | +0.066 [+0.055, +0.077] | −0.001 [−0.007, +0.005] |
+| validation (n=548) | k1=0.9, b=0.4 | 0.230 | 0.297 | 0.279 | 0.298 | +0.069 [+0.046, +0.092] | +0.001 [−0.012, +0.014] |
+| validation (n=548) | k1=1.2, b=0.75 | 0.148 | 0.214 | 0.200 | 0.209 | +0.061 [+0.042, +0.081] | −0.004 [−0.015, +0.006] |
+
+In all four rows stemming improves nDCG@10 by 0.061 to 0.069 with an interval above zero, and the interval for Rust + lexicon against Snowball contains zero. The absolute scores depend on the parameters. The significance of each comparison between stemmers is the same in all four rows, though the sign of the Snowball difference varies within its interval.
 
 The judgments are sparse. Between 4.6% and 6.0% of the passages in any system's top 10 carry a judgment, and an unjudged passage counts as not relevant, so the absolute scores are lower bounds and the paired deltas are what the set measures.
 
