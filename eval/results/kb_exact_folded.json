@@ -3,8 +3,8 @@
     "10": {
       "precision": 0.0369,
       "recall": 0.0276,
-      "mrr": 0.0473,
-      "ndcg": 0.0377
+      "mrr": 0.0436,
+      "ndcg": 0.0366
     }
   },
   "nostem": {
@@ -21,8 +21,8 @@
         "10": {
           "precision": 0.0369,
           "recall": 0.0276,
-          "mrr": 0.0473,
-          "ndcg": 0.0377
+          "mrr": 0.0436,
+          "ndcg": 0.0366
         }
       },
       "nostem_metrics": {
@@ -41,7 +41,7 @@
         ],
         "mrr@10": [
           0.0152,
-          0.0852
+          0.0777
         ]
       }
     }
@@ -62,7 +62,7 @@
       "ndcg": 0.0
     }
   },
-  "trgm_threshold": 0.3,
+  "trgm_threshold": 0.2,
   "num_queries": 132,
   "num_trgm_queries": 1,
   "ks": [

@@ -1,0 +1,215 @@
+{
+  "ES kazsearch_stem": {
+    "summary": {
+      "10": {
+        "precision": 0.0967,
+        "recall": 0.9104,
+        "mrr": 0.7632,
+        "ndcg": 0.7962
+      },
+      "50": {
+        "precision": 0.0232,
+        "recall": 0.977,
+        "mrr": 0.7667,
+        "ndcg": 0.8128
+      }
+    },
+    "by_source": {
+      "body_sentence": {
+        "metrics": {
+          "10": {
+            "precision": 0.0786,
+            "recall": 0.7859,
+            "mrr": 0.5128,
+            "ndcg": 0.5776
+          },
+          "50": {
+            "precision": 0.0189,
+            "recall": 0.939,
+            "mrr": 0.5213,
+            "ndcg": 0.6132
+          }
+        },
+        "num_queries": 2999
+      },
+      "gold": {
+        "metrics": {
+          "10": {
+            "precision": 0.2686,
+            "recall": 0.396,
+            "mrr": 0.6625,
+            "ndcg": 0.4104
+          },
+          "50": {
+            "precision": 0.1141,
+            "recall": 0.7861,
+            "mrr": 0.6658,
+            "ndcg": 0.5761
+          }
+        },
+        "num_queries": 51
+      },
+      "gold_v2": {
+        "metrics": {
+          "10": {
+            "precision": 0.2962,
+            "recall": 0.5242,
+            "mrr": 0.6687,
+            "ndcg": 0.5272
+          },
+          "50": {
+            "precision": 0.1222,
+            "recall": 0.8769,
+            "mrr": 0.6757,
+            "ndcg": 0.6446
+          }
+        },
+        "num_queries": 132
+      },
+      "morpho_variant": {
+        "metrics": {
+          "10": {
+            "precision": 0.0994,
+            "recall": 0.98,
+            "mrr": 0.8877,
+            "ndcg": 0.9105
+          },
+          "50": {
+            "precision": 0.0226,
+            "recall": 0.9997,
+            "mrr": 0.8889,
+            "ndcg": 0.9153
+          }
+        },
+        "num_queries": 2999
+      },
+      "title_keywords": {
+        "metrics": {
+          "10": {
+            "precision": 0.1003,
+            "recall": 0.991,
+            "mrr": 0.895,
+            "ndcg": 0.9189
+          },
+          "50": {
+            "precision": 0.0221,
+            "recall": 1.0,
+            "mrr": 0.8956,
+            "ndcg": 0.9212
+          }
+        },
+        "num_queries": 2999
+      }
+    },
+    "elapsed_s": 4.64
+  },
+  "ES standard (no stemming)": {
+    "summary": {
+      "10": {
+        "precision": 0.1035,
+        "recall": 0.9376,
+        "mrr": 0.7949,
+        "ndcg": 0.8272
+      },
+      "50": {
+        "precision": 0.0311,
+        "recall": 0.9809,
+        "mrr": 0.7972,
+        "ndcg": 0.8382
+      }
+    },
+    "by_source": {
+      "body_sentence": {
+        "metrics": {
+          "10": {
+            "precision": 0.0875,
+            "recall": 0.875,
+            "mrr": 0.6387,
+            "ndcg": 0.6953
+          },
+          "50": {
+            "precision": 0.0194,
+            "recall": 0.9577,
+            "mrr": 0.6433,
+            "ndcg": 0.7146
+          }
+        },
+        "num_queries": 2999
+      },
+      "gold": {
+        "metrics": {
+          "10": {
+            "precision": 0.1983,
+            "recall": 0.3093,
+            "mrr": 0.5911,
+            "ndcg": 0.3259
+          },
+          "50": {
+            "precision": 0.0939,
+            "recall": 0.6241,
+            "mrr": 0.5958,
+            "ndcg": 0.4582
+          }
+        },
+        "num_queries": 51
+      },
+      "gold_v2": {
+        "metrics": {
+          "10": {
+            "precision": 0.2792,
+            "recall": 0.4506,
+            "mrr": 0.5687,
+            "ndcg": 0.451
+          },
+          "50": {
+            "precision": 0.1344,
+            "recall": 0.7759,
+            "mrr": 0.575,
+            "ndcg": 0.5509
+          }
+        },
+        "num_queries": 132
+      },
+      "morpho_variant": {
+        "metrics": {
+          "10": {
+            "precision": 0.1106,
+            "recall": 0.9747,
+            "mrr": 0.8271,
+            "ndcg": 0.8633
+          },
+          "50": {
+            "precision": 0.0416,
+            "recall": 1.0,
+            "mrr": 0.8289,
+            "ndcg": 0.8697
+          }
+        },
+        "num_queries": 2999
+      },
+      "title_keywords": {
+        "metrics": {
+          "10": {
+            "precision": 0.1031,
+            "recall": 0.9953,
+            "mrr": 0.9323,
+            "ndcg": 0.9481
+          },
+          "50": {
+            "precision": 0.0266,
+            "recall": 1.0,
+            "mrr": 0.9327,
+            "ndcg": 0.9493
+          }
+        },
+        "num_queries": 2999
+      }
+    },
+    "elapsed_s": 3.35
+  },
+  "num_queries": 9180,
+  "ks": [
+    10,
+    50
+  ]
+}

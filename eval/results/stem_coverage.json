@@ -1,0 +1,15 @@
+{
+  "tokens_file": "core/tests/bench_tokens.txt",
+  "lexicon_file": "data/tsearch_data/kaz_stems.dict",
+  "total_tokens": 45708,
+  "analyzed_rate_pct": 75.86,
+  "lexicon_valid_rate_pct": 74.86,
+  "recognized_rate_pct": 86.87,
+  "unchanged_oov_pct": 13.13,
+  "definitions": {
+    "analyzed_rate": "stem differs from lowercased input (a suffix was stripped)",
+    "lexicon_valid_rate": "final stem is an entry in the lexicon",
+    "recognized_rate": "stem changed OR stem is a lexicon entry",
+    "unchanged_oov": "token passed through unchanged and is not in the lexicon"
+  }
+}
