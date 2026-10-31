@@ -364,7 +364,13 @@ fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     }
 
     let mut lexeme = txt[..best.len as usize].to_string();
-    undo_sound_changes(&mut lexeme, &best);
+    // Mutation and elision repair rebuild a lemma from its inflected stem.
+    // A stripped form that is already a lemma (негіз, клуб) must not be
+    // "repaired" into негііз or клуп.
+    let is_lemma = cfg.lexicon.as_ref().is_some_and(|lex| lex.contains(&lexeme));
+    if !is_lemma {
+        undo_sound_changes(&mut lexeme, &best);
+    }
 
     if let Some(ref lex) = cfg.lexicon {
         lexeme = restore_lexicon_vowel(&lexeme, lex, best.steps);
