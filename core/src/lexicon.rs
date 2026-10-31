@@ -2,7 +2,9 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
+use std::sync::OnceLock;
 
+use crate::kbfold::FoldIndex;
 use crate::MAX_STEM_BYTES;
 
 #[derive(Clone, Debug, Default)]
@@ -12,6 +14,28 @@ pub struct Lexicon {
     /// gate verb-root reductions (-у/-ю, -ған participles, -п converbs) so
     /// they never land on noun homographs. Empty when the sibling is absent.
     verbs: HashSet<String>,
+    /// Keyboard-fold index, derived from `entries` on first use and dropped
+    /// by `insert`/`insert_verb`, so it can never disagree with the entry
+    /// set. `OnceLock` keeps `Lexicon: Sync` for the Elasticsearch
+    /// `Arc<StemConfig>` shared across analysis threads.
+    fold: OnceLock<FoldIndex>,
+}
+
+/// Proof that a string is a lexicon entry. Only [`Lexicon::verify`] builds
+/// one, so keyboard restoration cannot return a stem that was not checked
+/// against the dictionary, which is the invariant its idempotence argument
+/// rests on.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LexStem(String);
+
+impl LexStem {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn into_string(self) -> String {
+        self.0
+    }
 }
 
 fn read_entries<P: AsRef<Path>>(path: P) -> io::Result<HashSet<String>> {
@@ -58,11 +82,19 @@ impl Lexicon {
             HashSet::new()
         };
 
-        Ok(Self { entries, verbs })
+        Ok(Self { entries, verbs, fold: OnceLock::new() })
     }
 
     pub fn contains(&self, word: &str) -> bool {
         self.entries.contains(word)
+    }
+
+    pub fn verify(&self, word: &str) -> Option<LexStem> {
+        self.contains(word).then(|| LexStem(word.to_owned()))
+    }
+
+    pub fn fold_index(&self) -> &FoldIndex {
+        self.fold.get_or_init(|| FoldIndex::build(self.entries.iter()))
     }
 
     /// True when `word` is a known verb root. Falls back to plain dictionary
@@ -82,6 +114,7 @@ impl Lexicon {
 
     pub fn insert(&mut self, word: String) {
         self.entries.insert(word);
+        self.fold = OnceLock::new();
     }
 
     /// Insert a verb lemma (also added to the general entry set, mirroring
@@ -89,6 +122,7 @@ impl Lexicon {
     pub fn insert_verb(&mut self, word: String) {
         self.verbs.insert(word.clone());
         self.entries.insert(word);
+        self.fold = OnceLock::new();
     }
 
     pub fn len(&self) -> usize {

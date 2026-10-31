@@ -1,0 +1,4 @@
+# Grounded bench_tokens.txt tokens (token or Exact stem is a lexicon entry)
+# whose Restore stem differs from Exact. Only the whole-token override path
+# may produce these; the (b1) test fails on any other change or on drift.
+# word<TAB>restore stem
