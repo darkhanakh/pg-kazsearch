@@ -201,7 +201,8 @@ def main():
     ap.add_argument("--kazrag", help="path to the kazrag checkout for the Wikipedia benchmark")
     ap.add_argument("--dump", help="write Snowball/Rust-lexicon disagreements (TSV) here")
     ap.add_argument("--no-agreement", action="store_true")
-    ap.add_argument("--json", help="write all numbers to this JSON file")
+    ap.add_argument("--json", default=os.path.join(ROOT, "eval", "results", "snowball.json"),
+                    help="write all numbers to this JSON file (default: eval/results/snowball.json)")
     args = ap.parse_args()
     sbls = args.sbl or [os.path.join(HERE, "kazakh.sbl")]
 
@@ -270,8 +271,11 @@ def main():
                     print(f"  {name} - {other}: {d:+.3f} [{lo:+.3f}, {hi:+.3f}]{flag}")
 
     if args.json:
+        os.makedirs(os.path.dirname(os.path.abspath(args.json)), exist_ok=True)
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"\nwrote {os.path.relpath(args.json, ROOT)}")
 
 
 if __name__ == "__main__":
