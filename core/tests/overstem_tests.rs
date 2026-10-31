@@ -48,6 +48,12 @@ fn verb_track_undoes_stem_final_voicing_before_a_vowel_suffix() {
     assert_eq!(stem("жаға", &cfg), "жаға");
     assert_eq!(stem("балаға", &cfg), "бала");
     assert_eq!(stem("тауға", &cfg), "тау");
+    // Devoicing applies to tense and converb suffixes only. Through a voice
+    // suffix it would carry соқтығысқан past the nominal соқтығыс
+    // "collision" that соқтығысты still stems to.
+    let cfg_voice = cfg_with_verbs(&["соқтығыс"], &["соқтық", "соқтығыс"]);
+    assert_eq!(stem("соқтығысқан", &cfg_voice), "соқтығыс");
+    assert_eq!(stem("соқтығысты", &cfg_voice), "соқтығыс");
     for w in ["соғады", "шыға", "соғып"] {
         assert_eq!(stem(&stem(w, &cfg), &cfg), stem(w, &cfg), "{w} must stem idempotently");
     }

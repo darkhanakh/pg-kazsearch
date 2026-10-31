@@ -178,7 +178,17 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
         LAYER_VTENSE => match sfx {
             "у" => return utf8_char_count(base) >= 2 && count_syllables(base) >= 1,
             "й" => return steps_so_far > 0,
-            "а" | "е" => return steps_so_far > 0 && count_syllables(base) >= 2,
+            "а" | "е" => {
+                if steps_so_far > 0 && count_syllables(base) >= 2 {
+                    return true;
+                }
+                // A lexicon verb root, as stripped (сен+е) or devoiced
+                // (шық→шығ+а), licenses the bare present marker on a
+                // single-syllable base too.
+                let Some(l) = lex else { return false };
+                let mut buf = [0u8; MAX_STEM_BYTES];
+                return l.is_verb_root(base) || devoiced_verb_root(base, &mut buf, l).is_some();
+            }
             _ => {}
         },
         LAYER_VNEG => return utf8_char_count(base) >= 3,
@@ -440,6 +450,36 @@ fn elision_restored_on_stack<'a>(s: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> 
     Some(std::str::from_utf8(&buf[..total]).unwrap())
 }
 
+/// `stem` with its final consonant devoiced (ғ→қ, г→к, б→п), when that form
+/// is a lexicon verb root.
+fn devoiced_verb_root<'a>(stem: &str, buf: &'a mut [u8; MAX_STEM_BYTES], lex: &Lexicon) -> Option<&'a str> {
+    let alt = mutated_on_stack(stem, buf)?;
+    (alt != stem && lex.is_verb_root(alt)).then_some(alt)
+}
+
+/// A vowel-initial tense or converb suffix voices a stem-final қ/к/п
+/// (соқ+ады → соғады, тап+у → табу), so the stem it was stripped from may
+/// need devoicing before it matches the lexicon. Voice suffixes (-ыс, -ыл)
+/// are left out: the noun track reads the same word as a nominal in -ыс
+/// (соқтығыс "collision"), and devoicing past it would split соқтығысқан
+/// from соқтығысты.
+fn verb_suffix_voices_stem(c: &Candidate) -> bool {
+    c.last_layer == LAYER_VTENSE
+        && c.last_suffix
+            .and_then(|s| s.chars().next())
+            .is_some_and(is_vowel)
+}
+
+/// The lexicon verb root behind a verb-track candidate whose last stripped
+/// suffix voiced the stem-final consonant (соғ → соқ).
+pub fn voiced_verb_root(stem: &str, c: &Candidate, lex: &Lexicon) -> Option<String> {
+    if !verb_suffix_voices_stem(c) {
+        return None;
+    }
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    devoiced_verb_root(stem, &mut buf, lex).map(str::to_string)
+}
+
 fn try_append_vowel_check(stem: &str, suffix: &str, lexicon: &Lexicon) -> bool {
     if stem.is_empty() {
         return false;
@@ -490,6 +530,10 @@ pub fn candidate_hits_lexicon(c: &Candidate, word: &str, lexicon: &Lexicon) -> b
                 }
             }
         }
+    }
+
+    if voiced_verb_root(stem, c, lexicon).is_some() {
+        return true;
     }
 
     if c.steps < 2 {

@@ -141,16 +141,20 @@ fn test_parity_5k_words_with_lexicon() {
     // than C does; those divergences are covered by
     // test_stem_idempotent_over_5k_corpus and the gold_v2 eval instead.
     //
-    // Rust now deliberately departs from the C reference on 145 of these
-    // words (5000-word sample, 4317 -> 4176 matches):
+    // Rust now deliberately departs from the C reference on 175 of these
+    // words (5000-word sample, 4317 -> 4146 matches):
     //  * 129: C re-extends a stripped stem that is already a lemma (елдер →
     //    еле, жолында → жола, берілді → бері); Rust keeps ел, жол, бер.
+    //  *  30: C stops a verb parse before the lexicon root when the last
+    //    suffix is the bare present -а/-е (ала, бола, бере, айтамын → ай) or
+    //    voiced the stem-final consonant (жабу, егіп); Rust reaches ал, бол,
+    //    бер, айт, жап, ек.
     //  *   9: patronymics -ұлы/-қызы stay whole (төлегенұлы, not төлегенұл).
     //  *   7: -бек names (әлібек), -тай words (жазатайым) and -ты/-ті after a
     //    vowel (апаты, автоматы) are no longer parsed as verb or derived forms.
     // The floor sits below the C-faithful rate for those reasons only.
     assert!(
-        parity_pct >= 83.0,
+        parity_pct >= 82.5,
         "5K parity too low: {:.2}% ({}/{} words match)",
         parity_pct,
         matches,
