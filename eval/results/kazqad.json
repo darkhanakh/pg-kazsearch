@@ -1,0 +1,2602 @@
+{
+  "dataset": {
+    "name": "KazQAD information-retrieval",
+    "repo": "https://github.com/IS2AI/KazQAD",
+    "commit": "ab8684a667109f2a7345f4f89ab3b123e8d78e1f",
+    "license": "CC BY-SA 4.0",
+    "files_sha256": {
+      "corpus/kazqad-corpus-v1.0-kk-part-1.jsonl.gz": "22e176f9b66c238144d73c3f35a30b62b2a310891faf17039d736fb2973f286b",
+      "corpus/kazqad-corpus-v1.0-kk-part-2.jsonl.gz": "fd8f8014670f65a902424f1cf9ba679ef76a2aa24e5746467c83254a5e7b73e8",
+      "corpus/kazqad-corpus-v1.0-kk-part-3.jsonl.gz": "d6289d96abd7e0643fd7385460c03e531eeb8e4accb4893d9f80bab2752349bf",
+      "topics/kazqad-topics-v1.0-kk-test.tsv": "30b48eb772346207274211d1bee5cebdc12d355a938e962552bd162bfac55d5e",
+      "topics/kazqad-topics-v1.0-kk-validation.tsv": "87d17c8c69ab0c936d477527c7562488e8434d4eacb8438d982b48b162bb3eb0",
+      "topics/kazqad-topics-v1.0-kk-train.tsv": "bb5534905423c4ac0091688bf7f6171e421e68473951de311142a7d5992cf2ac",
+      "qrels/kazqad-qrels-v1.0-test.tsv": "0b930a55ffc600c7c694e51c71db53ea7f3890fd828e253cd659899ca9a9902b",
+      "qrels/kazqad-qrels-v1.0-validation.tsv": "502465bea5b0fb9926cf33c9dcdf78d74e8b0dc8ed3277830d121f3a23af92d0",
+      "qrels/kazqad-qrels-v1.0-train.tsv": "13edbbf35b66c524a196ffda655fc40c004da40c736f5e898f4d30f87b8b6a4c"
+    }
+  },
+  "parameters": {
+    "param_sets": {
+      "k1=0.9,b=0.4": [
+        0.9,
+        0.4
+      ],
+      "k1=1.2,b=0.75": [
+        1.2,
+        0.75
+      ]
+    },
+    "primary_params": "k1=0.9,b=0.4",
+    "top_k": 100,
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 20260501,
+    "primary_harness": {
+      "name": "alnum+stopwords",
+      "tokenizer": "alnum",
+      "stopwords": true
+    },
+    "stopword_file": "data/tsearch_data/kaz_stopwords.stop",
+    "document_text": "title + passage text",
+    "max_token_chars": 100,
+    "relevance": "grade 1 = relevant; grade 0 judged non-relevant, ignored by the metrics",
+    "query_population": "topics with at least one relevant judgment",
+    "limit_docs": null
+  },
+  "tools": {
+    "kazsearch_cli_sha256": "1a9ce9117ac754df7a01d53f013b8b99ef86c87e0f94a26be71b77a4045fc613",
+    "lexicon_sha256": "19997c75d74c394fbc5708504eb77720ebf616e609a0c077957f50e02f3cf13a",
+    "lexicon_verbs_sha256": "1ecd18ed39d779b68231347154213db982ad482a4a8316062118e7792fa145c1",
+    "snowball_sbl_sha256": "17961f009b8a785a5bcd726589cb96f522fca3f09b2cbd709a4324d28088f4bf",
+    "snowball_compiler_commit": "6389c79f91cd67ed2de3ebdcf84ec8c2d2d23c11"
+  },
+  "results": {
+    "alnum+stopwords": {
+      "systems": {
+        "no stemming": {
+          "index_terms": 1239983,
+          "relevant_pair_reachable": {
+            "test": 0.9065489330389993,
+            "validation": 0.9011703511053316
+          }
+        },
+        "snowball": {
+          "index_terms": 861781,
+          "relevant_pair_reachable": {
+            "test": 0.9856512141280354,
+            "validation": 0.9791937581274383
+          }
+        },
+        "rust": {
+          "index_terms": 865783,
+          "relevant_pair_reachable": {
+            "test": 0.9768211920529801,
+            "validation": 0.9739921976592978
+          }
+        },
+        "rust+lexicon": {
+          "index_terms": 802800,
+          "relevant_pair_reachable": {
+            "test": 0.986019131714496,
+            "validation": 0.9804941482444733
+          }
+        }
+      },
+      "splits": {
+        "test": {
+          "queries": 1929,
+          "topics": 1929,
+          "topics_without_relevant": 0,
+          "relevant_not_in_corpus": 0,
+          "params": {
+            "k1=0.9,b=0.4": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.21912728833107584,
+                  "mrr@10": 0.20869066133451825,
+                  "recall@10": 0.3174356315880421,
+                  "recall@100": 0.544409884223259,
+                  "mrr@100": 0.21818998505071177,
+                  "judged_fraction_of_top10": 0.04582685329186107
+                },
+                "snowball": {
+                  "ndcg@10": 0.2897688923560379,
+                  "mrr@10": 0.27375871205575714,
+                  "recall@10": 0.41817867634352857,
+                  "recall@100": 0.7019180922757906,
+                  "mrr@100": 0.2850807293840576,
+                  "judged_fraction_of_top10": 0.06003110419906686
+                },
+                "rust": {
+                  "ndcg@10": 0.27252265333923026,
+                  "mrr@10": 0.2585028429896237,
+                  "recall@10": 0.3958441334024537,
+                  "recall@100": 0.6653706583722135,
+                  "mrr@100": 0.2688136811164734,
+                  "judged_fraction_of_top10": 0.056765163297045104
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.28770568499062527,
+                  "mrr@10": 0.26942099286578297,
+                  "recall@10": 0.41977708657335405,
+                  "recall@100": 0.6963884568861242,
+                  "mrr@100": 0.28078886520616053,
+                  "judged_fraction_of_top10": 0.06039398652151374
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.21912728833107584,
+                  "mrr@10": 0.20869066133451825,
+                  "recall@10": 0.3174356315880421,
+                  "recall@100": 0.544409884223259
+                },
+                "snowball": {
+                  "ndcg@10": 0.2897688923560379,
+                  "mrr@10": 0.27375871205575714,
+                  "recall@10": 0.41817867634352857,
+                  "recall@100": 0.7019180922757906
+                },
+                "rust": {
+                  "ndcg@10": 0.27252265333923026,
+                  "mrr@10": 0.2585028429896237,
+                  "recall@10": 0.3958441334024537,
+                  "recall@100": 0.6653706583722135
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.28770568499062527,
+                  "mrr@10": 0.26942099286578297,
+                  "recall@10": 0.41977708657335405,
+                  "recall@100": 0.6963884568861242
+                }
+              },
+              "pairs": {
+                "rust+lexicon - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.06857839665954941,
+                    "ci95": [
+                      0.056146109971002854,
+                      0.08111547523452632
+                    ],
+                    "significant": true,
+                    "wins": 563,
+                    "losses": 300,
+                    "ties": 1066
+                  },
+                  "mrr@10": {
+                    "delta": 0.06073033153126466,
+                    "ci95": [
+                      0.04672428760686926,
+                      0.07489024044039595
+                    ],
+                    "significant": true,
+                    "wins": 543,
+                    "losses": 280,
+                    "ties": 1106
+                  },
+                  "recall@10": {
+                    "delta": 0.1023414549853119,
+                    "ci95": [
+                      0.08462934162778642,
+                      0.11983864696734059
+                    ],
+                    "significant": true,
+                    "wins": 358,
+                    "losses": 108,
+                    "ties": 1463
+                  },
+                  "recall@100": {
+                    "delta": 0.15197857266286505,
+                    "ci95": [
+                      0.13366165543459477,
+                      0.17064109210298944
+                    ],
+                    "significant": true,
+                    "wins": 441,
+                    "losses": 80,
+                    "ties": 1408
+                  }
+                },
+                "rust+lexicon - rust": {
+                  "ndcg@10": {
+                    "delta": 0.015183031651395095,
+                    "ci95": [
+                      0.006650411787922008,
+                      0.023784938311996056
+                    ],
+                    "significant": true,
+                    "wins": 365,
+                    "losses": 321,
+                    "ties": 1243
+                  },
+                  "mrr@10": {
+                    "delta": 0.010918149876159206,
+                    "ci95": [
+                      0.001274413299102257,
+                      0.020764367177664222
+                    ],
+                    "significant": true,
+                    "wins": 337,
+                    "losses": 294,
+                    "ties": 1298
+                  },
+                  "recall@10": {
+                    "delta": 0.02393295317090029,
+                    "ci95": [
+                      0.010454466908588214,
+                      0.03715223777432175
+                    ],
+                    "significant": true,
+                    "wins": 164,
+                    "losses": 104,
+                    "ties": 1661
+                  },
+                  "recall@100": {
+                    "delta": 0.03101779851391049,
+                    "ci95": [
+                      0.01866251944012442,
+                      0.04371867979955071
+                    ],
+                    "significant": true,
+                    "wins": 168,
+                    "losses": 83,
+                    "ties": 1678
+                  }
+                },
+                "rust - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.017246239016807774,
+                    "ci95": [
+                      -0.025791585984162244,
+                      -0.008668922030045118
+                    ],
+                    "significant": true,
+                    "wins": 306,
+                    "losses": 341,
+                    "ties": 1282
+                  },
+                  "mrr@10": {
+                    "delta": -0.015255869066133453,
+                    "ci95": [
+                      -0.02523997239296617,
+                      -0.0054716853045002406
+                    ],
+                    "significant": true,
+                    "wins": 281,
+                    "losses": 315,
+                    "ties": 1333
+                  },
+                  "recall@10": {
+                    "delta": -0.022334542941074825,
+                    "ci95": [
+                      -0.0352514256091239,
+                      -0.009633661655434595
+                    ],
+                    "significant": true,
+                    "wins": 101,
+                    "losses": 151,
+                    "ties": 1677
+                  },
+                  "recall@100": {
+                    "delta": -0.03654743390357698,
+                    "ci95": [
+                      -0.0501123207188526,
+                      -0.0235009504060826
+                    ],
+                    "significant": true,
+                    "wins": 82,
+                    "losses": 177,
+                    "ties": 1670
+                  }
+                },
+                "rust+lexicon - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.0020632073654126824,
+                    "ci95": [
+                      -0.009264292005771406,
+                      0.005263310604108174
+                    ],
+                    "significant": false,
+                    "wins": 289,
+                    "losses": 333,
+                    "ties": 1307
+                  },
+                  "mrr@10": {
+                    "delta": -0.004337719189974242,
+                    "ci95": [
+                      -0.012737148946324686,
+                      0.004249523768380684
+                    ],
+                    "significant": false,
+                    "wins": 260,
+                    "losses": 302,
+                    "ties": 1367
+                  },
+                  "recall@10": {
+                    "delta": 0.001598410229825471,
+                    "ci95": [
+                      -0.009806462761361675,
+                      0.012614480732676691
+                    ],
+                    "significant": false,
+                    "wins": 109,
+                    "losses": 104,
+                    "ties": 1716
+                  },
+                  "recall@100": {
+                    "delta": -0.005529635389666494,
+                    "ci95": [
+                      -0.016416105063072405,
+                      0.004924831518921719
+                    ],
+                    "significant": false,
+                    "wins": 86,
+                    "losses": 97,
+                    "ties": 1746
+                  }
+                },
+                "snowball - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.0706416040249621,
+                    "ci95": [
+                      0.05865888741569943,
+                      0.08279658868213896
+                    ],
+                    "significant": true,
+                    "wins": 561,
+                    "losses": 266,
+                    "ties": 1102
+                  },
+                  "mrr@10": {
+                    "delta": 0.06506805072123889,
+                    "ci95": [
+                      0.05157789009849663,
+                      0.07887981683082773
+                    ],
+                    "significant": true,
+                    "wins": 532,
+                    "losses": 251,
+                    "ties": 1146
+                  },
+                  "recall@10": {
+                    "delta": 0.10074304475548644,
+                    "ci95": [
+                      0.08398133748055987,
+                      0.11776395368930362
+                    ],
+                    "significant": true,
+                    "wins": 349,
+                    "losses": 100,
+                    "ties": 1480
+                  },
+                  "recall@100": {
+                    "delta": 0.15750820805253155,
+                    "ci95": [
+                      0.13893208916537067,
+                      0.17617072749265597
+                    ],
+                    "significant": true,
+                    "wins": 450,
+                    "losses": 77,
+                    "ties": 1402
+                  }
+                },
+                "rust - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.053395365008154325,
+                    "ci95": [
+                      0.04147438706892243,
+                      0.06516698411356156
+                    ],
+                    "significant": true,
+                    "wins": 494,
+                    "losses": 305,
+                    "ties": 1130
+                  },
+                  "mrr@10": {
+                    "delta": 0.04981218165510545,
+                    "ci95": [
+                      0.03602155796654242,
+                      0.06330415771803796
+                    ],
+                    "significant": true,
+                    "wins": 472,
+                    "losses": 279,
+                    "ties": 1178
+                  },
+                  "recall@10": {
+                    "delta": 0.07840850181441161,
+                    "ci95": [
+                      0.06147291342664594,
+                      0.09495420770692932
+                    ],
+                    "significant": true,
+                    "wins": 321,
+                    "losses": 118,
+                    "ties": 1490
+                  },
+                  "recall@100": {
+                    "delta": 0.12096077414895456,
+                    "ci95": [
+                      0.10342146189735614,
+                      0.13884568861240715
+                    ],
+                    "significant": true,
+                    "wins": 378,
+                    "losses": 89,
+                    "ties": 1462
+                  }
+                }
+              }
+            },
+            "k1=1.2,b=0.75": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.14293402329216748,
+                  "mrr@10": 0.1330825660141368,
+                  "recall@10": 0.21669258683255574,
+                  "recall@100": 0.4444012441679627,
+                  "mrr@100": 0.14266754746672558,
+                  "judged_fraction_of_top10": 0.03131156039398652
+                },
+                "snowball": {
+                  "ndcg@10": 0.20973849176606785,
+                  "mrr@10": 0.1903103837007414,
+                  "recall@10": 0.3269828926905132,
+                  "recall@100": 0.619751166407465,
+                  "mrr@100": 0.2024737693170556,
+                  "judged_fraction_of_top10": 0.04629341627786419
+                },
+                "rust": {
+                  "ndcg@10": 0.1901045738668313,
+                  "mrr@10": 0.1718566655969455,
+                  "recall@10": 0.29726110247105586,
+                  "recall@100": 0.5745204769310523,
+                  "mrr@100": 0.18356266235710034,
+                  "judged_fraction_of_top10": 0.04250907205806117
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.20885993468495684,
+                  "mrr@10": 0.18904811276506453,
+                  "recall@10": 0.32292206670122686,
+                  "recall@100": 0.6149127354415067,
+                  "mrr@100": 0.20156059566616932,
+                  "judged_fraction_of_top10": 0.04624157594608606
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.14293402329216748,
+                  "mrr@10": 0.1330825660141368,
+                  "recall@10": 0.21669258683255574,
+                  "recall@100": 0.4444012441679627
+                },
+                "snowball": {
+                  "ndcg@10": 0.20973849176606785,
+                  "mrr@10": 0.1903103837007414,
+                  "recall@10": 0.3269828926905132,
+                  "recall@100": 0.619751166407465
+                },
+                "rust": {
+                  "ndcg@10": 0.1901045738668313,
+                  "mrr@10": 0.1718566655969455,
+                  "recall@10": 0.29726110247105586,
+                  "recall@100": 0.5745204769310523
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.20885993468495684,
+                  "mrr@10": 0.18904811276506453,
+                  "recall@10": 0.32292206670122686,
+                  "recall@100": 0.6149127354415067
+                }
+              },
+              "pairs": {
+                "rust+lexicon - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.06592591139278936,
+                    "ci95": [
+                      0.05497601158545533,
+                      0.07696895158427958
+                    ],
+                    "significant": true,
+                    "wins": 491,
+                    "losses": 210,
+                    "ties": 1228
+                  },
+                  "mrr@10": {
+                    "delta": 0.055965546750927776,
+                    "ci95": [
+                      0.04400975194812675,
+                      0.068436335135402
+                    ],
+                    "significant": true,
+                    "wins": 463,
+                    "losses": 200,
+                    "ties": 1266
+                  },
+                  "recall@10": {
+                    "delta": 0.10622947986867116,
+                    "ci95": [
+                      0.08985549507516848,
+                      0.12277518576118887
+                    ],
+                    "significant": true,
+                    "wins": 340,
+                    "losses": 85,
+                    "ties": 1504
+                  },
+                  "recall@100": {
+                    "delta": 0.17051149127354412,
+                    "ci95": [
+                      0.1524969759806463,
+                      0.1886988076723691
+                    ],
+                    "significant": true,
+                    "wins": 470,
+                    "losses": 70,
+                    "ties": 1389
+                  }
+                },
+                "rust+lexicon - rust": {
+                  "ndcg@10": {
+                    "delta": 0.018755360818125552,
+                    "ci95": [
+                      0.011250521829920089,
+                      0.02640451049043997
+                    ],
+                    "significant": true,
+                    "wins": 328,
+                    "losses": 243,
+                    "ties": 1358
+                  },
+                  "mrr@10": {
+                    "delta": 0.017191447168119017,
+                    "ci95": [
+                      0.009151932286652347,
+                      0.025425939297440074
+                    ],
+                    "significant": true,
+                    "wins": 306,
+                    "losses": 228,
+                    "ties": 1395
+                  },
+                  "recall@10": {
+                    "delta": 0.025660964230171075,
+                    "ci95": [
+                      0.01313288405045792,
+                      0.0383618455158113
+                    ],
+                    "significant": true,
+                    "wins": 159,
+                    "losses": 92,
+                    "ties": 1678
+                  },
+                  "recall@100": {
+                    "delta": 0.04039225851045448,
+                    "ci95": [
+                      0.027648176948332468,
+                      0.05317954034905823
+                    ],
+                    "significant": true,
+                    "wins": 168,
+                    "losses": 77,
+                    "ties": 1684
+                  }
+                },
+                "rust - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.01963391789923655,
+                    "ci95": [
+                      -0.026812945578148357,
+                      -0.012621546612771697
+                    ],
+                    "significant": true,
+                    "wins": 250,
+                    "losses": 302,
+                    "ties": 1377
+                  },
+                  "mrr@10": {
+                    "delta": -0.01845371810379587,
+                    "ci95": [
+                      -0.026180442411974293,
+                      -0.010928723658117126
+                    ],
+                    "significant": true,
+                    "wins": 230,
+                    "losses": 278,
+                    "ties": 1421
+                  },
+                  "recall@10": {
+                    "delta": -0.0297217902194574,
+                    "ci95": [
+                      -0.04216346984620702,
+                      -0.01745291169863487
+                    ],
+                    "significant": true,
+                    "wins": 85,
+                    "losses": 152,
+                    "ties": 1692
+                  },
+                  "recall@100": {
+                    "delta": -0.04523068947641265,
+                    "ci95": [
+                      -0.05827717297390703,
+                      -0.03283005011232075
+                    ],
+                    "significant": true,
+                    "wins": 72,
+                    "losses": 182,
+                    "ties": 1675
+                  }
+                },
+                "rust+lexicon - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.0008785570811109959,
+                    "ci95": [
+                      -0.0071505278910068675,
+                      0.005295233069753977
+                    ],
+                    "significant": false,
+                    "wins": 231,
+                    "losses": 253,
+                    "ties": 1445
+                  },
+                  "mrr@10": {
+                    "delta": -0.0012622709356768446,
+                    "ci95": [
+                      -0.008123724563265775,
+                      0.005472261308186658
+                    ],
+                    "significant": false,
+                    "wins": 212,
+                    "losses": 231,
+                    "ties": 1486
+                  },
+                  "recall@10": {
+                    "delta": -0.0040608259892863305,
+                    "ci95": [
+                      -0.01425609123898393,
+                      0.006220839813374806
+                    ],
+                    "significant": false,
+                    "wins": 81,
+                    "losses": 85,
+                    "ties": 1763
+                  },
+                  "recall@100": {
+                    "delta": -0.004838430965958184,
+                    "ci95": [
+                      -0.016329704510108865,
+                      0.0066528425781925
+                    ],
+                    "significant": false,
+                    "wins": 97,
+                    "losses": 112,
+                    "ties": 1720
+                  }
+                },
+                "snowball - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.06680446847390037,
+                    "ci95": [
+                      0.0562806261891425,
+                      0.07736310058823007
+                    ],
+                    "significant": true,
+                    "wins": 484,
+                    "losses": 204,
+                    "ties": 1241
+                  },
+                  "mrr@10": {
+                    "delta": 0.05722781768660462,
+                    "ci95": [
+                      0.04581869666823011,
+                      0.06918474906810831
+                    ],
+                    "significant": true,
+                    "wins": 457,
+                    "losses": 190,
+                    "ties": 1282
+                  },
+                  "recall@10": {
+                    "delta": 0.11029030585795749,
+                    "ci95": [
+                      0.09430512355279073,
+                      0.12653468982201485
+                    ],
+                    "significant": true,
+                    "wins": 335,
+                    "losses": 77,
+                    "ties": 1517
+                  },
+                  "recall@100": {
+                    "delta": 0.17534992223950233,
+                    "ci95": [
+                      0.15772312942802835,
+                      0.19323591670986695
+                    ],
+                    "significant": true,
+                    "wins": 480,
+                    "losses": 65,
+                    "ties": 1384
+                  }
+                },
+                "rust - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.0471705505746638,
+                    "ci95": [
+                      0.037065185062924985,
+                      0.05758840116315763
+                    ],
+                    "significant": true,
+                    "wins": 417,
+                    "losses": 228,
+                    "ties": 1284
+                  },
+                  "mrr@10": {
+                    "delta": 0.03877409958280876,
+                    "ci95": [
+                      0.027830224970582667,
+                      0.050035053938630926
+                    ],
+                    "significant": true,
+                    "wins": 396,
+                    "losses": 215,
+                    "ties": 1318
+                  },
+                  "recall@10": {
+                    "delta": 0.08056851563850008,
+                    "ci95": [
+                      0.06514601693450837,
+                      0.09599209434940383
+                    ],
+                    "significant": true,
+                    "wins": 286,
+                    "losses": 89,
+                    "ties": 1554
+                  },
+                  "recall@100": {
+                    "delta": 0.13011923276308968,
+                    "ci95": [
+                      0.11300976326248488,
+                      0.1472265422498704
+                    ],
+                    "significant": true,
+                    "wins": 397,
+                    "losses": 78,
+                    "ties": 1454
+                  }
+                }
+              }
+            }
+          }
+        },
+        "validation": {
+          "queries": 548,
+          "topics": 548,
+          "topics_without_relevant": 0,
+          "relevant_not_in_corpus": 0,
+          "params": {
+            "k1=0.9,b=0.4": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.2295497900653594,
+                  "mrr@10": 0.22024895724713245,
+                  "recall@10": 0.3217761557177615,
+                  "recall@100": 0.5684306569343066,
+                  "mrr@100": 0.2306699348621606,
+                  "judged_fraction_of_top10": 0.04543795620437956
+                },
+                "snowball": {
+                  "ndcg@10": 0.29735667616348777,
+                  "mrr@10": 0.28200816823079594,
+                  "recall@10": 0.4197080291970803,
+                  "recall@100": 0.7168491484184915,
+                  "mrr@100": 0.2941722990423187,
+                  "judged_fraction_of_top10": 0.05985401459854014
+                },
+                "rust": {
+                  "ndcg@10": 0.2794076614607902,
+                  "mrr@10": 0.2602139091646391,
+                  "recall@10": 0.40875912408759124,
+                  "recall@100": 0.6624087591240876,
+                  "mrr@100": 0.27024263821233274,
+                  "judged_fraction_of_top10": 0.058211678832116795
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.29847517109744437,
+                  "mrr@10": 0.2755293419070791,
+                  "recall@10": 0.43856447688564476,
+                  "recall@100": 0.7025547445255474,
+                  "mrr@100": 0.2856792177643966,
+                  "judged_fraction_of_top10": 0.06204379562043796
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.2295497900653594,
+                  "mrr@10": 0.22024895724713245,
+                  "recall@10": 0.3217761557177615,
+                  "recall@100": 0.5684306569343066
+                },
+                "snowball": {
+                  "ndcg@10": 0.29735667616348777,
+                  "mrr@10": 0.28200816823079594,
+                  "recall@10": 0.4197080291970803,
+                  "recall@100": 0.7168491484184915
+                },
+                "rust": {
+                  "ndcg@10": 0.2794076614607902,
+                  "mrr@10": 0.2602139091646391,
+                  "recall@10": 0.40875912408759124,
+                  "recall@100": 0.6624087591240876
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.29847517109744437,
+                  "mrr@10": 0.2755293419070791,
+                  "recall@10": 0.43856447688564476,
+                  "recall@100": 0.7025547445255474
+                }
+              },
+              "pairs": {
+                "rust+lexicon - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.068925381032085,
+                    "ci95": [
+                      0.04622074584997464,
+                      0.09178425247890357
+                    ],
+                    "significant": true,
+                    "wins": 162,
+                    "losses": 83,
+                    "ties": 303
+                  },
+                  "mrr@10": {
+                    "delta": 0.0552803846599467,
+                    "ci95": [
+                      0.029877023954350594,
+                      0.08066127911018421
+                    ],
+                    "significant": true,
+                    "wins": 156,
+                    "losses": 80,
+                    "ties": 312
+                  },
+                  "recall@10": {
+                    "delta": 0.11678832116788321,
+                    "ci95": [
+                      0.08424574209245743,
+                      0.14902676399026765
+                    ],
+                    "significant": true,
+                    "wins": 103,
+                    "losses": 26,
+                    "ties": 419
+                  },
+                  "recall@100": {
+                    "delta": 0.13412408759124086,
+                    "ci95": [
+                      0.10006082725060828,
+                      0.16849148418491483
+                    ],
+                    "significant": true,
+                    "wins": 121,
+                    "losses": 26,
+                    "ties": 401
+                  }
+                },
+                "rust+lexicon - rust": {
+                  "ndcg@10": {
+                    "delta": 0.019067509636654163,
+                    "ci95": [
+                      0.00237450403821128,
+                      0.03591348691555421
+                    ],
+                    "significant": true,
+                    "wins": 106,
+                    "losses": 86,
+                    "ties": 356
+                  },
+                  "mrr@10": {
+                    "delta": 0.015315432742440044,
+                    "ci95": [
+                      -0.004645409714980882,
+                      0.03541100031861893
+                    ],
+                    "significant": false,
+                    "wins": 103,
+                    "losses": 83,
+                    "ties": 362
+                  },
+                  "recall@10": {
+                    "delta": 0.029805352798053526,
+                    "ci95": [
+                      0.006082725060827251,
+                      0.05322384428223844
+                    ],
+                    "significant": true,
+                    "wins": 46,
+                    "losses": 23,
+                    "ties": 479
+                  },
+                  "recall@100": {
+                    "delta": 0.040145985401459854,
+                    "ci95": [
+                      0.013686131386861315,
+                      0.06630170316301702
+                    ],
+                    "significant": true,
+                    "wins": 55,
+                    "losses": 28,
+                    "ties": 465
+                  }
+                },
+                "rust - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.01794901470269754,
+                    "ci95": [
+                      -0.034117967861126024,
+                      -0.002186727433639905
+                    ],
+                    "significant": true,
+                    "wins": 79,
+                    "losses": 106,
+                    "ties": 363
+                  },
+                  "mrr@10": {
+                    "delta": -0.02179425906615688,
+                    "ci95": [
+                      -0.03991149272969529,
+                      -0.004174939896883332
+                    ],
+                    "significant": true,
+                    "wins": 73,
+                    "losses": 99,
+                    "ties": 376
+                  },
+                  "recall@10": {
+                    "delta": -0.010948905109489052,
+                    "ci95": [
+                      -0.03497566909975669,
+                      0.013077858880778588
+                    ],
+                    "significant": false,
+                    "wins": 29,
+                    "losses": 41,
+                    "ties": 478
+                  },
+                  "recall@100": {
+                    "delta": -0.054440389294403896,
+                    "ci95": [
+                      -0.07725060827250609,
+                      -0.032238442822384424
+                    ],
+                    "significant": true,
+                    "wins": 16,
+                    "losses": 53,
+                    "ties": 479
+                  }
+                },
+                "rust+lexicon - snowball": {
+                  "ndcg@10": {
+                    "delta": 0.0011184949339566243,
+                    "ci95": [
+                      -0.011851631028239606,
+                      0.013749547518485318
+                    ],
+                    "significant": false,
+                    "wins": 86,
+                    "losses": 81,
+                    "ties": 381
+                  },
+                  "mrr@10": {
+                    "delta": -0.006478826323716835,
+                    "ci95": [
+                      -0.02137952945776851,
+                      0.008110426804541767
+                    ],
+                    "significant": false,
+                    "wins": 80,
+                    "losses": 75,
+                    "ties": 393
+                  },
+                  "recall@10": {
+                    "delta": 0.018856447688564475,
+                    "ci95": [
+                      -0.0030413625304136255,
+                      0.040145985401459854
+                    ],
+                    "significant": false,
+                    "wins": 30,
+                    "losses": 20,
+                    "ties": 498
+                  },
+                  "recall@100": {
+                    "delta": -0.01429440389294404,
+                    "ci95": [
+                      -0.03467153284671533,
+                      0.005778588807785887
+                    ],
+                    "significant": false,
+                    "wins": 22,
+                    "losses": 32,
+                    "ties": 494
+                  }
+                },
+                "snowball - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.06780688609812836,
+                    "ci95": [
+                      0.04491777796934325,
+                      0.0908979662545093
+                    ],
+                    "significant": true,
+                    "wins": 159,
+                    "losses": 73,
+                    "ties": 316
+                  },
+                  "mrr@10": {
+                    "delta": 0.06175921098366354,
+                    "ci95": [
+                      0.0360554433147955,
+                      0.08720046199745102
+                    ],
+                    "significant": true,
+                    "wins": 151,
+                    "losses": 72,
+                    "ties": 325
+                  },
+                  "recall@10": {
+                    "delta": 0.09793187347931874,
+                    "ci95": [
+                      0.06569343065693431,
+                      0.13047445255474452
+                    ],
+                    "significant": true,
+                    "wins": 96,
+                    "losses": 30,
+                    "ties": 422
+                  },
+                  "recall@100": {
+                    "delta": 0.1484184914841849,
+                    "ci95": [
+                      0.11617244525547446,
+                      0.18096107055961072
+                    ],
+                    "significant": true,
+                    "wins": 124,
+                    "losses": 22,
+                    "ties": 402
+                  }
+                },
+                "rust - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.04985787139543083,
+                    "ci95": [
+                      0.029344345678721448,
+                      0.07066924746561523
+                    ],
+                    "significant": true,
+                    "wins": 138,
+                    "losses": 81,
+                    "ties": 329
+                  },
+                  "mrr@10": {
+                    "delta": 0.03996495191750666,
+                    "ci95": [
+                      0.017514211128490328,
+                      0.06284760239253852
+                    ],
+                    "significant": true,
+                    "wins": 128,
+                    "losses": 80,
+                    "ties": 340
+                  },
+                  "recall@10": {
+                    "delta": 0.08698296836982969,
+                    "ci95": [
+                      0.05596107055961071,
+                      0.11800486618004867
+                    ],
+                    "significant": true,
+                    "wins": 85,
+                    "losses": 27,
+                    "ties": 436
+                  },
+                  "recall@100": {
+                    "delta": 0.09397810218978102,
+                    "ci95": [
+                      0.06417274939172748,
+                      0.125
+                    ],
+                    "significant": true,
+                    "wins": 93,
+                    "losses": 26,
+                    "ties": 429
+                  }
+                }
+              }
+            },
+            "k1=1.2,b=0.75": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.14825301353572828,
+                  "mrr@10": 0.1361741107635268,
+                  "recall@10": 0.2305352798053528,
+                  "recall@100": 0.45650851581508517,
+                  "mrr@100": 0.1447191501161284,
+                  "judged_fraction_of_top10": 0.03138686131386862
+                },
+                "snowball": {
+                  "ndcg@10": 0.21375072766747655,
+                  "mrr@10": 0.19228507704785075,
+                  "recall@10": 0.3287712895377129,
+                  "recall@100": 0.6295620437956204,
+                  "mrr@100": 0.20560285248562535,
+                  "judged_fraction_of_top10": 0.04507299270072993
+                },
+                "rust": {
+                  "ndcg@10": 0.20044247906474064,
+                  "mrr@10": 0.18522259877186883,
+                  "recall@10": 0.2983576642335766,
+                  "recall@100": 0.5723844282238442,
+                  "mrr@100": 0.19713054419311368,
+                  "judged_fraction_of_top10": 0.041605839416058395
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.20938619247228418,
+                  "mrr@10": 0.1801732128374464,
+                  "recall@10": 0.34124087591240876,
+                  "recall@100": 0.6210462287104622,
+                  "mrr@100": 0.19159713349553623,
+                  "judged_fraction_of_top10": 0.047262773722627736
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.14825301353572828,
+                  "mrr@10": 0.1361741107635268,
+                  "recall@10": 0.2305352798053528,
+                  "recall@100": 0.45650851581508517
+                },
+                "snowball": {
+                  "ndcg@10": 0.21375072766747655,
+                  "mrr@10": 0.19228507704785075,
+                  "recall@10": 0.3287712895377129,
+                  "recall@100": 0.6295620437956204
+                },
+                "rust": {
+                  "ndcg@10": 0.20044247906474064,
+                  "mrr@10": 0.18522259877186883,
+                  "recall@10": 0.2983576642335766,
+                  "recall@100": 0.5723844282238442
+                },
+                "rust+lexicon": {
+                  "ndcg@10": 0.20938619247228418,
+                  "mrr@10": 0.1801732128374464,
+                  "recall@10": 0.34124087591240876,
+                  "recall@100": 0.6210462287104622
+                }
+              },
+              "pairs": {
+                "rust+lexicon - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.06113317893655587,
+                    "ci95": [
+                      0.042080880624520645,
+                      0.08071299359327075
+                    ],
+                    "significant": true,
+                    "wins": 137,
+                    "losses": 61,
+                    "ties": 350
+                  },
+                  "mrr@10": {
+                    "delta": 0.043999102073919584,
+                    "ci95": [
+                      0.02332131270999884,
+                      0.0648564947572703
+                    ],
+                    "significant": true,
+                    "wins": 131,
+                    "losses": 61,
+                    "ties": 356
+                  },
+                  "recall@10": {
+                    "delta": 0.11070559610705594,
+                    "ci95": [
+                      0.08119677615571777,
+                      0.14142335766423358
+                    ],
+                    "significant": true,
+                    "wins": 94,
+                    "losses": 17,
+                    "ties": 437
+                  },
+                  "recall@100": {
+                    "delta": 0.16453771289537714,
+                    "ci95": [
+                      0.13047445255474452,
+                      0.197992700729927
+                    ],
+                    "significant": true,
+                    "wins": 128,
+                    "losses": 19,
+                    "ties": 401
+                  }
+                },
+                "rust+lexicon - rust": {
+                  "ndcg@10": {
+                    "delta": 0.008943713407543536,
+                    "ci95": [
+                      -0.0053040756014634035,
+                      0.022949421108338836
+                    ],
+                    "significant": false,
+                    "wins": 83,
+                    "losses": 70,
+                    "ties": 395
+                  },
+                  "mrr@10": {
+                    "delta": -0.00504938593442243,
+                    "ci95": [
+                      -0.021152133298574904,
+                      0.010421301123855862
+                    ],
+                    "significant": false,
+                    "wins": 79,
+                    "losses": 69,
+                    "ties": 400
+                  },
+                  "recall@10": {
+                    "delta": 0.04288321167883212,
+                    "ci95": [
+                      0.021289537712895375,
+                      0.06538929440389293
+                    ],
+                    "significant": true,
+                    "wins": 45,
+                    "losses": 16,
+                    "ties": 487
+                  },
+                  "recall@100": {
+                    "delta": 0.048661800486618,
+                    "ci95": [
+                      0.022506082725060824,
+                      0.07451338199513383
+                    ],
+                    "significant": true,
+                    "wins": 56,
+                    "losses": 26,
+                    "ties": 466
+                  }
+                },
+                "rust - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.013308248602735929,
+                    "ci95": [
+                      -0.026845662283065574,
+                      0.0002010711613257289
+                    ],
+                    "significant": false,
+                    "wins": 59,
+                    "losses": 83,
+                    "ties": 406
+                  },
+                  "mrr@10": {
+                    "delta": -0.007062478275981927,
+                    "ci95": [
+                      -0.021694455306453482,
+                      0.007561533281195687
+                    ],
+                    "significant": false,
+                    "wins": 55,
+                    "losses": 78,
+                    "ties": 415
+                  },
+                  "recall@10": {
+                    "delta": -0.030413625304136247,
+                    "ci95": [
+                      -0.05200729927007299,
+                      -0.009732360097323601
+                    ],
+                    "significant": true,
+                    "wins": 17,
+                    "losses": 36,
+                    "ties": 495
+                  },
+                  "recall@100": {
+                    "delta": -0.057177615571776155,
+                    "ci95": [
+                      -0.08181265206812653,
+                      -0.032542579075425786
+                    ],
+                    "significant": true,
+                    "wins": 19,
+                    "losses": 54,
+                    "ties": 475
+                  }
+                },
+                "rust+lexicon - snowball": {
+                  "ndcg@10": {
+                    "delta": -0.004364535195192389,
+                    "ci95": [
+                      -0.015139015865780587,
+                      0.00607553466032235
+                    ],
+                    "significant": false,
+                    "wins": 60,
+                    "losses": 74,
+                    "ties": 414
+                  },
+                  "mrr@10": {
+                    "delta": -0.012111864210404354,
+                    "ci95": [
+                      -0.024407042926659715,
+                      -0.00032604130459970663
+                    ],
+                    "significant": true,
+                    "wins": 52,
+                    "losses": 73,
+                    "ties": 423
+                  },
+                  "recall@10": {
+                    "delta": 0.012469586374695862,
+                    "ci95": [
+                      -0.004562043795620438,
+                      0.02889294403892944
+                    ],
+                    "significant": false,
+                    "wins": 25,
+                    "losses": 13,
+                    "ties": 510
+                  },
+                  "recall@100": {
+                    "delta": -0.008515815085158149,
+                    "ci95": [
+                      -0.02950121654501216,
+                      0.011861313868613142
+                    ],
+                    "significant": false,
+                    "wins": 25,
+                    "losses": 28,
+                    "ties": 495
+                  }
+                },
+                "snowball - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.06549771413174826,
+                    "ci95": [
+                      0.045763700039648095,
+                      0.0856945613004412
+                    ],
+                    "significant": true,
+                    "wins": 133,
+                    "losses": 58,
+                    "ties": 357
+                  },
+                  "mrr@10": {
+                    "delta": 0.05611096628432395,
+                    "ci95": [
+                      0.03538647028154328,
+                      0.07764996813810682
+                    ],
+                    "significant": true,
+                    "wins": 126,
+                    "losses": 59,
+                    "ties": 363
+                  },
+                  "recall@10": {
+                    "delta": 0.09823600973236009,
+                    "ci95": [
+                      0.06843065693430657,
+                      0.12956204379562045
+                    ],
+                    "significant": true,
+                    "wins": 88,
+                    "losses": 23,
+                    "ties": 437
+                  },
+                  "recall@100": {
+                    "delta": 0.1730535279805353,
+                    "ci95": [
+                      0.14051094890510948,
+                      0.20529197080291972
+                    ],
+                    "significant": true,
+                    "wins": 133,
+                    "losses": 15,
+                    "ties": 400
+                  }
+                },
+                "rust - no stemming": {
+                  "ndcg@10": {
+                    "delta": 0.05218946552901234,
+                    "ci95": [
+                      0.03432108945571929,
+                      0.07042362948870712
+                    ],
+                    "significant": true,
+                    "wins": 121,
+                    "losses": 56,
+                    "ties": 371
+                  },
+                  "mrr@10": {
+                    "delta": 0.049048488008342016,
+                    "ci95": [
+                      0.029782705509210985,
+                      0.06901018132313753
+                    ],
+                    "significant": true,
+                    "wins": 111,
+                    "losses": 56,
+                    "ties": 381
+                  },
+                  "recall@10": {
+                    "delta": 0.06782238442822386,
+                    "ci95": [
+                      0.038929440389294405,
+                      0.097323600973236
+                    ],
+                    "significant": true,
+                    "wins": 74,
+                    "losses": 25,
+                    "ties": 449
+                  },
+                  "recall@100": {
+                    "delta": 0.11587591240875912,
+                    "ci95": [
+                      0.08575881995133822,
+                      0.14659367396593675
+                    ],
+                    "significant": true,
+                    "wins": 101,
+                    "losses": 22,
+                    "ties": 425
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "harness": {
+        "name": "alnum+stopwords",
+        "tokenizer": "alnum",
+        "stopwords": true
+      }
+    },
+    "alnum, no stopwords": {
+      "systems": {
+        "no stemming": {
+          "index_terms": 1240079,
+          "relevant_pair_reachable": {}
+        }
+      },
+      "splits": {
+        "test": {
+          "queries": 1929,
+          "topics": 1929,
+          "topics_without_relevant": 0,
+          "relevant_not_in_corpus": 0,
+          "params": {
+            "k1=0.9,b=0.4": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.21913398018682564,
+                  "mrr@10": 0.20866309544381081,
+                  "recall@10": 0.31726283048211507,
+                  "recall@100": 0.5469155002592017,
+                  "mrr@100": 0.21810783577473705,
+                  "judged_fraction_of_top10": 0.04577501296008295
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.21913398018682564,
+                  "mrr@10": 0.20866309544381081,
+                  "recall@10": 0.31726283048211507,
+                  "recall@100": 0.5469155002592017
+                }
+              },
+              "pairs": {}
+            },
+            "k1=1.2,b=0.75": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.13998991075566886,
+                  "mrr@10": 0.13064997901700856,
+                  "recall@10": 0.211767755313634,
+                  "recall@100": 0.4451788491446345,
+                  "mrr@100": 0.14038275347343823,
+                  "judged_fraction_of_top10": 0.030430274753758424
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.13998991075566886,
+                  "mrr@10": 0.13064997901700856,
+                  "recall@10": 0.211767755313634,
+                  "recall@100": 0.4451788491446345
+                }
+              },
+              "pairs": {}
+            }
+          }
+        },
+        "validation": {
+          "queries": 548,
+          "topics": 548,
+          "topics_without_relevant": 0,
+          "relevant_not_in_corpus": 0,
+          "params": {
+            "k1=0.9,b=0.4": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.22603233355474356,
+                  "mrr@10": 0.217705798864558,
+                  "recall@10": 0.3156934306569343,
+                  "recall@100": 0.5556569343065694,
+                  "mrr@100": 0.22832246602077982,
+                  "judged_fraction_of_top10": 0.04470802919708029
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.22603233355474356,
+                  "mrr@10": 0.217705798864558,
+                  "recall@10": 0.3156934306569343,
+                  "recall@100": 0.5556569343065694
+                }
+              },
+              "pairs": {}
+            },
+            "k1=1.2,b=0.75": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.14082883019229275,
+                  "mrr@10": 0.12848380836519524,
+                  "recall@10": 0.22019464720194645,
+                  "recall@100": 0.45346715328467146,
+                  "mrr@100": 0.1382030087898897,
+                  "judged_fraction_of_top10": 0.029744525547445257
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.14082883019229275,
+                  "mrr@10": 0.12848380836519524,
+                  "recall@10": 0.22019464720194645,
+                  "recall@100": 0.45346715328467146
+                }
+              },
+              "pairs": {}
+            }
+          }
+        }
+      },
+      "harness": {
+        "name": "alnum, no stopwords",
+        "tokenizer": "alnum",
+        "stopwords": false
+      }
+    },
+    "whitespace, punctuation deleted, no stopwords": {
+      "systems": {
+        "no stemming": {
+          "index_terms": 1508129,
+          "relevant_pair_reachable": {}
+        }
+      },
+      "splits": {
+        "test": {
+          "queries": 1929,
+          "topics": 1929,
+          "topics_without_relevant": 0,
+          "relevant_not_in_corpus": 0,
+          "params": {
+            "k1=0.9,b=0.4": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.21277548719882713,
+                  "mrr@10": 0.20297135615953657,
+                  "recall@10": 0.30732676689130806,
+                  "recall@100": 0.51537929842751,
+                  "mrr@100": 0.2115011126075043,
+                  "judged_fraction_of_top10": 0.04406428201140487
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.21277548719882713,
+                  "mrr@10": 0.20297135615953657,
+                  "recall@10": 0.30732676689130806,
+                  "recall@100": 0.51537929842751
+                }
+              },
+              "pairs": {}
+            },
+            "k1=1.2,b=0.75": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.13532624851518255,
+                  "mrr@10": 0.12566425567980777,
+                  "recall@10": 0.20667012268878518,
+                  "recall@100": 0.4196906860203905,
+                  "mrr@100": 0.13438847977598437,
+                  "judged_fraction_of_top10": 0.029237947122861586
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.13532624851518255,
+                  "mrr@10": 0.12566425567980777,
+                  "recall@10": 0.20667012268878518,
+                  "recall@100": 0.4196906860203905
+                }
+              },
+              "pairs": {}
+            }
+          }
+        },
+        "validation": {
+          "queries": 548,
+          "topics": 548,
+          "topics_without_relevant": 0,
+          "relevant_not_in_corpus": 0,
+          "params": {
+            "k1=0.9,b=0.4": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.21891417488088322,
+                  "mrr@10": 0.20591834665739775,
+                  "recall@10": 0.3199513381995133,
+                  "recall@100": 0.5459245742092458,
+                  "mrr@100": 0.21507671850752602,
+                  "judged_fraction_of_top10": 0.04489051094890511
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.21891417488088322,
+                  "mrr@10": 0.20591834665739775,
+                  "recall@10": 0.3199513381995133,
+                  "recall@100": 0.5459245742092458
+                }
+              },
+              "pairs": {}
+            },
+            "k1=1.2,b=0.75": {
+              "metrics": {
+                "no stemming": {
+                  "ndcg@10": 0.131016113415501,
+                  "mrr@10": 0.11714097439462404,
+                  "recall@10": 0.21289537712895376,
+                  "recall@100": 0.44403892944038925,
+                  "mrr@100": 0.12663653201344005,
+                  "judged_fraction_of_top10": 0.02864963503649635
+                }
+              },
+              "metrics_all_topics_denominator": {
+                "no stemming": {
+                  "ndcg@10": 0.131016113415501,
+                  "mrr@10": 0.11714097439462404,
+                  "recall@10": 0.21289537712895376,
+                  "recall@100": 0.44403892944038925
+                }
+              },
+              "pairs": {}
+            }
+          }
+        }
+      },
+      "harness": {
+        "name": "whitespace, punctuation deleted, no stopwords",
+        "tokenizer": "ws",
+        "stopwords": false
+      }
+    }
+  },
+  "corpus": {
+    "passages": 825309,
+    "tokens": 29958494,
+    "raw_vocab_types": 1239983,
+    "tokens_dropped_over_max_len": 0,
+    "mean_passage_tokens": 36.29973016167278
+  },
+  "query_token_stems": {
+    "test_query_token_types": 4858,
+    "no stemming": {
+      "changed_fraction": 0.0
+    },
+    "snowball": {
+      "changed_fraction": 0.662412515438452
+    },
+    "rust": {
+      "changed_fraction": 0.7381638534376287
+    },
+    "rust+lexicon": {
+      "changed_fraction": 0.6500617538081515
+    },
+    "same_stem rust+lexicon / no stemming": 0.3499382461918485,
+    "same_stem rust+lexicon / rust": 0.7324001646768218,
+    "same_stem rust / snowball": 0.7256072457801565,
+    "same_stem rust+lexicon / snowball": 0.7305475504322767,
+    "same_stem snowball / no stemming": 0.33758748456154797,
+    "same_stem rust / no stemming": 0.26183614656237136
+  },
+  "examples_test_lexicon_vs_snowball": {
+    "lexicon_better": [
+      {
+        "qid": "woh0030woh",
+        "query": "Телефонды кім ойлап тапты?",
+        "ndcg@10": {
+          "no stemming": 0.31546487678572877,
+          "snowball": 0.2890648263178879,
+          "rust": 1.0,
+          "rust+lexicon": 1.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 8,
+          "snowball": 10,
+          "rust": 1,
+          "rust+lexicon": 1
+        },
+        "query_stems": {
+          "no stemming": [
+            "телефонды",
+            "кім",
+            "ойлап",
+            "тапты"
+          ],
+          "snowball": [
+            "телефон",
+            "кім",
+            "ойлап",
+            "тап"
+          ],
+          "rust": [
+            "телефон",
+            "кім",
+            "ойлап",
+            "тап"
+          ],
+          "rust+lexicon": [
+            "телефон",
+            "кім",
+            "ойла",
+            "тап"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "531672_3_1",
+            "title": "Алло (сөз)",
+            "text": "Телефонмен сөйлескен сайын айтылатын «Алло» сөзі негізінде бір қыздың (телефонды ойлап тапқан Александр Грейам Беллдың сүйіктісі) қысқартылған есімі. Қыздың толық есімі – Алессандра Лолита Освалдо. Гр"
+          }
+        ]
+      },
+      {
+        "qid": "bio0965bio",
+        "query": "Биосфера туралы ілімнің негізін кім қалаған?",
+        "ndcg@10": {
+          "no stemming": 0.2640681225725909,
+          "snowball": 0.0,
+          "rust": 0.3065735963827292,
+          "rust+lexicon": 0.6934264036172708
+        },
+        "first_relevant_rank": {
+          "no stemming": 4,
+          "snowball": 30,
+          "rust": 3,
+          "rust+lexicon": 2
+        },
+        "query_stems": {
+          "no stemming": [
+            "биосфера",
+            "ілімнің",
+            "негізін",
+            "кім",
+            "қалаған"
+          ],
+          "snowball": [
+            "биосфера",
+            "ілімнің",
+            "негіз",
+            "кім",
+            "қала"
+          ],
+          "rust": [
+            "биосфера",
+            "ілі",
+            "негіз",
+            "кім",
+            "қала"
+          ],
+          "rust+lexicon": [
+            "биосфера",
+            "ілім",
+            "негіз",
+            "кім",
+            "қала"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "14838_8_1",
+            "title": "Экология",
+            "text": "Экология ғылымының жеке ғылым ретінде қалыптасу және даму кезеңі. Бұл кезеңде шетелдік ғалымдармен қоса орыс ғалымдарының еңбектері шыға бастады. Бұл кезең 19 ғасырдың басы мен 20 ғасырдың 70-80 жылда"
+          },
+          {
+            "docid": "15647_16_1",
+            "title": "Биосфера",
+            "text": "Саялы сыңсыған ну орман-тоғайсыз, айдын-шалқар көлсіз, арқырап аққан өзенсіз- жайқалып өскен шекарай шалғын шөпсіз, бітік шыққан егінсіз адамзат қоғамының шарықтап өсуі мүмкін емес. Сондықтан да бізді"
+          }
+        ]
+      },
+      {
+        "qid": "kzh0805kzh",
+        "query": "1990 жылы 25 қазанда Жоғары Кеңес қандай құжат қабылдаған?",
+        "ndcg@10": {
+          "no stemming": 0.0,
+          "snowball": 0.31546487678572877,
+          "rust": 1.0,
+          "rust+lexicon": 1.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 42,
+          "snowball": 8,
+          "rust": 1,
+          "rust+lexicon": 1
+        },
+        "query_stems": {
+          "no stemming": [
+            "1990",
+            "жылы",
+            "25",
+            "қазанда",
+            "жоғары",
+            "кеңес",
+            "қандай",
+            "құжат",
+            "қабылдаған"
+          ],
+          "snowball": [
+            "1990",
+            "жыл",
+            "25",
+            "қазан",
+            "жоғар",
+            "кеңес",
+            "қандай",
+            "құжат",
+            "қабыл"
+          ],
+          "rust": [
+            "1990",
+            "жыл",
+            "25",
+            "қаза",
+            "жоғар",
+            "кеңес",
+            "қан",
+            "құжат",
+            "қабылда"
+          ],
+          "rust+lexicon": [
+            "1990",
+            "жылы",
+            "25",
+            "қаза",
+            "жоғары",
+            "кеңес",
+            "қандай",
+            "құжат",
+            "қабылда"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "537148_6_1",
+            "title": "Қазақ КСР Жоғарғы Кеңесі",
+            "text": "Қазақ КСР-інің осы соңғы сайланған Жоғарғы Кеңесі Қазақстанның егемендігі мен тәуелсіздігін баянды еткен аса маңызды тарихи заңнамалық құжаттар қабылдады. \nАтап айтқанда: \n: 1990 жылы сәуірде \"“Қазақ "
+          }
+        ]
+      },
+      {
+        "qid": "kzh0425kzh",
+        "query": "1918 жылы РКСФР Халық Комиссарлары Кеңесінің қаулысымен «Суландыру жұмыстарына» қанша қаржы бөлінді?",
+        "ndcg@10": {
+          "no stemming": 1.0,
+          "snowball": 0.3333333333333333,
+          "rust": 1.0,
+          "rust+lexicon": 1.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 1,
+          "snowball": 7,
+          "rust": 1,
+          "rust+lexicon": 1
+        },
+        "query_stems": {
+          "no stemming": [
+            "1918",
+            "жылы",
+            "рксфр",
+            "халық",
+            "комиссарлары",
+            "кеңесінің",
+            "қаулысымен",
+            "суландыру",
+            "жұмыстарына",
+            "қанша",
+            "қаржы",
+            "бөлінді"
+          ],
+          "snowball": [
+            "1918",
+            "жыл",
+            "рксфр",
+            "халық",
+            "комиссар",
+            "кеңе",
+            "қаулыс",
+            "суландыру",
+            "жұмыс",
+            "қанша",
+            "қарж",
+            "бөлін"
+          ],
+          "rust": [
+            "1918",
+            "жыл",
+            "рксфр",
+            "халық",
+            "комиссар",
+            "кеңе",
+            "қаулы",
+            "сулан",
+            "жұмыс",
+            "қанша",
+            "қарж",
+            "бөл"
+          ],
+          "rust+lexicon": [
+            "1918",
+            "жылы",
+            "рксфр",
+            "халық",
+            "комиссар",
+            "кеңес",
+            "қаулы",
+            "суландыр",
+            "жұмыс",
+            "қанша",
+            "қаржы",
+            "бөл"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "28605_25_1",
+            "title": "Кеңес үкіметі",
+            "text": "1918 жылы 17 мамырда «Суландыру жұмыстарына 50 млн. сом қаржы бөлү туралы» декрет қабылданды."
+          }
+        ]
+      },
+      {
+        "qid": "kzh2387kzh",
+        "query": "1916 жылғы көтерілістің негізгі қозғаушы күші:",
+        "ndcg@10": {
+          "no stemming": 0.3333333333333333,
+          "snowball": 0.3333333333333333,
+          "rust": 1.0,
+          "rust+lexicon": 1.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 7,
+          "snowball": 7,
+          "rust": 1,
+          "rust+lexicon": 1
+        },
+        "query_stems": {
+          "no stemming": [
+            "1916",
+            "жылғы",
+            "көтерілістің",
+            "негізгі",
+            "қозғаушы",
+            "күші"
+          ],
+          "snowball": [
+            "1916",
+            "жыл",
+            "көтеріліс",
+            "негіз",
+            "қоз",
+            "күші"
+          ],
+          "rust": [
+            "1916",
+            "жылқ",
+            "көтер",
+            "негізк",
+            "қозғауш",
+            "күш"
+          ],
+          "rust+lexicon": [
+            "1916",
+            "жыл",
+            "көтер",
+            "негізгі",
+            "қозғаушы",
+            "күш"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "506984_2_1_5",
+            "title": "1916 жылғы ұлт-азаттық қозғалыс",
+            "text": "Бұл дағдарыстың айқын көрінісі Қазақстан және Орталық Азия халықтарының 1916 жылғы жалпы бұқаралық сипат алған ұлт - азаттық қозғалыс болды. Қоғамның барлық әлеуметтік топтарын қамтыған қозғалыс барыс"
+          }
+        ]
+      },
+      {
+        "qid": "lit1490lit",
+        "query": "Асан қайғының әкесінің кәсібі не болған?",
+        "ndcg@10": {
+          "no stemming": 0.0,
+          "snowball": 0.0,
+          "rust": 0.0,
+          "rust+lexicon": 0.6309297535714575
+        },
+        "first_relevant_rank": {
+          "no stemming": 0,
+          "snowball": 28,
+          "rust": 11,
+          "rust+lexicon": 2
+        },
+        "query_stems": {
+          "no stemming": [
+            "асан",
+            "қайғының",
+            "әкесінің",
+            "кәсібі",
+            "болған"
+          ],
+          "snowball": [
+            "асан",
+            "қайық",
+            "әке",
+            "кәсіп",
+            "болған"
+          ],
+          "rust": [
+            "асан",
+            "қайғы",
+            "әке",
+            "кәсіп",
+            "бол"
+          ],
+          "rust+lexicon": [
+            "асан",
+            "қайғы",
+            "әке",
+            "кәсіп",
+            "бол"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "36885_2_1_1",
+            "title": "Асан қайғы Сәбитұлы",
+            "text": "==Өмір сүрген кезеңі==\nАсан Қайғы Сәбитұлы XIV ғасырда ғұмыр кешкен, Алтын Орда, қазақтың данышпан ақылгөй жырауы, өз дәуірінің абызы, бас биі, Шоқан Уәлихановтың айтуы бойынша, қазақ халқының қамын, "
+          }
+        ]
+      }
+    ],
+    "snowball_better": [
+      {
+        "qid": "geo0571geo",
+        "query": "Алғашқы дүние жүзін айналып жүзіп өтуге кеткен уақыт қай жылдарда?",
+        "ndcg@10": {
+          "no stemming": 1.0,
+          "snowball": 1.0,
+          "rust": 0.0,
+          "rust+lexicon": 0.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 1,
+          "snowball": 1,
+          "rust": 84,
+          "rust+lexicon": 0
+        },
+        "query_stems": {
+          "no stemming": [
+            "алғашқы",
+            "дүние",
+            "жүзін",
+            "айналып",
+            "жүзіп",
+            "өтуге",
+            "кеткен",
+            "уақыт",
+            "қай",
+            "жылдарда"
+          ],
+          "snowball": [
+            "алғаш",
+            "дүние",
+            "жүз",
+            "айнал",
+            "жүзіп",
+            "өту",
+            "кеткен",
+            "уақыт",
+            "қай",
+            "жыл"
+          ],
+          "rust": [
+            "алғашқ",
+            "дүние",
+            "жүз",
+            "айнал",
+            "жүз",
+            "өту",
+            "кет",
+            "уақыт",
+            "қай",
+            "жыл"
+          ],
+          "rust+lexicon": [
+            "алғашқы",
+            "дүние",
+            "жүз",
+            "айнал",
+            "жүз",
+            "өту",
+            "кет",
+            "уақыт",
+            "қай",
+            "жыл"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "14071_6_1",
+            "title": "Фернан Магеллан",
+            "text": "=== Дүние жүзін айналып шығу ===\n\n1519 — 1521 ж. Молукк аралдарына апаратын батыс жолдарын іздеуге шыққан экспедицияны басқарды. Африканың батысымен жүзіп, Атлант мұхиты арқылы Оңтүстік Американың шығ"
+          }
+        ]
+      },
+      {
+        "qid": "kzh1169kzh",
+        "query": "Көккесене қайда орналасқан?",
+        "ndcg@10": {
+          "no stemming": 1.0,
+          "snowball": 1.0,
+          "rust": 1.0,
+          "rust+lexicon": 0.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 1,
+          "snowball": 1,
+          "rust": 1,
+          "rust+lexicon": 0
+        },
+        "query_stems": {
+          "no stemming": [
+            "көккесене",
+            "қайда",
+            "орналасқан"
+          ],
+          "snowball": [
+            "көккесене",
+            "қай",
+            "орналас"
+          ],
+          "rust": [
+            "көккесе",
+            "қай",
+            "орналас"
+          ],
+          "rust+lexicon": [
+            "көк",
+            "қайда",
+            "орналас"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "53834_1_1",
+            "title": "Көккесене",
+            "text": "\nКөккесене – орта ғасырлардан сақталған архитектуралық ескерткіш, Cырдария өзенінің жағасына (қазіргі Қызылорда облысы Төменарық темір жол торабынан солтүстікке қарай – 5, Сығанақтан оңтүстікке қарай "
+          }
+        ]
+      },
+      {
+        "qid": "geo1107geo",
+        "query": "Республикамыздағы ең қуатты СЭС  қай қалаларда орналасқан?",
+        "ndcg@10": {
+          "no stemming": 0.3333333333333333,
+          "snowball": 1.0,
+          "rust": 1.0,
+          "rust+lexicon": 0.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 7,
+          "snowball": 1,
+          "rust": 1,
+          "rust+lexicon": 14
+        },
+        "query_stems": {
+          "no stemming": [
+            "республикамыздағы",
+            "ең",
+            "қуатты",
+            "сэс",
+            "қай",
+            "қалаларда",
+            "орналасқан"
+          ],
+          "snowball": [
+            "республика",
+            "ең",
+            "қуат",
+            "сэс",
+            "қай",
+            "қала",
+            "орналас"
+          ],
+          "rust": [
+            "республика",
+            "ең",
+            "қуат",
+            "сэс",
+            "қай",
+            "қала",
+            "орналас"
+          ],
+          "rust+lexicon": [
+            "республика",
+            "ең",
+            "қуатты",
+            "сэс",
+            "қай",
+            "қала",
+            "орналас"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "67384_2_1",
+            "title": "Су электр станциясы",
+            "text": "Қазақстандағы ең алғашқы СЭС 1902 жылы Зырян кенішін энергиямен қамтамасыз ету мақсатында Тұрғысын өзенінде салынды. Оның қуаты 1 мың кВт болды. 1927 жылы Жоғары Хариузовск СЭС-і (қуаты 3,2 мың кВт), "
+          }
+        ]
+      },
+      {
+        "qid": "kzh2513kzh",
+        "query": "Қазақтың халық болып құрылуына әсер еткен біріккен этникалық топ:",
+        "ndcg@10": {
+          "no stemming": 0.0,
+          "snowball": 1.0,
+          "rust": 0.0,
+          "rust+lexicon": 0.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 0,
+          "snowball": 1,
+          "rust": 0,
+          "rust+lexicon": 0
+        },
+        "query_stems": {
+          "no stemming": [
+            "қазақтың",
+            "халық",
+            "болып",
+            "құрылуына",
+            "әсер",
+            "еткен",
+            "біріккен",
+            "этникалық",
+            "топ"
+          ],
+          "snowball": [
+            "қазақ",
+            "халық",
+            "болып",
+            "құрылу",
+            "әсер",
+            "еткен",
+            "бірік",
+            "этника",
+            "топ"
+          ],
+          "rust": [
+            "қазақ",
+            "халық",
+            "бол",
+            "құрылу",
+            "әсер",
+            "ет",
+            "бірік",
+            "этника",
+            "топ"
+          ],
+          "rust+lexicon": [
+            "қазақ",
+            "халық",
+            "бол",
+            "құрыл",
+            "әсер",
+            "ет",
+            "бірік",
+            "этникалы",
+            "топ"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "665725_249_1",
+            "title": "Қазақ мемлекеттігі",
+            "text": "Қазақ хандығының құрылу қарсаңында (XIV-XV ғасырларда) Қазақ тайпалары Сібірден Сыр бойына, Ертістен Жайық жағасына дейінгі жалпақ өңірге жайылып қоныстанған болатын. Осы дәуірді баяндайтын орта ғасыр"
+          }
+        ]
+      },
+      {
+        "qid": "woh0189woh",
+        "query": "Фарабунда Марти  деген кім?",
+        "ndcg@10": {
+          "no stemming": 0.3562071871080222,
+          "snowball": 1.0,
+          "rust": 0.0,
+          "rust+lexicon": 0.0
+        },
+        "first_relevant_rank": {
+          "no stemming": 6,
+          "snowball": 1,
+          "rust": 18,
+          "rust+lexicon": 21
+        },
+        "query_stems": {
+          "no stemming": [
+            "фарабунда",
+            "марти",
+            "деген",
+            "кім"
+          ],
+          "snowball": [
+            "фарабун",
+            "марти",
+            "деген",
+            "кім"
+          ],
+          "rust": [
+            "фарабу",
+            "марти",
+            "де",
+            "кім"
+          ],
+          "rust+lexicon": [
+            "фарабу",
+            "марти",
+            "де",
+            "кім"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "530536_1_1",
+            "title": "Марти Аугусто Фарабундо",
+            "text": "\nФарабундо Марти (толық есімі — \"Агустин Фарабундо Марти Родригес\" (Agustín Farabundo Martí Rodríguez); 5 мамыр 1893 — 1 ақпан 1932) — Сальвадор жұмысшы қозғалысының қайраткері. Ауқатты шаруа отбасынд"
+          }
+        ]
+      },
+      {
+        "qid": "kzh1351kzh",
+        "query": "Қазақ хандығы қай уақытта құрылды ?",
+        "ndcg@10": {
+          "no stemming": 0.0,
+          "snowball": 1.0,
+          "rust": 1.0,
+          "rust+lexicon": 0.31546487678572877
+        },
+        "first_relevant_rank": {
+          "no stemming": 38,
+          "snowball": 1,
+          "rust": 1,
+          "rust+lexicon": 8
+        },
+        "query_stems": {
+          "no stemming": [
+            "қазақ",
+            "хандығы",
+            "қай",
+            "уақытта",
+            "құрылды"
+          ],
+          "snowball": [
+            "қазақ",
+            "хандық",
+            "қай",
+            "уақыт",
+            "құрыл"
+          ],
+          "rust": [
+            "қазақ",
+            "хандық",
+            "қай",
+            "уақыт",
+            "құр"
+          ],
+          "rust+lexicon": [
+            "қазақ",
+            "хандық",
+            "қай",
+            "уақыт",
+            "құр"
+          ]
+        },
+        "relevant": [
+          {
+            "docid": "14148_2_1",
+            "title": "Қазақстан тарихы",
+            "text": "Ең бірінші қазақ елі Алтын Орда ішінде құрылып, уақыт өткен соң, 1465 жылда Қазақ хандығы қалыптасқан. XV ғ. соңы мен XVI ғасырдың басында Қазақ хандығы тез өсіп, қазіргі Қазақстанның аумағының көбісі"
+          }
+        ]
+      }
+    ]
+  },
+  "recall_ceiling": {
+    "test": {
+      "queries_with_relevant_in_top100_any_system": 0.815966822187662,
+      "queries_with_relevant_in_top100_all_systems": 0.5562467599792639,
+      "queries_with_relevant_in_top100_no stemming": 0.6101607050285122,
+      "queries_with_relevant_in_top100_snowball": 0.7558320373250389,
+      "queries_with_relevant_in_top100_rust": 0.7262830482115086,
+      "queries_with_relevant_in_top100_rust+lexicon": 0.7547952306894764
+    },
+    "validation": {
+      "queries_with_relevant_in_top100_any_system": 0.8284671532846716,
+      "queries_with_relevant_in_top100_all_systems": 0.5821167883211679,
+      "queries_with_relevant_in_top100_no stemming": 0.6313868613138686,
+      "queries_with_relevant_in_top100_snowball": 0.7864963503649635,
+      "queries_with_relevant_in_top100_rust": 0.7244525547445255,
+      "queries_with_relevant_in_top100_rust+lexicon": 0.7609489051094891
+    }
+  },
+  "paper_baseline": {
+    "source": "KazQAD paper (LREC-COLING 2024), Table 4, 'BM25 (title+text)' candidate generator, FlexNeuART, whitespace tokenisation with lowercase and punctuation removal",
+    "reported": {
+      "ndcg@10": 0.1446,
+      "mrr": 0.1443,
+      "recall@100": 0.4491
+    },
+    "note": "The abstract's NDCG@10 0.389 / MRR 0.382 is the fine-tuned XLM-R re-ranker, not BM25.",
+    "reproduction": {
+      "alnum+stopwords": {
+        "k1=0.9,b=0.4": {
+          "no stemming": {
+            "ndcg@10": 0.21912728833107584,
+            "mrr@10": 0.20869066133451825,
+            "recall@10": 0.3174356315880421,
+            "recall@100": 0.544409884223259,
+            "mrr@100": 0.21818998505071177,
+            "judged_fraction_of_top10": 0.04582685329186107
+          },
+          "no stemming, all topics as denominator": {
+            "ndcg@10": 0.21912728833107584,
+            "mrr@10": 0.20869066133451825,
+            "recall@10": 0.3174356315880421,
+            "recall@100": 0.544409884223259
+          }
+        },
+        "k1=1.2,b=0.75": {
+          "no stemming": {
+            "ndcg@10": 0.14293402329216748,
+            "mrr@10": 0.1330825660141368,
+            "recall@10": 0.21669258683255574,
+            "recall@100": 0.4444012441679627,
+            "mrr@100": 0.14266754746672558,
+            "judged_fraction_of_top10": 0.03131156039398652
+          },
+          "no stemming, all topics as denominator": {
+            "ndcg@10": 0.14293402329216748,
+            "mrr@10": 0.1330825660141368,
+            "recall@10": 0.21669258683255574,
+            "recall@100": 0.4444012441679627
+          }
+        }
+      },
+      "alnum, no stopwords": {
+        "k1=0.9,b=0.4": {
+          "no stemming": {
+            "ndcg@10": 0.21913398018682564,
+            "mrr@10": 0.20866309544381081,
+            "recall@10": 0.31726283048211507,
+            "recall@100": 0.5469155002592017,
+            "mrr@100": 0.21810783577473705,
+            "judged_fraction_of_top10": 0.04577501296008295
+          },
+          "no stemming, all topics as denominator": {
+            "ndcg@10": 0.21913398018682564,
+            "mrr@10": 0.20866309544381081,
+            "recall@10": 0.31726283048211507,
+            "recall@100": 0.5469155002592017
+          }
+        },
+        "k1=1.2,b=0.75": {
+          "no stemming": {
+            "ndcg@10": 0.13998991075566886,
+            "mrr@10": 0.13064997901700856,
+            "recall@10": 0.211767755313634,
+            "recall@100": 0.4451788491446345,
+            "mrr@100": 0.14038275347343823,
+            "judged_fraction_of_top10": 0.030430274753758424
+          },
+          "no stemming, all topics as denominator": {
+            "ndcg@10": 0.13998991075566886,
+            "mrr@10": 0.13064997901700856,
+            "recall@10": 0.211767755313634,
+            "recall@100": 0.4451788491446345
+          }
+        }
+      },
+      "whitespace, punctuation deleted, no stopwords": {
+        "k1=0.9,b=0.4": {
+          "no stemming": {
+            "ndcg@10": 0.21277548719882713,
+            "mrr@10": 0.20297135615953657,
+            "recall@10": 0.30732676689130806,
+            "recall@100": 0.51537929842751,
+            "mrr@100": 0.2115011126075043,
+            "judged_fraction_of_top10": 0.04406428201140487
+          },
+          "no stemming, all topics as denominator": {
+            "ndcg@10": 0.21277548719882713,
+            "mrr@10": 0.20297135615953657,
+            "recall@10": 0.30732676689130806,
+            "recall@100": 0.51537929842751
+          }
+        },
+        "k1=1.2,b=0.75": {
+          "no stemming": {
+            "ndcg@10": 0.13532624851518255,
+            "mrr@10": 0.12566425567980777,
+            "recall@10": 0.20667012268878518,
+            "recall@100": 0.4196906860203905,
+            "mrr@100": 0.13438847977598437,
+            "judged_fraction_of_top10": 0.029237947122861586
+          },
+          "no stemming, all topics as denominator": {
+            "ndcg@10": 0.13532624851518255,
+            "mrr@10": 0.12566425567980777,
+            "recall@10": 0.20667012268878518,
+            "recall@100": 0.4196906860203905
+          }
+        }
+      }
+    }
+  },
+  "environment": {
+    "wall_seconds": 135.1,
+    "phases_seconds": {
+      "fetch+build": 0.2,
+      "alnum+stopwords / tokenize+count": 13.7,
+      "alnum+stopwords / no stemming": 11.1,
+      "alnum+stopwords / snowball": 17.2,
+      "alnum+stopwords / rust": 18.8,
+      "alnum+stopwords / rust+lexicon": 21.3,
+      "alnum, no stopwords / tokenize+count": 14.9,
+      "alnum, no stopwords / no stemming": 11.8,
+      "whitespace, punctuation deleted, no stopwords / tokenize+count": 14.7,
+      "whitespace, punctuation deleted, no stopwords / no stemming": 11.4
+    },
+    "peak_rss_mb": 3833,
+    "machine": "macOS-26.5-arm64-arm-64bit, 14 cores",
+    "python": "3.12.12",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1"
+  }
+}

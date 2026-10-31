@@ -169,6 +169,10 @@ eval-external: cli
     python3 eval/run_external_kazrag.py --repo "{{ kazrag_dir }}" \
         --lexicon data/tsearch_data/kaz_stems.dict --out eval/results/external_kazrag.json
 
+# Compare stemmers on KazQAD passage retrieval (pinned commit, judgments independent of this project)
+eval-kazqad: cli
+    uv run --no-project --with numpy --with scipy python eval/run_kazqad.py --out eval/results/kazqad.json
+
 # Validate the gold_v2 dataset gates
 validate-gold:
     python3 eval/validate_gold.py --gold "{{ gold_v2_q }}"
