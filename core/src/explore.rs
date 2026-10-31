@@ -99,7 +99,34 @@ fn count_strong_syllables(base: &str) -> i32 {
         .count() as i32
 }
 
+/// Negation and intentive suffixes (ма/ме, ба/бе, па/пе and the forms built on
+/// them: -майды, -мақ, -бек, ...) pick their first consonant from the final
+/// sound of the verb stem: м after vowels and л/р/й, б after voiced
+/// obstruents and м/н/ң, п after voiceless ones. A mismatch (жәні+бек, әлі+бек) means the
+/// letters belong to something else, typically a name in -бек.
+fn negation_allomorph_ok(sfx: &str, base: &str) -> bool {
+    let mut chars = sfx.chars();
+    let first = chars.next();
+    if !matches!(chars.next(), Some('а' | 'е')) {
+        return true;
+    }
+    let Some(last) = utf8_last_cp(base) else {
+        return false;
+    };
+    match (first, final_sound(last)) {
+        (_, FinalSound::Unknown) => true,
+        (Some('м'), FinalSound::Vocalic | FinalSound::Liquid) => true,
+        (Some('б'), FinalSound::Voiced | FinalSound::Nasal) => true,
+        (Some('п'), FinalSound::Voiceless) => true,
+        (Some('м' | 'б' | 'п'), _) => false,
+        _ => true,
+    }
+}
+
 fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Option<&Lexicon>) -> bool {
+    if matches!(layer_id, LAYER_VTENSE | LAYER_VNEG) && !negation_allomorph_ok(sfx, base) {
+        return false;
+    }
     match layer_id {
         LAYER_CASE => {
             if sfx == "н" {

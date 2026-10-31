@@ -59,4 +59,6 @@ fn well_formed_negative_and_intentive_verbs_still_strip() {
     assert_eq!(stem("бармайды", &cfg), "бар");
     assert_eq!(stem("білмеймін", &cfg), "біл");
     assert_eq!(stem("өткізбек", &cfg), "өткіз");
+    assert_eq!(stem("сенбейді", &cfg), "сен");
+    assert_eq!(stem("жарияланбайды", &cfg), "жариялан");
 }

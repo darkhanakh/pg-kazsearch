@@ -24,6 +24,36 @@ pub fn is_loan_vowel(cp: char) -> bool {
     matches!(cp, 'я' | 'э')
 }
 
+/// Word-final sound class that picks the allomorph of a suffix-initial
+/// consonant (ма/ба/па, ды/ты, дай/тай).
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum FinalSound {
+    Vocalic,
+    /// л, р, й: take the same allomorph as vowels (бармайды, келмейді).
+    Liquid,
+    /// м, н, ң: take the voiced allomorph (сенбейді, жарияланбайды).
+    Nasal,
+    Voiced,
+    Voiceless,
+    /// Non-Cyrillic or soft/hard sign: no allomorph can be ruled out.
+    Unknown,
+}
+
+pub fn final_sound(cp: char) -> FinalSound {
+    if is_vocalic(cp) || cp == 'ю' {
+        return FinalSound::Vocalic;
+    }
+    match cp {
+        'л' | 'р' | 'й' => FinalSound::Liquid,
+        'м' | 'н' | 'ң' => FinalSound::Nasal,
+        'б' | 'в' | 'г' | 'ғ' | 'д' | 'ж' | 'з' => FinalSound::Voiced,
+        'қ' | 'к' | 'п' | 'с' | 'т' | 'ш' | 'ч' | 'ц' | 'ф' | 'х' | 'һ' | 'щ' => {
+            FinalSound::Voiceless
+        }
+        _ => FinalSound::Unknown,
+    }
+}
+
 pub fn utf8_last_cp(s: &str) -> Option<char> {
     s.chars().last()
 }
