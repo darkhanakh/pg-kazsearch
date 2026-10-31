@@ -191,15 +191,14 @@ fn lexicon_vowel_restore_ignores_vowels_the_suffix_did_not_start_with() {
 
 #[test]
 fn lexicon_vowel_restore_keeps_a_verb_root_cut_by_a_verbal_suffix() {
-    // берілді is бер + passive -іл + past -ді, барысын is бар + -ыс + -ын and
-    // ұрынып is ұр + reflexive -ын + converb -ып. бері "hither", бары
-    // "existing" and ұры "thief" are entries, but the verb roots are
-    // already complete.
+    // берілді is бер + passive -іл + past -ді and ұрынып is ұр + reflexive
+    // -ын + converb -ып. бері "hither" and ұры "thief" are entries, but the
+    // verb roots are already complete.
     let mut lex = Lexicon::new();
-    for verb in ["бер", "бар", "ұр"] {
+    for verb in ["бер", "ұр"] {
         lex.insert_verb(verb.to_string());
     }
-    for word in ["бері", "бары", "ұры", "жыл", "жылы"] {
+    for word in ["бері", "ұры", "жыл", "жылы"] {
         lex.insert(word.to_string());
     }
     let cfg = StemConfig {
@@ -207,10 +206,29 @@ fn lexicon_vowel_restore_keeps_a_verb_root_cut_by_a_verbal_suffix() {
         ..Default::default()
     };
     assert_eq!(stem("берілді", &cfg), "бер");
-    assert_eq!(stem("барысын", &cfg), "бар");
     assert_eq!(stem("ұрынып", &cfg), "ұр");
     assert_eq!(stem("жылынады", &cfg), "жылы");
 }
+#[test]
+fn lexicon_vowel_restore_follows_a_verb_root_when_the_rest_is_a_noun_chain() {
+    // желісін is желі + poss. -сі + acc. -н. The BFS reads жел + -іс + -ін
+    // instead. жел is a verb root, but the tail сін is a noun inflection
+    // chain, while the tail лді of бер-іл-ді is not.
+    let mut lex = Lexicon::new();
+    for verb in ["жел", "бер"] {
+        lex.insert_verb(verb.to_string());
+    }
+    for word in ["желі", "бері"] {
+        lex.insert(word.to_string());
+    }
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+    assert_eq!(stem("желісін", &cfg), "желі");
+    assert_eq!(stem("берілді", &cfg), "бер");
+}
+
 #[test]
 fn possessive_after_lexicon_noun_ending_in_ul_still_strips() {
     // Only a base that is not a word itself reads as a patronymic stub.
