@@ -1,0 +1,182 @@
+[% header('Kazakh stemming algorithm') %]
+
+<h2>Links to resources</h2>
+
+<ul>
+<li> <a href="stemmer.sbl">The stemmer in Snowball</a>
+<li> <a href="voc.txt">Sample Kazakh vocabulary</a>
+<li> <a href="output.txt">Its stemmed equivalent</a>
+<li> <a href="diffs.txt">Vocabulary and stemmed equivalent in two columns</a>
+</ul>
+
+[% algorithm_vocab([
+    'мектеп', 'мектепке', 'мектепте', 'мектептен', 'мектептің', 'мектептер',
+    'мектептерде', 'мектебі', 'мектебін', 'мектебінде', 'мектебіміз',
+    'кітап', 'кітабы', 'кітабын', 'кітабына', 'кітапты', 'кітаптар', 'кітаптарымызда',
+    'аудан', 'ауданы', 'ауданда', 'ауданында', 'ауданындағы', 'аудандар', 'ауданның',
+    'қазақстан', 'қазақстанның', 'қазақстанда', 'қазақстандық', 'қазақстандықтар',
+    'жоспар', 'жоспарлар', 'жоспары', 'жоспарлады', 'жоспарлаған', 'жоспарланды',
+    'келді', 'келмеген', 'келмеді', 'келгендер', 'келгенін',
+    'дамыту', 'дамытуға', 'дамытуы', 'дамытады', 'дамытты',
+], [
+    'мектеп', 'мектеп', 'мектеп', 'мектеп', 'мектеп', 'мектеп',
+    'мектеп', 'мектеп', 'мектеп', 'мектеп', 'мектеп',
+    'кітап', 'кітап', 'кітап', 'кітап', 'кітап', 'кітап', 'кітап',
+    'аудан', 'ауда', 'аудан', 'аудан', 'аудан', 'аудан', 'аудан',
+    'қазақстан', 'қазақстан', 'қазақстан', 'қазақстан', 'қазақстан',
+    'жоспар', 'жоспар', 'жоспар', 'жоспар', 'жоспар', 'жоспарлан',
+    'кел', 'кел', 'кел', 'келген', 'келген',
+    'дамыту', 'дамыту', 'дамыту', 'дамыт', 'дамыт',
+]) %]
+
+<h2>Kazakh</h2>
+
+<p>
+Kazakh is a Turkic language written, in Kazakhstan, in a Cyrillic alphabet of
+42 letters: the 33 Russian letters plus ә, ғ, қ, ң, ө, ұ, ү, һ and і.  A
+Latin alphabet is being introduced, but the bulk of existing text, and of
+text indexed by search engines today, is Cyrillic, and this algorithm handles
+Cyrillic only.
+</p>
+
+<p>
+Like Turkish, Kazakh is agglutinative: a noun takes, in order, derivational
+suffixes, the plural, a possessive, a case ending and a predicative person
+ending, and a verb takes voice, negation, tense and person.  Each suffix has
+two to six allomorphs, chosen by vowel harmony (back а о ұ ы against front
+ә е ө ү і) and by the last sound of what precedes it: the locative is
+<i>-да</i> after a vowel or voiced consonant, <i>-та</i> after a voiceless
+one; the plural is <i>-лар</i> after a vowel, р, й or у, <i>-дар</i> after
+л м н ң з ж and <i>-тар</i> after a voiceless consonant.  A final п, қ or к
+of the base becomes б, ғ or г before a vowel-initial suffix
+(<i>кітап</i>, <i>кітабы</i>), and a narrow vowel in the last syllable of
+some roots drops out before one (<i>орын</i>, <i>орны</i>).
+</p>
+
+<h2>The stemming algorithm</h2>
+
+<p>
+The algorithm strips suffixes from the right one at a time.  Each slot is
+an <code>among</code> table; an entry is accepted only if
+</p>
+
+<ul>
+<li> its vowel class matches the last non-glide vowel of what precedes it
+     (у, и and ю are transparent; a base with no other vowel, such as
+     <i>туризм</i>, accepts either class, and a base ending in к or г
+     accepts front suffixes whatever its vowels, which is how loanwords
+     such as <i>банк</i> behave),
+<li> its initial consonant fits the final sound of the base as described
+     above, and
+<li> the base keeps at least one vowel and either three letters or a vowel
+     followed by a consonant (<i>ел</i>, <i>іс</i>).
+</ul>
+
+<p>
+The word is first tried as a finite verb: a tense ending, then negation,
+then the denominal verbaliser <i>-ла</i>.  If no tense ending matches, the
+nominal suffixes are removed in a loop until none applies, and then a
+participle ending that the nominal suffixes may have covered.  Finally, if a
+vowel-initial suffix was removed, б ғ г at the end of the stem are restored
+to п қ к and an elided ы/і is put back before a final н, з or қ.
+</p>
+
+<p>
+The loop over nominal suffixes matters more than it looks.  Many Kazakh
+lemmas end in a string that is also a suffix (<i>теңге</i> ends in the
+dative <i>-ге</i>, <i>сауда</i> in the locative <i>-да</i>), so a single
+pass would cut the bare lemma once more than its inflected forms and the
+two would never meet in an index.  With the loop <i>теңге</i> and
+<i>теңгені</i> both give <i>тең</i>: wrong as a dictionary form, but the
+same wrong form for every occurrence, which is what matters for retrieval.
+</p>
+
+<h3>Why some suffixes are not removed</h3>
+
+<p>
+The algorithm was tuned on retrieval experiments over Kazakh news text
+(2,999 articles, 132 judged queries) and Kazakh Wikipedia passages (8,370
+passages, 300 queries), comparing BM25 recall with and without stemming and
+against a dictionary-backed morphological analyser.  Several suffixes that a
+morphological analyser would strip are left alone because stripping them
+was measured to lower recall or to cut too many roots:
+</p>
+
+<ul>
+<li> The verbal noun <i>-у</i> (<i>дамыту</i> "development", <i>кездесу</i>
+     "meeting", <i>сайлау</i> "election").  These are lexicalised nouns and
+     are what a searcher types; conflating them with the finite verb merges
+     a rare, specific term into a very frequent one and the query loses its
+     weight.  The nominal suffixes on a verbal noun are still removed.
+<li> Voice suffixes (passive <i>-ыл/-іл</i>, <i>-л/-н</i>; causative
+     <i>-тыр/-дыр</i>, <i>-қыз/-гіз</i>), for the same reason: the passive
+     reports an event, the active an agent, and keeping them apart helps.
+<li> First and second person endings (<i>-мын, -сың, -сыз, -м, -ң</i>).
+     They are rare in written text and the same strings end many content
+     nouns: <i>білім</i> "education", <i>бағдарлама</i> "programme",
+     <i>тәуелсіз</i> "independent".  The privative <i>-сыз/-сіз</i> is
+     left for the same reason.
+<li> The bare habitual participle <i>-атын/-етін</i>, which cannot be told
+     from the very common nouns in <i>-ат/-ет</i> with possessive and
+     accusative (<i>мемлекет-і-н</i> "its state", <i>қызмет-і-н</i>).  It
+     is removed once a nominal suffix has been taken off it
+     (<i>болатынын</i> gives <i>бол</i>).
+<li> The reflexive <i>-ын/-ін</i>, which ends too many roots
+     (<i>дайын</i>, <i>ақын</i>, <i>тұрғын</i>, <i>жақын</i>).
+<li> The past participle <i>-ған/-ген</i> and converb <i>-ып/-іп</i> on a
+     one-syllable base (<i>болған</i>, <i>айтқан</i>, <i>болып</i>).  Those
+     verbs are mostly auxiliaries, and nouns such as <i>дүкен</i> "shop",
+     <i>науқан</i> "campaign", <i>кәсіп</i> "trade" would otherwise be cut.
+<li> The similative <i>-дай/-дей</i>, rare in practice and fatal to
+     <i>Құрылтай</i>.
+</ul>
+
+<h3>Known ambiguities</h3>
+
+<p>
+Some decisions cannot be made from the word alone, and the algorithm takes
+the reading that is more frequent in running text:
+</p>
+
+<ul>
+<li> <i>-ны</i> after a vowel is read as the accusative (<i>бала-ны</i>),
+     so a noun ending in н with the possessive loses its н:
+     <i>ауданы</i> "its district" gives <i>ауда</i> while every other form
+     of <i>аудан</i> keeps it.  Vowel-final nouns are the larger class.
+<li> <i>-сы</i> after consonant + ы/і is read as noun in <i>-ыс</i> plus
+     possessive (<i>жұмыс-ы</i>, <i>облыс-ы</i>, <i>Мәжіліс-і</i>), so a
+     lemma such as <i>желі</i> "network" gives <i>желіс</i> in its
+     possessive forms.  Agent nouns in <i>-шы</i> are exempted
+     (<i>тілші-сі</i>).
+<li> <i>-ады/-еді</i> on a one-syllable base is undecidable against vowel
+     stem plus past <i>-ды</i> (<i>бар-ады</i> against <i>жаса-ды</i>); the
+     past reading is taken, so <i>барады</i> gives <i>бара</i>.
+<li> Accusative <i>-ны</i> is refused after <i>-ға/-ге/-қа/-ке</i> so that
+     participles with the possessive are not cut (<i>болғаны</i> stays
+     <i>болған</i>); the price is <i>теңгені</i> giving <i>теңген</i>.
+</ul>
+
+<p>
+Surnames in <i>-ев</i> after a back vowel take back suffixes in practice
+(<i>Тоқаевтың</i>, <i>Назарбаевқа</i>) although their last vowel is front,
+and the harmony check allows for this.
+</p>
+
+<h3>Measured effect</h3>
+
+<p>
+On the news collection, BM25 recall@10 is 0.524 without stemming, 0.626
+with this algorithm and 0.661 with the dictionary-backed analyser; the gain
+over no stemming has a paired-bootstrap 95% interval of [+0.048, +0.156].
+On the Wikipedia collection the figures are 0.830, 0.920 and 0.903.  The
+remaining gap to the analyser on the news collection is concentrated in
+queries with many judged documents, where the analyser's errors happen to
+produce rare terms that match the judged documents' surface forms; that
+gap did not reproduce on the Wikipedia collection.
+</p>
+
+<h2>The full algorithm in Snowball</h2>
+
+[% highlight_file('kazakh') %]
+
+[% footer %]
