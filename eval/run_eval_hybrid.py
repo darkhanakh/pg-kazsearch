@@ -38,7 +38,7 @@ from run_eval import mrr, ndcg_at_k, recall_at_k
 
 DEFAULT_DSN = "postgresql://postgres:postgres@localhost:55439/kazsearch"
 METRICS = ("R@10", "MRR@10", "nDCG@10", "R@50")
-README_BASELINE = {"R@10": 0.595, "MRR@10": 0.753, "R@50": 0.869}
+QUERY_STRATEGIES_REPORT = Path("eval/results/query_strategies.json")
 BM25_KAZ_IDX = "idx_articles_bm25_kaz"
 BM25_SIMPLE_IDX = "idx_articles_bm25_simple"
 BM25_KAZ_T2_IDX = "idx_articles_bm25_kaz_t2"
@@ -384,6 +384,17 @@ def print_table(summary: dict, baseline: str, latencies: dict) -> None:
         print(f"{name:<28}{cells}")
 
 
+def and_or_reproduction(measured: dict) -> dict:
+    """Cross-check the ts_rank_cd baseline against measure_query_strategies.py,
+    which runs the same AND-then-OR SQL through a different harness."""
+    if not QUERY_STRATEGIES_REPORT.exists():
+        return {}
+    ref = json.loads(QUERY_STRATEGIES_REPORT.read_text(encoding="utf-8"))["strategies"]["and_or"]["metrics"]
+    expected = {"R@10": ref["10"]["recall"], "MRR@10": ref["10"]["mrr"], "R@50": ref["50"]["recall"]}
+    return {m: {"query_strategies": v, "measured": measured[m], "match": abs(measured[m] - v) <= 0.005}
+            for m, v in expected.items()}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Hybrid (BM25 + dense + RRF) Kazakh search eval inside PostgreSQL")
     ap.add_argument("--dsn", default=DEFAULT_DSN)
@@ -493,10 +504,8 @@ def main() -> None:
         entry["delta_vs_bm25_kazakh_ci95"] = vs_bm25[name]["delta_ci95"]
     print_table(summary, "ts_rank_cd (AND+OR)", latencies)
 
-    base = summary["ts_rank_cd (AND+OR)"]["metrics"]
-    baseline_check = {m: {"readme": v, "measured": base[m], "match": abs(base[m] - v) <= 0.005}
-                      for m, v in README_BASELINE.items()}
-    print(f"\nREADME baseline reproduction: {baseline_check}")
+    baseline_check = and_or_reproduction(summary["ts_rank_cd (AND+OR)"]["metrics"])
+    print(f"\nAND+OR baseline reproduction against {QUERY_STRATEGIES_REPORT}: {baseline_check}")
 
     hnsw_overlap = {}
     with conn.cursor() as cur:
