@@ -146,7 +146,21 @@ fn person_allomorph_ok(sfx: &str, base: &str) -> bool {
     }
 }
 
-fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Option<&Lexicon>) -> bool {
+/// The short first-person plural -қ/-к (бардық, келдік, барсақ) is the
+/// remnant of -мыз after the past -ды/-ті and the conditional -са/-се. It
+/// never follows the present -а/-е.
+fn follows_short_plural_person(outer: &Candidate) -> bool {
+    outer.last_layer == LAYER_VPERSON && matches!(outer.last_suffix, Some("қ" | "к"))
+}
+
+fn layer_guard(
+    layer_id: i32,
+    sfx: &str,
+    base: &str,
+    outer: &Candidate,
+    lex: Option<&Lexicon>,
+) -> bool {
+    let steps_so_far = outer.steps;
     if matches!(layer_id, LAYER_VTENSE | LAYER_VNEG) && !negation_allomorph_ok(sfx, base) {
         return false;
     }
@@ -214,7 +228,11 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
                 }
                 // A lexicon verb root, as stripped (сен+е) or devoiced
                 // (шық→шығ+а), licenses the bare present marker on a
-                // single-syllable base too.
+                // single-syllable base too, but never under a 1pl -қ/-к
+                // (созақ is not соз+а+қ).
+                if follows_short_plural_person(outer) {
+                    return false;
+                }
                 let Some(l) = lex else { return false };
                 let mut buf = [0u8; MAX_STEM_BYTES];
                 return l.is_verb_root(base) || devoiced_verb_root(base, &mut buf, l).is_some();
@@ -726,7 +744,7 @@ pub fn explore_track_best(
             if !prefix.harmony_ok_at(base_len, rule.harmony) {
                 continue;
             }
-            if !layer_guard(layer.layer_id, rule.suffix, &word[..base_len], st.c.steps, cfg.lexicon.as_ref()) {
+            if !layer_guard(layer.layer_id, rule.suffix, &word[..base_len], &st.c, cfg.lexicon.as_ref()) {
                 continue;
             }
 
