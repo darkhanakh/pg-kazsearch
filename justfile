@@ -10,6 +10,8 @@ gold_q      := "eval/gold_queries.jsonl"
 gold_v2_q   := "eval/gold_queries_v2.jsonl"
 scrape_lim  := "3000"
 eval_max_q  := "0"
+kazrag_dir  := ".cache/kazrag"
+kazrag_sha  := "08bc105c093be16c714b6ba3c363beb54ac0ad16"
 opt_report  := "eval/results/optimized_weights.json"
 opt_evals   := "2000"
 opt_obj     := "combined"
@@ -148,6 +150,20 @@ gen-queries:
 eval-search:
     python3 eval/run_eval.py --auto "{{ auto_q }}" --gold "{{ gold_q }}" \
         --gold-v2 "{{ gold_v2_q }}" --max-queries {{ eval_max_q }}
+
+# Run pg_kazsearch through the external Kaz-RAG-search-benchmark (pinned commit, their harness)
+eval-external: cli
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -d "{{ kazrag_dir }}/.git" ]; then
+        git clone --quiet https://github.com/Tim2190/Kaz-RAG-search-benchmark "{{ kazrag_dir }}"
+    fi
+    if [ "$(git -C "{{ kazrag_dir }}" rev-parse HEAD)" != "{{ kazrag_sha }}" ]; then
+        git -C "{{ kazrag_dir }}" fetch --quiet origin "{{ kazrag_sha }}" || true
+        git -C "{{ kazrag_dir }}" checkout --quiet "{{ kazrag_sha }}"
+    fi
+    python3 eval/run_external_kazrag.py --repo "{{ kazrag_dir }}" \
+        --lexicon data/tsearch_data/kaz_stems.dict --out eval/results/external_kazrag.json
 
 # Validate the gold_v2 dataset gates
 validate-gold:
