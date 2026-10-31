@@ -211,3 +211,21 @@ fn lexicon_vowel_restore_keeps_a_verb_root_cut_by_a_verbal_suffix() {
     assert_eq!(stem("ұрынып", &cfg), "ұр");
     assert_eq!(stem("жылынады", &cfg), "жылы");
 }
+#[test]
+fn possessive_after_lexicon_noun_ending_in_ul_still_strips() {
+    // Only a base that is not a word itself reads as a patronymic stub.
+    let cfg = cfg_with(&["құл", "бұлбұл", "ұл"]);
+    assert_eq!(stem("құлы", &cfg), "құл");
+    assert_eq!(stem("бұлбұлы", &cfg), "бұлбұл");
+    assert_eq!(stem("бұлбұлының", &cfg), "бұлбұл");
+    assert_eq!(stem("төлегенұлы", &cfg), "төлегенұлы");
+    assert_eq!(stem("төлегенұлының", &cfg), "төлегенұлы");
+    assert_eq!(stem("серікқызы", &cfg), "серікқызы");
+}
+
+#[test]
+fn possessive_after_lexicon_noun_ending_in_qyz_still_strips() {
+    let cfg = cfg_with(&["бейқыз", "қыз"]);
+    assert_eq!(stem("бейқызы", &cfg), "бейқыз");
+    assert_eq!(stem("серікқызы", &cfg), "серікқызы");
+}
