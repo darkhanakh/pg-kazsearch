@@ -16,6 +16,51 @@ fn cfg_no_lexicon() -> StemConfig {
     StemConfig::default()
 }
 
+fn cfg_with_verbs(words: &[&str], verbs: &[&str]) -> StemConfig {
+    let mut lex = Lexicon::new();
+    for w in words {
+        lex.insert((*w).to_string());
+    }
+    for v in verbs {
+        lex.insert_verb((*v).to_string());
+    }
+    StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn verb_track_undoes_stem_final_voicing_before_a_vowel_suffix() {
+    // соқ + ады → соғады: a stem-final қ/к/п voices before a vowel-initial
+    // verbal suffix. The verb parse must land on the lexicon root instead of
+    // stopping at соға and leaving a dative-looking -ға to the noun track.
+    let cfg = cfg_with_verbs(&["бақа", "жаға", "бала", "тау"], &["соқ", "шық", "бақ", "жақ", "тап", "қақ", "жап"]);
+    assert_eq!(stem("соғады", &cfg), "соқ");
+    assert_eq!(stem("шығады", &cfg), "шық");
+    assert_eq!(stem("шығып", &cfg), "шық");
+    assert_eq!(stem("соғатын", &cfg), "соқ");
+    assert_eq!(stem("қағып", &cfg), "қақ");
+    assert_eq!(stem("жабу", &cfg), "жап");
+    assert_eq!(stem("табу", &cfg), "тап");
+    assert_eq!(stem("табады", &cfg), "тап");
+    // Dictionary nouns that look like converbs of a verb root stay whole,
+    // and a real dative is still a dative.
+    assert_eq!(stem("бақа", &cfg), "бақа");
+    assert_eq!(stem("жаға", &cfg), "жаға");
+    assert_eq!(stem("балаға", &cfg), "бала");
+    assert_eq!(stem("тауға", &cfg), "тау");
+    // Devoicing applies to tense and converb suffixes only. Through a voice
+    // suffix it would carry соқтығысқан past the nominal соқтығыс
+    // "collision" that соқтығысты still stems to.
+    let cfg_voice = cfg_with_verbs(&["соқтығыс"], &["соқтық", "соқтығыс"]);
+    assert_eq!(stem("соқтығысқан", &cfg_voice), "соқтығыс");
+    assert_eq!(stem("соқтығысты", &cfg_voice), "соқтығыс");
+    for w in ["соғады", "шығып", "жабу"] {
+        assert_eq!(stem(&stem(w, &cfg), &cfg), stem(w, &cfg), "{w} must stem idempotently");
+    }
+}
+
 #[test]
 fn lexicon_vowel_restore_never_extends_a_lexicon_entry() {
     // жыл "year" and жылы "warm" are both lexicon entries. Stripping
