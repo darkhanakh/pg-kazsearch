@@ -339,7 +339,7 @@ Measured on the 2,999-article corpus and gold_v2 (`python3 eval/measure_keyboard
 
 | | exact | restore |
 | --- | --- | --- |
-| Keyboard-typed corpus tokens that reach the proper stem | 1.6% | 74.8% |
+| Keyboard-typed corpus tokens that reach the proper stem | 1.6% | 74.9% |
 | Properly written tokens without Kazakh letters whose stem changes | | 0.12% (mostly names) |
 | Keyboard-typed gold_v2 queries, PostgreSQL R@10 / MRR@10 | 0.028 / 0.047 | 0.376 / 0.523 |
 | Properly written gold_v2 queries, PostgreSQL R@10 / MRR@10 | 0.542 / 0.743 | 0.542 / 0.743 |

@@ -3,27 +3,27 @@
  "a_full_fold": {
   "types": 30580,
   "tokens": 389720,
-  "exact_pct": 1.61,
-  "restore_pct": 74.76
+  "exact_pct": 1.62,
+  "restore_pct": 74.9
  },
  "a_partial_fold": {
   "types": 19956,
   "tokens": 261627,
   "exact_pct": 2.08,
-  "restore_pct": 62.32
+  "restore_pct": 63.47
  },
  "a_all_tokens_full_fold": {
   "types": 45506,
   "tokens": 606176,
   "exact_pct": 36.75,
-  "restore_pct": 83.73
+  "restore_pct": 83.82
  },
  "b_natural_k_free": {
   "types": 14926,
   "tokens": 216456,
-  "changed_types": 108,
-  "changed_tokens": 257,
-  "changed_tok_pct": 0.119,
+  "changed_types": 107,
+  "changed_tokens": 255,
+  "changed_tok_pct": 0.118,
   "examples": [
    [
     "ауырлататын",
@@ -190,7 +190,7 @@
    [
     "байдарка",
     "байдарка",
-    "байы",
+    "бай",
     3
    ],
    [
@@ -221,12 +221,6 @@
     "ирина",
     "ири",
     "ірі",
-    2
-   ],
-   [
-    "каратай",
-    "кара",
-    "қара",
     2
    ],
    [
@@ -264,15 +258,21 @@
     "сейсмологиялык",
     "сейсмологиялық",
     2
+   ],
+   [
+    "касем",
+    "касе",
+    "кәсе",
+    2
    ]
   ]
  },
  "b_proper_with_k": {
   "types": 30580,
   "tokens": 389720,
-  "changed_types": 79,
-  "changed_tokens": 247,
-  "changed_tok_pct": 0.063,
+  "changed_types": 74,
+  "changed_tokens": 226,
+  "changed_tok_pct": 0.058,
   "examples": [
    [
     "төленетін",
@@ -283,19 +283,13 @@
    [
     "туристік",
     "турис",
-    "тура",
+    "тур",
     41
    ],
    [
     "әскерилер",
     "әскери",
     "әскер",
-    13
-   ],
-   [
-    "тізімін",
-    "тііз",
-    "тізім",
     13
    ],
    [
@@ -319,7 +313,7 @@
    [
     "каристің",
     "каристі",
-    "кәрі",
+    "кәр",
     4
    ],
    [
@@ -338,12 +332,6 @@
     "әскерилердің",
     "әскери",
     "әскер",
-    3
-   ],
-   [
-    "жаңашылдығын",
-    "жаңашылдығ",
-    "жаңаша",
     3
    ],
    [
@@ -389,12 +377,6 @@
     2
    ],
    [
-    "енгізсін",
-    "енгііз",
-    "енгіз",
-    2
-   ],
-   [
     "мусинді",
     "мусин",
     "мүсін",
@@ -419,15 +401,9 @@
     2
    ],
    [
-    "маркетингі",
-    "маркетинк",
-    "марке",
-    2
-   ],
-   [
     "еңбекминінің",
     "еңбекмин",
-    "еңбек",
+    "ең",
     2
    ],
    [
@@ -445,7 +421,7 @@
    [
     "каристі",
     "каристі",
-    "кәрі",
+    "кәр",
     2
    ],
    [
@@ -475,7 +451,7 @@
    [
     "мартинді",
     "мартинді",
-    "мәрте",
+    "мәрт",
     2
    ],
    [
@@ -513,40 +489,64 @@
     "рәсімдейт",
     "рәсім",
     1
+   ],
+   [
+    "даринаның",
+    "дари",
+    "дәрі",
+    1
+   ],
+   [
+    "уланған",
+    "улан",
+    "ұлан",
+    1
+   ],
+   [
+    "еңбекмині",
+    "еңбекми",
+    "ең",
+    1
+   ],
+   [
+    "туристеріміз",
+    "турис",
+    "тур",
+    1
    ]
   ]
  },
  "b_russian_probe_changed": {},
  "c_retrieval_proxy": {
   "proper_query_exact": {
-   "recall@10": 0.5059,
-   "mrr@10": 0.6321,
-   "and_zero_hit_queries": 5
+   "recall@10": 0.5041,
+   "mrr@10": 0.6177,
+   "and_zero_hit_queries": 4
   },
   "proper_query_restore": {
-   "recall@10": 0.5059,
-   "mrr@10": 0.6308,
-   "and_zero_hit_queries": 5
+   "recall@10": 0.5041,
+   "mrr@10": 0.6164,
+   "and_zero_hit_queries": 4
   },
   "folded_query_exact": {
-   "recall@10": 0.1614,
-   "mrr@10": 0.1865,
+   "recall@10": 0.1619,
+   "mrr@10": 0.1864,
    "and_zero_hit_queries": 125
   },
   "folded_query_restore": {
-   "recall@10": 0.4496,
-   "mrr@10": 0.5607,
-   "and_zero_hit_queries": 41
+   "recall@10": 0.4518,
+   "mrr@10": 0.5603,
+   "and_zero_hit_queries": 42
   },
   "folded_docs_proper_query_exact": {
-   "recall@10": 0.2275,
-   "mrr@10": 0.2558,
-   "and_zero_hit_queries": 119
+   "recall@10": 0.2298,
+   "mrr@10": 0.2495,
+   "and_zero_hit_queries": 117
   },
   "folded_docs_proper_query_restore": {
-   "recall@10": 0.463,
-   "mrr@10": 0.5851,
-   "and_zero_hit_queries": 23
+   "recall@10": 0.4608,
+   "mrr@10": 0.5793,
+   "and_zero_hit_queries": 25
   }
  },
  "d_idempotence_violations": [],
@@ -578,7 +578,7 @@
   ],
   "mean_extra_sc_calls_proper_corpus_token": 0.008,
   "mean_extra_sc_calls_folded_corpus_token": 0.54,
-  "mean_extra_sc_calls_partial_corpus_token": 0.297
+  "mean_extra_sc_calls_partial_corpus_token": 0.302
  },
  "a_miss_examples": [
   [
@@ -850,7 +850,7 @@
   [
    "екпіні",
    "екпини",
-   "екпе",
+   "екп",
    "екпини",
    435
   ],
@@ -928,7 +928,7 @@
    "қаңтарда",
    "кантарда",
    "қаңтар",
-   "қана",
+   "қан",
    313
   ],
   [
@@ -997,16 +997,16 @@
   [
    "еліміздің",
    "елимиздин",
-   "еле",
+   "ел",
    "елимиздин",
    245
   ]
  ],
  "a_miss_classes_tokens": {
-  "short_root (<=1 strong syllable, blocked by policy)": "56456 (57.4% of misses)",
-  "proper stem not in lexicon (names, OOV)": "23005 (23.4% of misses)",
-  "false_friend_gate (folded stem is a real entry)": "10355 (10.5% of misses)",
-  "other (no admissible candidate / wrong parse)": "8547 (8.7% of misses)"
+  "short_root (<=1 strong syllable, blocked by policy)": "58138 (59.4% of misses)",
+  "proper stem not in lexicon (names, OOV)": "22784 (23.3% of misses)",
+  "false_friend_gate (folded stem is a real entry)": "9856 (10.1% of misses)",
+  "other (no admissible candidate / wrong parse)": "7030 (7.2% of misses)"
  },
  "probes": {
   "мектептеримизде": [
@@ -1022,8 +1022,8 @@
    "өнім"
   ],
   "колдарына": [
-   "кола",
-   "кола"
+   "кол",
+   "қол"
   ],
   "колге": [
    "колге",
