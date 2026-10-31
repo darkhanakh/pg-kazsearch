@@ -167,11 +167,12 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
                 return utf8_last_cp(base).map_or(false, |cp| is_vowel(cp));
             }
             // Patronymics (Төлегенұлы, Серікқызы) end in the fused words
-            // ұлы/қызы, not in a possessive on a name.
+            // ұлы/қызы, not in a possessive on a name. A base that is a word
+            // itself (құл, бұлбұл) is an ordinary possessive.
             if sfx == "ы" {
                 let patronymic = (base.ends_with("ұл") && utf8_char_count(base) > 2)
                     || (base.ends_with("қыз") && utf8_char_count(base) > 3);
-                return !patronymic;
+                return !patronymic || lex.is_some_and(|l| l.contains(base));
             }
         }
         LAYER_VTENSE => match sfx {
