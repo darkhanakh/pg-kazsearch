@@ -273,6 +273,31 @@ LIMIT 10;
 
 (The `relaxed` CTE uses the `simple` config for `to_tsquery` because the lexemes coming out of `unnest(to_tsvector('kazakh_cfg', …))` are already stemmed.)
 
+### Better ranking: BM25 and hybrid search
+
+`kazakh_cfg` works with [pg_textsearch](https://github.com/timescale/pg_textsearch) (BM25 index for PostgreSQL 17/18) and [pgvector](https://github.com/pgvector/pgvector), so stemmed BM25 and dense vectors can run in the same database. Measured on gold_v2 (n=132), same 2,999 articles, 95% paired-bootstrap CI against the AND-with-OR-fallback pattern above:
+
+| Ranking                                      | R@10      | MRR@10    | R@50      | Δ R@10 vs AND+OR        |
+| -------------------------------------------- | --------- | --------- | --------- | ----------------------- |
+| `ts_rank_cd`, AND then OR fallback           | 0.591     | 0.753     | 0.872     | baseline                |
+| BM25, `simple` (no stemming)                 | 0.503     | 0.694     | 0.783     | −0.087 [−0.157, −0.017] |
+| BM25, `kazakh_cfg`                           | 0.641     | 0.793     | 0.933     | +0.050 [+0.007, +0.097] |
+| Dense only, BAAI/bge-m3                      | 0.593     | 0.731     | 0.875     | +0.002 [−0.062, +0.068] |
+| **RRF of BM25 `kazakh_cfg` + bge-m3**        | **0.697** | **0.812** | **0.935** | **+0.105 [+0.055, +0.158]** |
+
+- Switching from `ts_rank_cd` to BM25 on `kazakh_cfg` is the upgrade that needs no model. It raises R@50 from 0.872 to 0.933.
+- Dense search alone ties the baseline on this news corpus. Fusing it with stemmed BM25 by reciprocal rank fusion (k=60, top-100 from each) gives the best recall.
+- A Kazakh-tuned embedder (`BekbolatShanakbay/kaz-embedder`) lands at the same R@10 in the fusion (0.691) as bge-m3.
+
+pg_textsearch needs `shared_preload_libraries = 'pg_textsearch'` and a schema-qualified config name:
+
+```sql
+CREATE INDEX ON articles USING bm25 ((title || E'\n' || body))
+    WITH (text_config = 'public.kazakh_cfg');
+```
+
+The full schema and the one-statement RRF query are in [`examples/hybrid-search.sql`](examples/hybrid-search.sql). `just hybrid-up` starts PostgreSQL 18 with all three extensions, and `just hybrid-eval --models bge_m3 kaz_embedder` reproduces the table (`eval/results/report_hybrid.json`).
+
 ### Tuning weights
 
 Penalty weights are tunable at runtime without restarting PostgreSQL:
