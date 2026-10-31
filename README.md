@@ -274,10 +274,10 @@ The `relaxed` branch parses with the `simple` configuration because the lexemes 
 | BM25, `kazakh_cfg` | 0.644 | 0.790 | 0.925 | +0.048 [+0.004, +0.095] | 0.6 |
 | Dense only, BAAI/bge-m3 | 0.593 | 0.731 | 0.875 | −0.003 [−0.067, +0.063] | 2.8 |
 | Dense only, kaz-embedder | 0.617 | 0.713 | 0.878 | +0.021 [−0.039, +0.084] | 2.5 |
-| **RRF of BM25 `kazakh_cfg` + bge-m3** | **0.691** | **0.814** | **0.935** | **+0.095 [+0.046, +0.148]** | 3.2 |
+| RRF of BM25 `kazakh_cfg` + bge-m3 | 0.691 | 0.814 | 0.935 | +0.095 [+0.046, +0.148] | 3.2 |
 | RRF of BM25 `kazakh_cfg` + kaz-embedder | 0.688 | 0.820 | 0.933 | +0.093 [+0.047, +0.142] | 3.5 |
 
-Switching the ranking function from `ts_rank_cd` to BM25 on the stemmed index is the upgrade that needs no model. Dense retrieval alone ties the lexical baseline on this news corpus, and the gain appears when BM25 and dense lists are fused by reciprocal rank fusion (k=60, top-100 from each). The two fusion rows differ by 0.003 in R@10, inside each other's intervals, so this corpus cannot tell the two embedders apart.
+Switching the ranking function from `ts_rank_cd` to BM25 on the stemmed index is the upgrade that needs no model (+0.048 R@10, 95% CI +0.004 to +0.095). The interval for each dense-only row against the baseline includes zero (−0.003 and +0.021 R@10). Fusing the BM25 list with a dense list by reciprocal rank fusion (k=60, top-100 from each) adds +0.048 R@10 over BM25 alone with bge-m3 (95% CI +0.017 to +0.080) and +0.045 with kaz-embedder (95% CI +0.012 to +0.079). The two fusion rows score 0.691 and 0.688 R@10. `report_hybrid.json` has no paired comparison between them, so the table does not show whether they differ.
 
 ```mermaid
 flowchart LR
