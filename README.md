@@ -199,7 +199,7 @@ Paired bootstrap over questions (10,000 resamples) on nDCG@10:
 
 - Rust + lexicon against no stemming is +0.069 (95% CI +0.056 to +0.081). Stemming improves 563 questions and worsens 300.
 - Rust + lexicon against Rust without it is +0.015 (95% CI +0.007 to +0.024).
-- Rust + lexicon against Snowball is −0.002 (95% CI −0.009 to +0.005). The dictionary-free algorithm and the lexicon-backed engine score the same on this set. Snowball is +0.017 above the engine without the lexicon (95% CI +0.009 to +0.026).
+- Rust + lexicon against Snowball is −0.002 (95% CI −0.009 to +0.005). The interval includes zero and limits any difference to about 0.009 nDCG@10 either way, so this set shows no advantage for the lexicon-backed engine over the dictionary-free algorithm. Snowball is +0.017 above the engine without the lexicon (95% CI +0.009 to +0.026).
 
 Four things qualify the first table.
 
@@ -317,7 +317,7 @@ CREATE INDEX ON articles USING bm25 ((title || E'\n' || body))
 | BM25 + the benchmark's stemmer | 0.754 | 0.727 | **0.772** | 0.764 |
 | BM25 + pg_kazsearch | **0.767** | **0.768** | 0.753 | **0.781** |
 
-pg_kazsearch is +0.077 nDCG@10 above no stemming (95% CI +0.041 to +0.113), with the largest gain on inflected queries (+0.142). Against the benchmark's own stemmer the difference is +0.013 (95% CI −0.011 to +0.036), a tie on this set. The benchmark's own [results page](https://github.com/Tim2190/Kaz-RAG-search-benchmark/blob/main/results/RESULTS.md) reports dense BGE-M3 at 0.866 nDCG@10 on the same queries. That is their measurement, not one of ours, and it says that for question-style Wikipedia search an embedding model is ahead of any BM25 configuration. The hybrid section above shows the two combining.
+pg_kazsearch is +0.077 nDCG@10 above no stemming (95% CI +0.041 to +0.113), with the largest gain on inflected queries (+0.142). Against the benchmark's own stemmer the difference is +0.013 (95% CI −0.011 to +0.036). The interval includes zero, so this set shows no measurable difference between the two stemmers. The benchmark's own [results page](https://github.com/Tim2190/Kaz-RAG-search-benchmark/blob/main/results/RESULTS.md) reports dense BGE-M3 at 0.866 nDCG@10 on the same queries. That is their measurement, not one of ours, and it says that for question-style Wikipedia search an embedding model is ahead of any BM25 configuration. The hybrid section above shows the two combining.
 
 ### Keyboard restoration
 
