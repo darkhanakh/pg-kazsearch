@@ -62,3 +62,23 @@ fn well_formed_negative_and_intentive_verbs_still_strip() {
     assert_eq!(stem("сенбейді", &cfg), "сен");
     assert_eq!(stem("жарияланбайды", &cfg), "жариялан");
 }
+
+#[test]
+fn patronymic_suffix_is_not_a_possessive() {
+    let cfg = cfg_no_lexicon();
+    assert_eq!(stem("төлегенұлы", &cfg), "төлегенұлы");
+    assert_eq!(stem("кемелұлы", &cfg), "кемелұлы");
+    assert_eq!(stem("серікқызы", &cfg), "серікқызы");
+    assert_eq!(stem("төлегенұлының", &cfg), "төлегенұлы");
+    assert_eq!(stem("момышұлына", &cfg), "момышұлы");
+    assert_eq!(
+        stem(&stem("төлегенұлының", &cfg), &cfg),
+        stem("төлегенұлының", &cfg)
+    );
+}
+
+#[test]
+fn bare_possessive_after_ul_or_qyz_words_still_strips() {
+    let cfg = cfg_with(&["ұл", "қыз"]);
+    assert_eq!(stem("ұлы", &cfg), "ұл");
+}
