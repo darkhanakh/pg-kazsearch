@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 
 use crate::lexicon::{LexStem, Lexicon};
-use crate::text::{is_glide, is_loan_vowel, is_vowel, strong_vowel_class};
+use crate::text::{is_glide, is_loan_vowel, is_vocalic, is_vowel, strong_vowel_class};
 use crate::{stem_cyrillic, StemConfig, MAX_STEM_BYTES};
 
 /// Restoration hypotheses stemmed per source string. Agreement saturates
@@ -107,6 +107,20 @@ fn harmony_syllables(s: &str) -> u8 {
         .filter(|&c| (is_vowel(c) || is_loan_vowel(c)) && !is_glide(c))
         .count()
         .min(u8::MAX as usize) as u8
+}
+
+/// A non-glide vowel. Kazakh has no vowel hiatus at a stem-suffix boundary:
+/// after a vowel-final base suffixes take consonant- or glide-initial
+/// allomorphs (-сы, -н, -ға, -у), so a vowel followed by a vowel across the
+/// boundary is never a real word. Glides у/и/ю are excluded because they
+/// are consonantal there: `даму`+`ына`, `айту`+`ынша`, `қорға`+`уы`.
+fn is_hiatus_vowel(c: char) -> bool {
+    is_vocalic(c) && !is_glide(c)
+}
+
+fn forms_hiatus(anchor_surface: &str, tail: &str) -> bool {
+    anchor_surface.chars().next_back().is_some_and(is_hiatus_vowel)
+        && tail.chars().next().is_some_and(is_hiatus_vowel)
 }
 
 /// How a lexicon entry surfaces before a suffix. Only alternations the
@@ -350,6 +364,9 @@ pub(crate) fn candidates(word: &str, index: &FoldIndex, out: &mut Vec<Candidate>
             for &back in classes {
                 restore_tail(&word[k..], back, &mut tails);
                 for tail in &tails {
+                    if forms_hiatus(&anchor.surface, &tail.text) {
+                        continue;
+                    }
                     let evidence = Evidence {
                         lexical,
                         forced_tail: tail.forced,
