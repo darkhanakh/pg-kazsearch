@@ -99,7 +99,37 @@ fn count_strong_syllables(base: &str) -> i32 {
         .count() as i32
 }
 
+/// Negation and intentive suffixes (ма/ме, ба/бе, па/пе and the forms built on
+/// them: -майды, -мақ, -бек, ...) pick their first consonant from the final
+/// sound of the verb stem: м after vowels and л/р/й, б after voiced
+/// obstruents and м/н/ң, п after voiceless ones. A mismatch (жәні+бек, әлі+бек) means the
+/// letters belong to something else, typically a name in -бек.
+fn negation_allomorph_ok(sfx: &str, base: &str) -> bool {
+    let mut chars = sfx.chars();
+    let first = chars.next();
+    if !matches!(chars.next(), Some('а' | 'е')) {
+        return true;
+    }
+    let Some(last) = utf8_last_cp(base) else {
+        return false;
+    };
+    match (first, final_sound(last)) {
+        (_, FinalSound::Unknown) => true,
+        (Some('м'), FinalSound::Vocalic | FinalSound::Liquid) => true,
+        (Some('б'), FinalSound::Voiced | FinalSound::Nasal) => true,
+        (Some('п'), FinalSound::Voiceless) => true,
+        (Some('м' | 'б' | 'п'), _) => false,
+        _ => true,
+    }
+}
+
 fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Option<&Lexicon>) -> bool {
+    if matches!(layer_id, LAYER_VTENSE | LAYER_VNEG) && !negation_allomorph_ok(sfx, base) {
+        return false;
+    }
+    if layer_id == LAYER_VTENSE && matches!(sfx, "ты" | "ті") {
+        return utf8_last_cp(base).map_or(false, takes_t_allomorph);
+    }
     match layer_id {
         LAYER_CASE => {
             if sfx == "н" {
@@ -136,6 +166,14 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
             if sfx == "м" || sfx == "ң" {
                 return utf8_last_cp(base).map_or(false, |cp| is_vowel(cp));
             }
+            // Patronymics (Төлегенұлы, Серікқызы) end in the fused words
+            // ұлы/қызы, not in a possessive on a name. A base that is a word
+            // itself (құл, бұлбұл) is an ordinary possessive.
+            if sfx == "ы" {
+                let patronymic = (base.ends_with("ұл") && utf8_char_count(base) > 2)
+                    || (base.ends_with("қыз") && utf8_char_count(base) > 3);
+                return !patronymic || lex.is_some_and(|l| l.contains(base));
+            }
         }
         LAYER_VTENSE => match sfx {
             "у" => return utf8_char_count(base) >= 2 && count_syllables(base) >= 1,
@@ -153,11 +191,22 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
             if matches!(sfx, "лық" | "лік" | "дық" | "дік" | "тық" | "тік") {
                 return count_syllables(base) >= 2;
             }
+            // -тай/-тей ("like X") is the т allomorph of -дай/-дей: after a
+            // vowel, liquid, nasal or ж/з/ғ stem the same letters are part of a
+            // word or name (Қарақытай, жазатайым).
+            if matches!(sfx, "тай" | "тей") {
+                return utf8_last_cp(base).map_or(false, takes_t_allomorph);
+            }
             // Adjectival -лы/-лі ("having X"): only strip from bases that are
             // plausible standalone nominals, mirroring the -лық/-лік guard.
             // A dictionary base is plausible regardless of length (қарлы →
             // қар "snow"), otherwise require two syllables.
             if matches!(sfx, "лы" | "лі") {
+                // Native stems do not end in ұ: -ұлы is the patronymic, and
+                // peeling its -лы would leave a name stub (төлегенұ).
+                if base.ends_with('ұ') {
+                    return false;
+                }
                 return count_syllables(base) >= 2
                     || lex.is_some_and(|l| l.contains(base));
             }

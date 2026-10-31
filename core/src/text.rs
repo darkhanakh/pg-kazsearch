@@ -24,6 +24,49 @@ pub fn is_loan_vowel(cp: char) -> bool {
     matches!(cp, 'я' | 'э')
 }
 
+/// Word-final sound class that picks the allomorph of a suffix-initial
+/// consonant (ма/ба/па, ды/ты, дай/тай).
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum FinalSound {
+    Vocalic,
+    /// л, р, й: take the same allomorph as vowels (бармайды, келмейді).
+    Liquid,
+    /// м, н, ң: take the voiced allomorph (сенбейді, жарияланбайды).
+    Nasal,
+    Voiced,
+    Voiceless,
+    /// Non-Cyrillic or soft/hard sign: no allomorph can be ruled out.
+    Unknown,
+}
+
+pub fn final_sound(cp: char) -> FinalSound {
+    if is_vocalic(cp) || cp == 'ю' {
+        return FinalSound::Vocalic;
+    }
+    match cp {
+        'л' | 'р' | 'й' => FinalSound::Liquid,
+        'м' | 'н' | 'ң' => FinalSound::Nasal,
+        'б' | 'в' | 'г' | 'ғ' | 'д' | 'ж' | 'з' => FinalSound::Voiced,
+        'қ' | 'к' | 'п' | 'с' | 'т' | 'ш' | 'ч' | 'ц' | 'ф' | 'х' | 'һ' | 'щ' => {
+            FinalSound::Voiceless
+        }
+        _ => FinalSound::Unknown,
+    }
+}
+
+/// Whether a suffix with a д/т alternation (-ты/-ті, -тай/-тей, -та/-те,
+/// -тық/-тік) takes its т allomorph after a base ending in `cp`. Voiceless
+/// finals do, and so do the voiced stops б в г д of loanwords and names
+/// (клуб-тық, сауд-тың, штаб-та). The other voiced obstruents ж з ғ, vowels,
+/// liquids and nasals take д. Unknown finals cannot be ruled out.
+pub fn takes_t_allomorph(cp: char) -> bool {
+    match final_sound(cp) {
+        FinalSound::Voiceless | FinalSound::Unknown => true,
+        FinalSound::Voiced => matches!(cp, 'б' | 'в' | 'г' | 'д'),
+        FinalSound::Vocalic | FinalSound::Liquid | FinalSound::Nasal => false,
+    }
+}
+
 pub fn utf8_last_cp(s: &str) -> Option<char> {
     s.chars().last()
 }

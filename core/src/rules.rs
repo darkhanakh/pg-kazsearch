@@ -149,3 +149,26 @@ pub static VERB_LAYERS: &[LayerDef] = &[
 pub static POSS_VOWEL_SUFFIXES: &[&str] = &[
     "ы", "і", "сы", "сі", "ым", "ім", "ың", "ің", "ымыз", "іміз", "ыңыз", "іңіз",
 ];
+
+/// True when `tail` decomposes entirely into inflectional noun suffixes in
+/// stripping order (case, then possessive, then plural), ignoring harmony.
+pub fn is_nominal_suffix_chain(tail: &str) -> bool {
+    fn walk(tail: &str, from_layer: usize) -> bool {
+        if tail.is_empty() {
+            return true;
+        }
+        NOUN_LAYERS
+            .iter()
+            .enumerate()
+            .skip(from_layer)
+            .filter(|(_, layer)| layer.kind == 1)
+            .any(|(i, layer)| {
+                let next = if layer.repeat { i } else { i + 1 };
+                layer
+                    .rules
+                    .iter()
+                    .any(|r| tail.ends_with(r.suffix) && walk(&tail[..tail.len() - r.suffix.len()], next))
+            })
+    }
+    walk(tail, 0)
+}

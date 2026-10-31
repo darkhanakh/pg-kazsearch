@@ -5,7 +5,7 @@ pub mod explore;
 pub mod script;
 
 use explore::ExploreResult;
-use rules::{NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
+use rules::{is_nominal_suffix_chain, LAYER_VPERSON, LAYER_VVOICE, NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
 use script::{LatinAnalysis, ScriptClass};
 use text::{count_syllables, fill_prefix_tables, utf8_char_count, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
@@ -96,32 +96,76 @@ fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> O
     Some(std::str::from_utf8(&buf[..total]).unwrap())
 }
 
-fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, steps: i32) -> String {
-    if steps < 2 || lexeme.is_empty() || lexeme.len() >= MAX_STEM_BYTES {
+/// Re-segments a stem the BFS cut one vowel too early. Stripping -ын from
+/// жылына leaves жыл, but the stem is жылы and its final vowel was taken as
+/// the first letter of the suffix. Only that letter can be handed back, and
+/// only when the result is a lexicon entry.
+///
+/// A lexeme that is already a lexicon entry is a complete lemma, so негіз-і-нде
+/// and ел-ім-із stay put. Two verbal readings are overturned. The reflexive
+/// -ын/-ін peeled off a non-verb (жыл-ын-ады) is really a vowel-final stem
+/// with plain -н, so it becomes жылы. A verb root cut by a verbal suffix
+/// (бер-іл-ді) stays unless the rest of the word is a noun inflection chain,
+/// which marks the verbal parse as spurious (жел-іс-ін is желі-сі-н).
+fn restore_lexicon_vowel(word: &str, lexeme: &str, lexicon: &Lexicon, best: &explore::Candidate) -> String {
+    if best.steps < 2 || lexeme.is_empty() || lexeme.len() >= MAX_STEM_BYTES {
         return lexeme.to_string();
     }
 
-    let ends_with_vowel = utf8_last_cp(lexeme).map_or(true, |cp| is_vowel(cp));
-    if ends_with_vowel {
+    if utf8_last_cp(lexeme).map_or(true, |cp| is_vowel(cp)) {
         return lexeme.to_string();
     }
 
-    let mut buf = [0u8; MAX_STEM_BYTES];
-    // Harmony-neutral stems (glide-only vowels) try both classes.
-    let candidates: &[&str] = match text::strong_vowel_class(lexeme) {
-        Some(true) => &["ы", "а"],
-        Some(false) => &["і", "е"],
-        None => &["ы", "і", "а", "е"],
+    let Some(suffix) = best.last_suffix else {
+        return lexeme.to_string();
+    };
+    let Some(first) = suffix.chars().next().filter(|c| is_vowel(*c)) else {
+        return restore_verb_stem_vowel(lexeme, lexicon);
     };
 
-    for sfx in candidates {
-        if let Some(trial) = concat_on_stack(lexeme, sfx, &mut buf) {
-            if lexicon.contains(trial) {
+    let mut vowel = [0u8; 4];
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    let Some(trial) = concat_on_stack(lexeme, first.encode_utf8(&mut vowel), &mut buf) else {
+        return lexeme.to_string();
+    };
+    if !lexicon.contains(trial) {
+        return restore_verb_stem_vowel(lexeme, lexicon);
+    }
+
+    if lexicon.contains(lexeme) {
+        let verb_root = lexicon.has_verb_set() && lexicon.is_verb_root(lexeme);
+        let reflexive = best.last_layer == LAYER_VVOICE && matches!(suffix, "ын" | "ін");
+        let spurious_verbal =
+            best.last_layer >= LAYER_VPERSON && is_nominal_suffix_chain(word.get(trial.len()..).unwrap_or(""));
+        let restore = if verb_root { spurious_verbal } else { reflexive };
+        if !restore {
+            return lexeme.to_string();
+        }
+    }
+
+    trial.to_string()
+}
+
+/// A consonant suffix cannot hand back a vowel, but a verb stem ending in the
+/// -а/-е of a denominal or passive base (қорғала-, міндетте-) is still cut
+/// before it. Only a verb root of the lexicon qualifies.
+fn restore_verb_stem_vowel(lexeme: &str, lexicon: &Lexicon) -> String {
+    if lexicon.contains(lexeme) || !lexicon.has_verb_set() {
+        return lexeme.to_string();
+    }
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    let vowels: &[&str] = match text::strong_vowel_class(lexeme) {
+        Some(true) => &["а"],
+        Some(false) => &["е"],
+        None => &["а", "е"],
+    };
+    for vowel in vowels {
+        if let Some(trial) = concat_on_stack(lexeme, vowel, &mut buf) {
+            if lexicon.is_verb_root(trial) {
                 return trial.to_string();
             }
         }
     }
-
     lexeme.to_string()
 }
 
@@ -358,10 +402,16 @@ fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     }
 
     let mut lexeme = txt[..best.len as usize].to_string();
-    undo_sound_changes(&mut lexeme, &best);
+    // Mutation and elision repair rebuild a lemma from its inflected stem.
+    // A stripped form that is already a lemma (негіз, клуб) must not be
+    // "repaired" into негііз or клуп.
+    let is_lemma = cfg.lexicon.as_ref().is_some_and(|lex| lex.contains(&lexeme));
+    if !is_lemma {
+        undo_sound_changes(&mut lexeme, &best);
+    }
 
     if let Some(ref lex) = cfg.lexicon {
-        lexeme = restore_lexicon_vowel(&lexeme, lex, best.steps);
+        lexeme = restore_lexicon_vowel(&txt, &lexeme, lex, &best);
     }
 
     StemOutcome { stem: lexeme, best }
