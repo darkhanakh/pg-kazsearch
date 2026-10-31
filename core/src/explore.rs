@@ -157,6 +157,15 @@ fn layer_guard(layer_id: i32, sfx: &str, base: &str, steps_so_far: i32, lex: Opt
                 Some(cp) => match sfx {
                     "ны" | "ні" => return is_vocalic(cp),
                     "ын" | "ін" | "ды" | "ді" | "ты" | "ті" => return !is_vocalic(cp),
+                    // Locative -та/-те is the obstruent allomorph of -да/-де.
+                    // After a vowel, liquid or nasal the letters are part of
+                    // the word (айта, арта, жете are converbs of айт/арт/жет).
+                    "та" | "те" => {
+                        return matches!(
+                            final_sound(cp),
+                            FinalSound::Voiceless | FinalSound::Voiced | FinalSound::Unknown
+                        )
+                    }
                     _ => {}
                 },
                 None => return false,
