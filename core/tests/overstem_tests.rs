@@ -16,6 +16,64 @@ fn cfg_no_lexicon() -> StemConfig {
     StemConfig::default()
 }
 
+fn cfg_with_verbs(words: &[&str], verbs: &[&str]) -> StemConfig {
+    let mut lex = Lexicon::new();
+    for w in words {
+        lex.insert((*w).to_string());
+    }
+    for v in verbs {
+        lex.insert_verb((*v).to_string());
+    }
+    StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn verb_track_undoes_stem_final_voicing_before_a_vowel_suffix() {
+    // соқ + ады → соғады: a stem-final қ/к/п voices before a vowel-initial
+    // verbal suffix. The verb parse must land on the lexicon root instead of
+    // stopping at соға and leaving a dative-looking -ға to the noun track.
+    let cfg = cfg_with_verbs(&["бақа", "жаға", "бала", "тау"], &["соқ", "шық", "бақ", "жақ", "тап"]);
+    assert_eq!(stem("соғады", &cfg), "соқ");
+    assert_eq!(stem("шығады", &cfg), "шық");
+    assert_eq!(stem("шыға", &cfg), "шық");
+    assert_eq!(stem("соғып", &cfg), "соқ");
+    assert_eq!(stem("соғатын", &cfg), "соқ");
+    assert_eq!(stem("табады", &cfg), "тап");
+    // Dictionary nouns that look like converbs of a verb root stay whole,
+    // and a real dative is still a dative.
+    assert_eq!(stem("бақа", &cfg), "бақа");
+    assert_eq!(stem("жаға", &cfg), "жаға");
+    assert_eq!(stem("балаға", &cfg), "бала");
+    assert_eq!(stem("тауға", &cfg), "тау");
+    for w in ["соғады", "шыға", "соғып"] {
+        assert_eq!(stem(&stem(w, &cfg), &cfg), stem(w, &cfg), "{w} must stem idempotently");
+    }
+}
+
+#[test]
+fn present_tense_a_e_reaches_a_single_syllable_lexicon_verb_root() {
+    // сен + е + мін: the bare -е/-а present marker was only allowed after a
+    // two-syllable base, so сене survived the verb pass and the noun pass
+    // read its -не as a case ending (→ се).
+    let cfg = cfg_with_verbs(&["кеме", "дене"], &["сен", "кет", "кел", "айт", "кем"]);
+    assert_eq!(stem("сенемін", &cfg), "сен");
+    assert_eq!(stem("кете", &cfg), "кет");
+    assert_eq!(stem("келе", &cfg), "кел");
+    assert_eq!(stem("айта", &cfg), "айт");
+    assert_eq!(stem("айтамын", &cfg), "айт");
+    // Controls that already stemmed to the root.
+    assert_eq!(stem("соқты", &cfg_with_verbs(&[], &["соқ"])), "соқ");
+    assert_eq!(stem("сенді", &cfg), "сен");
+    assert_eq!(stem("кетті", &cfg), "кет");
+    // кеме "ship" is a dictionary noun, not кем "decrease" + е.
+    assert_eq!(stem("кеме", &cfg), "кеме");
+    assert_eq!(stem("кемеге", &cfg), "кеме");
+    assert_eq!(stem("денеге", &cfg), "дене");
+}
+
 #[test]
 fn lexicon_vowel_restore_never_extends_a_lexicon_entry() {
     // жыл "year" and жылы "warm" are both lexicon entries. Stripping
