@@ -191,9 +191,9 @@ Human queries contain inflected forms, and that is where the stemmer helps. Verb
 | BM25 on the test split (n=1,929) | nDCG@10 | MRR@10 | Recall@10 | Recall@100 |
 | --- | --- | --- | --- | --- |
 | no stemming | 0.219 | 0.209 | 0.317 | 0.544 |
-| Snowball `kazakh.sbl` | **0.290** | **0.274** | 0.418 | **0.702** |
+| Snowball `kazakh.sbl` | 0.290 | 0.274 | 0.418 | 0.702 |
 | Rust, no lexicon | 0.273 | 0.259 | 0.396 | 0.665 |
-| Rust + lexicon (pg_kazsearch) | 0.288 | 0.269 | **0.420** | 0.696 |
+| Rust + lexicon (pg_kazsearch) | 0.288 | 0.269 | 0.420 | 0.696 |
 
 Paired bootstrap over questions (10,000 resamples) on nDCG@10:
 
@@ -218,7 +218,7 @@ In all four rows stemming improves nDCG@10 by 0.061 to 0.069 with an interval ab
 
 The judgments are sparse. Between 4.6% and 6.0% of the passages in any system's top 10 carry a judgment, and an unjudged passage counts as not relevant, so the absolute scores are lower bounds and the paired deltas are what the set measures.
 
-The tie has a visible mechanism. The JSON keeps the six questions each way where the two stemmers disagree most. Among the questions Snowball wins, the lexicon engine kept a query word whole because the word is itself a dictionary entry (`қуатты`, where the passage has `қуаты`) or cut too deep (`Көккесене` to `көк`, `деген` to `де`). Among the questions the engine wins, Snowball left a word unstemmed (`ілімнің`) or cut it to the wrong stem (`қайғының` to `қайық`).
+The per-question disagreements have a visible mechanism. The JSON keeps the six questions each way where the two stemmers disagree most. Among the questions where Snowball scores higher, the lexicon engine kept a query word whole because the word is itself a dictionary entry (`қуатты`, where the passage has `қуаты`) or cut too deep (`Көккесене` to `көк`, `деген` to `де`). Among the questions where the engine scores higher, Snowball left a word unstemmed (`ілімнің`) or cut it to the wrong stem (`қайғының` to `қайық`).
 
 ### Relaxing AND to OR when the list is short adds 0.05 Recall@10
 
@@ -317,7 +317,7 @@ CREATE INDEX ON articles USING bm25 ((title || E'\n' || body))
 | BM25 + the benchmark's stemmer | 0.754 | 0.727 | **0.772** | 0.764 |
 | BM25 + pg_kazsearch | **0.767** | **0.768** | 0.753 | **0.781** |
 
-pg_kazsearch is +0.077 nDCG@10 above no stemming (95% CI +0.041 to +0.113), with the largest gain on inflected queries (+0.142). Against the benchmark's own stemmer the difference is +0.013 (95% CI −0.011 to +0.036). The interval includes zero, so this set shows no measurable difference between the two stemmers. The benchmark's own [results page](https://github.com/Tim2190/Kaz-RAG-search-benchmark/blob/main/results/RESULTS.md) reports dense BGE-M3 at 0.866 nDCG@10 on the same queries. That is their measurement, not one of ours, and it says that for question-style Wikipedia search an embedding model is ahead of any BM25 configuration. The hybrid section above shows the two combining.
+pg_kazsearch is +0.077 nDCG@10 above no stemming (95% CI +0.041 to +0.113), with the largest gain on inflected queries (+0.142). Against the benchmark's own stemmer the difference is +0.013 (95% CI −0.011 to +0.036). The interval includes zero, so this set does not establish a difference in either direction. The benchmark's own [results page](https://github.com/Tim2190/Kaz-RAG-search-benchmark/blob/main/results/RESULTS.md) reports dense BGE-M3 at 0.866 nDCG@10 on the same queries. That is their measurement, not one of ours, and it says that for question-style Wikipedia search an embedding model is ahead of any BM25 configuration. The hybrid section above shows the two combining.
 
 ### Keyboard restoration
 
@@ -369,7 +369,7 @@ Measured with the v2.3.0 release of the plugin (`python3 eval/run_eval_es.py`, `
 | gold_v2 (human, n=132) | Recall@10 | **0.524** | 0.451 | +16% |
 | | MRR@10 | **0.669** | 0.569 | +18% |
 
-The Elasticsearch run has not been repeated on `main`, because the plugin build needs a JDK that the measurement machine lacks. The stemmer inside the plugin is the same Rust crate, so the PostgreSQL deltas above are the current picture.
+The Elasticsearch run has not been repeated on `main`, because the plugin build needs a JDK that the measurement machine lacks. The stemmer inside the plugin is the same Rust crate, so the PostgreSQL results above use the current stemmer, but the Elasticsearch numbers themselves are from v2.3.0.
 
 ### Snowball algorithm
 
@@ -378,11 +378,11 @@ The Elasticsearch run has not been repeated on `main`, because the plugin build 
 | Recall@10 | gold_v2 (news) | Kaz-RAG (Wikipedia) |
 | --- | --- | --- |
 | no stemming | 0.524 | 0.830 |
-| Snowball `kazakh.sbl` | 0.626 | **0.920** |
+| Snowball `kazakh.sbl` | 0.626 | 0.920 |
 | Rust, no lexicon | 0.637 | 0.910 |
-| Rust + lexicon | **0.663** | 0.910 |
+| Rust + lexicon | 0.663 | 0.910 |
 
-On the news queries the Rust engine with its lexicon is +0.037 Recall@10 above Snowball (95% CI +0.002 to +0.077). On Kaz-RAG the three stemmers sit within 0.010 of each other, inside the bootstrap interval of the Snowball-against-Rust comparison (+0.010, 95% CI −0.017 to +0.037). On the 1,929 KazQAD questions Snowball ties the engine with its lexicon (−0.002 nDCG@10 for the engine, 95% CI −0.009 to +0.005) and is +0.017 above the engine without it. Rules alone reach the lexicon-backed engine on both Wikipedia sets and trail it on news text.
+On the news queries the Rust engine with its lexicon is +0.037 Recall@10 above Snowball (95% CI +0.002 to +0.077). On Kaz-RAG the three stemmers sit within 0.010 of each other, inside the bootstrap interval of the Snowball-against-Rust comparison (+0.010, 95% CI −0.017 to +0.037). On the 1,929 KazQAD questions the engine with its lexicon is −0.002 nDCG@10 against Snowball (95% CI −0.009 to +0.005), and Snowball is +0.017 above the engine without the lexicon (95% CI +0.009 to +0.026). On news text the lexicon-backed engine is ahead of the rules. On both Wikipedia sets neither interval establishes a difference between them.
 
 ### Against the site's own search
 
