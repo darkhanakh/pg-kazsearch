@@ -102,6 +102,24 @@ fn locative_ta_te_requires_an_obstruent_final_base() {
 }
 
 #[test]
+fn first_person_suffix_obeys_consonant_assimilation() {
+    // себебін is себеп+і+н. -бін after a vowel is impossible (it would be
+    // -мін), so the verb parse себ+е+бін must not be on offer: once -е
+    // reached verb roots it outscored the possessive reading.
+    let cfg = cfg_with_verbs(
+        &["себеп", "талап", "торап", "студент", "қазақ", "есе"],
+        &["сеп", "тала", "тор", "сен"],
+    );
+    assert_eq!(stem("себебін", &cfg), "себеп");
+    assert_eq!(stem("талабын", &cfg), "талап");
+    assert_eq!(stem("торабын", &cfg), "торап");
+    // Well-formed first-person forms still strip.
+    assert_eq!(stem("сенемін", &cfg), "сен");
+    assert_eq!(stem("студентпін", &cfg), "студент");
+    assert_eq!(stem("қазақпын", &cfg), "қазақ");
+}
+
+#[test]
 fn lexicon_vowel_restore_never_extends_a_lexicon_entry() {
     // жыл "year" and жылы "warm" are both lexicon entries. Stripping
     // жылдары to жыл is already a lemma, so it must not be re-extended to
