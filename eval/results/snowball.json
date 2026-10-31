@@ -1,0 +1,97 @@
+{
+  "gold_v2": {
+    "no stemming": {
+      "R@10": 0.5244195993895192,
+      "MRR@10": 0.698656204906205,
+      "index_terms": 47371
+    },
+    "snowball kazakh.sbl": {
+      "R@10": 0.6256628340217912,
+      "MRR@10": 0.7688522126022126,
+      "index_terms": 20257
+    },
+    "rust, no lexicon": {
+      "R@10": 0.6368961713914922,
+      "MRR@10": 0.7593644781144782,
+      "index_terms": 21689
+    },
+    "rust + lexicon": {
+      "R@10": 0.6629257765654825,
+      "MRR@10": 0.7916516354016354,
+      "index_terms": 17185
+    }
+  },
+  "gold_v2_ci": {
+    "snowball kazakh.sbl - no stemming": {
+      "delta": 0.10124323463227207,
+      "ci95": [
+        0.04836071904922172,
+        0.15644625353849953
+      ]
+    },
+    "snowball kazakh.sbl - rust, no lexicon": {
+      "delta": -0.011233337369701004,
+      "ci95": [
+        -0.0482522589808686,
+        0.02389736303506357
+      ]
+    },
+    "snowball kazakh.sbl - rust + lexicon": {
+      "delta": -0.0372629425436912,
+      "ci95": [
+        -0.07701573283124086,
+        -0.0021926763571148587
+      ]
+    },
+    "rust, no lexicon - no stemming": {
+      "delta": 0.11247657200197307,
+      "ci95": [
+        0.0612812976783565,
+        0.16425784183137127
+      ]
+    }
+  },
+  "agreement": {
+    "kazakh.sbl": {
+      "tokens": 45708,
+      "agree_with_rust_lexicon": 0.6735801172661241,
+      "agree_with_rust_nolexicon": 0.6961800997637175,
+      "snowball_changed": 0.7344009801347685,
+      "rust_lexicon_changed": 0.7586418132493218
+    }
+  },
+  "kazrag": {
+    "no stemming": {
+      "recall@10": 0.83,
+      "mrr@10": 0.6447910052910053
+    },
+    "snowball kazakh.sbl": {
+      "recall@10": 0.92,
+      "mrr@10": 0.7185542328042328
+    },
+    "rust, no lexicon": {
+      "recall@10": 0.91,
+      "mrr@10": 0.7171455026455027
+    },
+    "rust + lexicon": {
+      "recall@10": 0.91,
+      "mrr@10": 0.7216415343915343
+    }
+  },
+  "kazrag_ci": {
+    "snowball kazakh.sbl - no stemming": {
+      "delta": 0.09,
+      "ci95": [
+        0.05,
+        0.12666666666666668
+      ]
+    },
+    "snowball kazakh.sbl - rust, no lexicon": {
+      "delta": 0.01,
+      "ci95": [
+        -0.016666666666666666,
+        0.03666666666666667
+      ]
+    }
+  }
+}

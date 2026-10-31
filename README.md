@@ -86,10 +86,10 @@ flowchart TD
     W["word"] --> S["script analysis<br/>Latin to Cyrillic, split hyphenated compounds"]
     S --> N
     S --> V
-    subgraph FP["stem_cyrillic, repeated until the stem stops changing (at most 4 passes)"]
+    subgraph FP["stem_cyrillic (one pass, then with a lexicon up to 4 more passes until the stem stops changing)"]
         N["BFS over the noun layers<br/>PRED, CASE, POSS, PLUR, DERIV"]
         V["BFS over the verb layers<br/>VPERSON, VTENSE, VNEG, VVOICE"]
-        N --> P["select_best<br/>a lexicon hit wins, else the lowest penalty<br/>a dictionary word is kept whole"]
+        N --> P["select_best<br/>a lexicon hit first, else the lowest penalty<br/>a dictionary word is kept whole"]
         V --> P
         P --> U["stem repair<br/>undo б→п ғ→қ г→к, restore an elided vowel,<br/>give back a final vowel the lexicon confirms"]
         U --> X["reduce_to_lexicon_root<br/>-у, -ған, -п, -да onto the dictionary root"]
@@ -99,11 +99,11 @@ flowchart TD
 
 The engine (`core/src/explore.rs`) runs a breadth-first search over ordered suffix layers, once with the noun layers and once with the verb layers. Each step strips one suffix from the right and checks two things before it may continue. The suffix must agree in vowel harmony with the last non-glide vowel of the base (у, и, and ю are transparent, so `туризм` accepts either class). The base must satisfy the layer guard, which encodes a morphotactic constraint such as "past `-ты/-ті` attaches only after a voiceless consonant" or "no possessive after a patronymic in `-ұлы/-қызы`". Greedy longest-match stripping fails on Kazakh because a wrong early cut hides the right parse, so the search keeps every surviving path and scores the candidates at the end.
 
-`candidate_penalty` scores a candidate by stem length in syllables, the number of weak and single-letter suffixes, derivational depth, and whether the stem is a lexicon entry. The weights were tuned with CMA-ES against the news corpus. With a lexicon loaded, a candidate whose stem is a dictionary entry beats one that only scores well, and a safety valve keeps a word that is itself a dictionary entry whole when the only parses lose a syllable.
+`candidate_penalty` scores a candidate by stem length in syllables, the number of weak and single-letter suffixes, derivational depth, and whether the stem is a lexicon entry. The weights were tuned with CMA-ES against the news corpus. With a lexicon loaded, a candidate whose stem is a dictionary entry is chosen over one that only scores well, and a safety valve keeps a word that is itself a dictionary entry whole when the only parses lose a syllable.
 
 Stem repair reverses the sound changes that attaching a suffix caused. `кітабы` strips to `кітаб`, which `apply_mutation` turns back into `кітап`. `орны` strips to `орн`, and elision restore gives `орын`. When the search cut one vowel too early (`жылына` to `жыл`), `restore_lexicon_vowel` hands the vowel back if the longer form is in the lexicon.
 
-The last stage makes the stemmer idempotent. A single pass is not. One pass takes `таратқандар` to the participle `таратқан` and `таратқан` to `тарат`, so the plural and the bare participle never met in the index. `stem_cyrillic` therefore reruns the winner, together with `reduce_to_lexicon_root` (which folds `-у` verbal nouns, `-ған/-ген/-қан/-кен` participles, `-п` converbs, and `-да/-де` denominal verbs onto their dictionary root), until the stem stops changing. `stem(stem(w)) == stem(w)` holds for every word, and the tests enforce it.
+The last stage makes the stemmer idempotent. A single pass is not. One pass takes `таратқандар` to the participle `таратқан` and `таратқан` to `тарат`, so the plural and the bare participle never met in the index. With a lexicon loaded, `stem_cyrillic` therefore reruns the winner, together with `reduce_to_lexicon_root` (which folds `-у` verbal nouns, `-ған/-ген/-қан/-кен` participles, `-п` converbs, and `-да/-де` denominal verbs onto their dictionary root), up to four more times, stopping as soon as a pass changes nothing. Without a lexicon there is one pass. `stem(stem(w)) == stem(w)` then holds across the 5,000-word test corpus, and `core/tests/parity_test.rs` enforces it.
 
 ### What the lexicon adds
 
@@ -119,19 +119,23 @@ Many people type Kazakh on a Russian layout, so `өнімдері` arrives as `�
 
 ```mermaid
 flowchart TD
-    W["онимдери"] --> T["t = exact stem"]
-    T --> G{"t in the lexicon?"}
+    W["word"] --> T["t = exact stem"]
+    T --> OV{"word not in the lexicon,<br/>t in the lexicon, t ≠ word?"}
+    OV -- "yes" --> WT["whole-token override<br/>dictionary entries whose fold is the word<br/>and pass the same policy, at most 4, stem each"]
+    WT -- "a stem the lexicon verifies" --> OUT1["that stem<br/>(еңбек from енбек, not ен)"]
+    WT -- "none" --> KEEP
+    OV -- "no" --> G{"t in the lexicon?"}
     G -- "yes" --> KEEP["return t<br/>(most correctly typed words stop here)"]
-    G -- "no" --> C["candidates<br/>fold the word and t to Russian letters,<br/>find lexicon anchors in folded space,<br/>restore the suffix tail under the anchor's harmony"]
-    C --> A{"admissible?<br/>anchor with 2+ syllables, or a<br/>harmony-forced tail, or an ң suffix"}
-    A -- "no candidate" --> FB["return t"]
+    G -- "no" --> C["candidates for the word, then for t<br/>a lexicon anchor in folded space plus a restored tail<br/>evidence: dictionary spelling, forced tail, ң suffix"]
+    C --> A{"admissible?<br/>2+ syllable anchor unless the tail is forced,<br/>tail evidence if a Kazakh letter was typed"}
+    A -- "none" --> FB["return t"]
     A -- "yes, at most 4 per source" --> S["stem each respelling<br/>with the same engine"]
     S --> V{"stem in the lexicon?"}
-    V -- "yes" --> OUT["өнім"]
+    V -- "yes" --> OUT["that stem<br/>(өнім from онимдери)"]
     V -- "no" --> FB
 ```
 
-Restoration runs only when the exact stem is not a dictionary word, so correctly typed text costs 0.008 extra engine calls per token on the news corpus. One branch is left out of the diagram. When the typed word is not in the lexicon but its exact stem is, a respelling of the whole word that is itself a dictionary entry may override the exact stem. `core/tests/kbfold_override_golden.txt` freezes every bench token that path changes, and on `main` the list is empty. One-syllable anchors are never restored on lexical evidence alone, because `мен` would become `мең` and `сон` would become `соң`. The default stays `keyboard = exact`, which is byte for byte the behaviour of earlier releases, so an upgrade does not change an existing index.
+Restoration proper runs only when the exact stem is not a dictionary word, and the override only when the typed word is not one, so correctly typed text costs 0.008 extra engine calls per token on the news corpus. The override handles a folded word whose exact stem is itself a dictionary entry (`енбек` stems to `ен`, "width", but the whole token folds from `еңбек`, "labour"). `core/tests/kbfold_override_golden.txt` freezes every bench token that path changes, and on `main` the list is empty. The `admissible` policy in `core/src/kbfold.rs` asks for one of three kinds of evidence: a dictionary spelling the input lacks, a suffix letter that vowel harmony forces, or an ң read in a genitive, possessive, or polite suffix. The anchor needs two harmony-bearing syllables unless the tail is harmony-forced, because `мен` would otherwise become `мең` and `сон` would become `соң`. A token that already contains a Kazakh letter was typed by someone who can type them, so only tail evidence may change it. The default stays `keyboard = exact`, which is byte for byte the behaviour of earlier releases, so an upgrade does not change an existing index.
 
 ### How the pieces fit together
 
@@ -159,7 +163,7 @@ flowchart LR
 
 The corpus is 2,999 Kazakh news articles from [kaz.tengrinews.kz](https://kaz.tengrinews.kz/). Three query sets have different meanings:
 
-- `gold_v2` (n=132) is the primary benchmark. Human-written queries across 39 themes with deliberate morphological variety, relevance judged over a pooled top-15 of three retrieval systems, with a blind 20% re-judgment (95.9% agreement, Cohen's κ 0.899). The file is `eval/gold_queries_v2.jsonl` and the methodology is in `eval/gold_queries_v2.meta.json`.
+- `gold_v2` (n=132) is the primary benchmark. Human-written queries across 39 themes with deliberate morphological variety, relevance judged over a pooled top-15 of three retrieval systems, with 30 queries re-judged blind (95.9% agreement, Cohen's κ 0.899). The file is `eval/gold_queries_v2.jsonl` and the methodology is in `eval/gold_queries_v2.meta.json`.
 - `gold` (n=51) is the older, smaller human-written set, kept for continuity.
 - `auto` (n=8,997) is mined from the indexed articles: title keywords, body sentences, and a title word with a synthetic suffix attached (`morpho_variant`). These queries are circular, because each one is derived from the document it must find, so they serve regression testing and not absolute claims.
 
@@ -176,7 +180,7 @@ Every PostgreSQL number below comes from `just eval-search` (`eval/run_eval.py`)
 | morpho_variant (synthetic, n=2,999) | **0.799** | 0.006 | 0.725 vs 0.005 |
 | title_keywords (verbatim, n=2,999) | 0.974 | 0.992 | 0.868 vs 0.920 |
 
-Human queries contain inflected forms, and that is where the stemmer pays. Verbatim title words need no stemming, and stemming costs 0.018 recall there. The `morpho_variant` generator picks its suffix by vowel harmony alone and ignores consonant assimilation, so many of its forms (`мектеп` + `дар`) are not Kazakh words. The guards added in pull request #8 refuse such attachments, and this row dropped from 0.865 with v2.3.0 to 0.799 on `main` for that reason. On the ill-formed forms the release stemmer reached the proper stem 89.5% of the time and `main` reaches it 77.1%, while on the well-formed forms `main` is ahead, 85.4% against 84.6% (a one-off check with the CLI against both builds).
+Human queries contain inflected forms, and that is where the stemmer helps. Verbatim title words need no stemming, and stemming costs 0.018 recall there. The `morpho_variant` generator picks its suffix by vowel harmony alone and ignores consonant assimilation, so many of its forms (`мектеп` + `дар`) are not Kazakh words. The guards added in pull request #8 refuse such attachments (`мектепдар` passes through unstemmed on `main`), which is why this row reads 0.799 where the v2.3.0 README reported 0.865.
 
 ### Query construction matters as much as the dictionary
 
@@ -188,13 +192,13 @@ Human queries contain inflected forms, and that is where the stemmer pays. Verba
 | OR over the stemmed terms | 0.388 | 0.394 | 0.802 | 0 / 132 |
 | **AND, then OR fills the rest** | **0.596** | **0.745** | **0.875** | **0 / 132** |
 
-Plain OR floods the top of the list with single-term matches and halves MRR. The pattern that wins runs the strict query first and tops up with OR-ranked rows only when the strict list is short:
+Plain OR fills the top of the list with single-term matches and halves MRR. The third strategy runs the strict query first and tops up with OR-ranked rows only when the strict list is short. In psql, pass the query text as a variable (`psql -v q='президенттің жарлығы'`) and read it as the string literal `:'q'`:
 
 ```sql
 WITH q AS (
-    SELECT websearch_to_tsquery('kazakh_cfg', :q) AS strict_q,
+    SELECT websearch_to_tsquery('kazakh_cfg', :'q') AS strict_q,
            (SELECT to_tsquery('simple', string_agg(quote_literal(lexeme), ' | '))
-              FROM unnest(to_tsvector('kazakh_cfg', :q))) AS relaxed_q
+              FROM unnest(to_tsvector('kazakh_cfg', :'q'))) AS relaxed_q
 ),
 strict AS (
     SELECT a.id, a.title, ts_rank_cd(a.fts, q.strict_q) AS rank
@@ -235,7 +239,7 @@ The `relaxed` branch parses with the `simple` configuration because the lexemes 
 | **RRF of BM25 `kazakh_cfg` + bge-m3** | **0.691** | **0.814** | **0.935** | **+0.095 [+0.046, +0.148]** | 3.2 |
 | RRF of BM25 `kazakh_cfg` + kaz-embedder | 0.688 | 0.820 | 0.933 | +0.093 [+0.047, +0.142] | 3.5 |
 
-Switching the ranking function from `ts_rank_cd` to BM25 on the stemmed index is the upgrade that needs no model. Dense retrieval alone ties the lexical baseline on this news corpus, and the gain appears when BM25 and dense lists are fused by reciprocal rank fusion (k=60, top-100 from each). The two embedders land within noise of each other in the fusion. Two reruns of the same configuration differ by up to 0.003 in R@10 on the BM25 rows while the dense rows repeat exactly, so differences at that scale mean nothing here.
+Switching the ranking function from `ts_rank_cd` to BM25 on the stemmed index is the upgrade that needs no model. Dense retrieval alone ties the lexical baseline on this news corpus, and the gain appears when BM25 and dense lists are fused by reciprocal rank fusion (k=60, top-100 from each). The two fusion rows differ by 0.003 in R@10, far inside each other's intervals, so the choice of embedder does not matter on this corpus.
 
 ```mermaid
 flowchart LR
@@ -265,7 +269,7 @@ CREATE INDEX ON articles USING bm25 ((title || E'\n' || body))
 
 ### An independent benchmark agrees
 
-[Kaz-RAG-search-benchmark](https://github.com/Tim2190/Kaz-RAG-search-benchmark) is a Kazakh retrieval benchmark by another author: 300 queries over 8,370 Kazakh Wikipedia passages in three categories. `just eval-external` runs pg_kazsearch through the benchmark's own tokenizer, BM25 (k1=1.5, b=0.75), metrics, and bootstrap at commit `08bc105`, changing only the stemmer. The no-stemming run and the run with the benchmark's own stemmer reproduce its published nDCG@10 to the last digit (0.690 and 0.754), which is the check that the harness is theirs and not ours.
+[Kaz-RAG-search-benchmark](https://github.com/Tim2190/Kaz-RAG-search-benchmark) is a Kazakh retrieval benchmark by another author, with 300 queries over 8,370 Kazakh Wikipedia passages in three categories. `just eval-external` runs pg_kazsearch through the benchmark's own tokenizer, BM25 (k1=1.5, b=0.75), metrics, and bootstrap at commit `08bc105`, changing only the stemmer. The no-stemming run and the run with the benchmark's own stemmer reproduce its published nDCG@10 to the last digit (0.690 and 0.754), which is the check that the harness is theirs and not ours.
 
 ![Kaz-RAG-search-benchmark nDCG@10 by category](docs/img/external_kazrag.png)
 
@@ -275,7 +279,7 @@ CREATE INDEX ON articles USING bm25 ((title || E'\n' || body))
 | BM25 + the benchmark's stemmer | 0.754 | 0.727 | **0.772** | 0.764 |
 | BM25 + pg_kazsearch | **0.767** | **0.768** | 0.753 | **0.781** |
 
-pg_kazsearch beats no stemming by +0.077 nDCG@10 (95% CI +0.041 to +0.113), with the largest gain on inflected queries (+0.142). Against the benchmark's own stemmer the difference is +0.013 (95% CI −0.011 to +0.036), a tie on this set. The benchmark's authors report dense BGE-M3 at 0.866 on the same queries, so for question-style Wikipedia search an embedding model beats any BM25 configuration, and the hybrid section above shows the two combining.
+pg_kazsearch is +0.077 nDCG@10 above no stemming (95% CI +0.041 to +0.113), with the largest gain on inflected queries (+0.142). Against the benchmark's own stemmer the difference is +0.013 (95% CI −0.011 to +0.036), a tie on this set. The benchmark's own [results page](https://github.com/Tim2190/Kaz-RAG-search-benchmark/blob/main/results/RESULTS.md) reports dense BGE-M3 at 0.866 nDCG@10 on the same queries. That is their measurement, not one of ours, and it says that for question-style Wikipedia search an embedding model is ahead of any BM25 configuration. The hybrid section above shows the two combining.
 
 ### Keyboard restoration
 
@@ -304,7 +308,7 @@ A trigram index is the usual fallback when no stemmer exists. On the same seeded
 | MRR@10 | **0.809** | 0.539 | +50% |
 | nDCG@10 | **0.827** | 0.554 | +49% |
 
-The sample is dominated by auto queries, so read this as a relative comparison, not an absolute quality claim.
+The sample is mostly auto queries, so read this as a relative comparison, not an absolute quality claim.
 
 ### Token coverage
 
@@ -331,7 +335,7 @@ The Elasticsearch run has not been repeated on `main`, because the plugin build 
 
 ### Snowball algorithm
 
-`snowball/kazakh.sbl` is a rule-only Kazakh stemmer written for the [Snowball](https://snowballstem.org/) compiler, for engines that cannot load a native library. `python3 snowball/eval_snowball.py --kazrag .cache/kazrag` (after `just eval-external` has cloned the benchmark) scores it with the same BM25 harness on both collections:
+`snowball/kazakh.sbl` is a rule-only Kazakh stemmer written for the [Snowball](https://snowballstem.org/) compiler, for engines that cannot load a native library. `python3 snowball/eval_snowball.py --kazrag .cache/kazrag` (after `just eval-external` has cloned the benchmark) scores it with the same BM25 harness on both collections and writes `eval/results/snowball.json`:
 
 | Recall@10 | gold_v2 (news) | Kaz-RAG (Wikipedia) |
 | --- | --- | --- |
@@ -340,11 +344,11 @@ The Elasticsearch run has not been repeated on `main`, because the plugin build 
 | Rust, no lexicon | 0.637 | 0.910 |
 | Rust + lexicon | **0.663** | 0.910 |
 
-The Snowball algorithm gets most of the way without a dictionary. The lexicon buys a further +0.037 Recall@10 on the news queries (95% CI +0.002 to +0.077). On Wikipedia the three stemmers sit within 0.010 of each other, inside the bootstrap interval of the Snowball-against-Rust comparison (+0.010, 95% CI −0.017 to +0.037).
+The Snowball algorithm gets most of the way without a dictionary. The lexicon adds a further +0.037 Recall@10 on the news queries (95% CI +0.002 to +0.077). On Wikipedia the three stemmers sit within 0.010 of each other, inside the bootstrap interval of the Snowball-against-Rust comparison (+0.010, 95% CI −0.017 to +0.037).
 
 ### Against the site's own search
 
-Re-benchmarked in July 2026 against `kaz.tengrinews.kz/search/?text=…`. Raw counts are not comparable, because tengrinews searches its full archive and our index holds 2,999 articles, so the signal is whether inflections of one word find the same documents:
+These counts were taken by hand in July 2026 against `kaz.tengrinews.kz/search/?text=…` and an Elasticsearch index that uses `kazsearch_stem`, and they are carried over from the v2.3.0 README. Raw counts are not comparable, because tengrinews searches its full archive and our index holds 2,999 articles, so the signal is whether inflections of one word find the same documents:
 
 | Query form | tengrinews.kz (full archive) | ES + `kazsearch_stem` (2,999 docs) |
 | --- | --- | --- |
@@ -569,6 +573,7 @@ To reproduce the benchmarks, link or scrape the corpus into `data/corpus/article
 | `python3 eval/measure_keyboard_fold.py` | `eval/results/keyboard_fold.json` and `eval/gold_queries_v2.kbfold.jsonl` |
 | `python3 eval/measure_stem_coverage.py` | `eval/results/stem_coverage.json` |
 | `just es-load-corpus && just es-eval` | `eval/results/report_es.json` |
+| `python3 snowball/eval_snowball.py --kazrag .cache/kazrag` | `eval/results/snowball.json` |
 | `python3 scripts/gen_readme_charts.py` | the PNG files in `docs/img/` |
 
 ### Contributing
