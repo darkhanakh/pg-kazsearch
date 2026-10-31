@@ -119,3 +119,24 @@ fn tay_dai_derivation_still_strips_well_formed_bases() {
     assert_eq!(stem("сондай", &cfg), "сон");
     assert_eq!(stem("қордай", &cfg), "қор");
 }
+
+#[test]
+fn sound_change_repair_leaves_a_stripped_lemma_alone() {
+    // негіз, теңіз, клуб and рейтинг are lemmas as stripped. Vowel
+    // re-insertion (негізі → негііз) and final-consonant devoicing
+    // (клубы → клуп) only repair stems that are not lemmas.
+    let cfg = cfg_with(&["негіз", "теңіз", "тізім", "клуб", "штаб", "рейтинг"]);
+    assert_eq!(stem("негізінде", &cfg), "негіз");
+    assert_eq!(stem("теңізі", &cfg), "теңіз");
+    assert_eq!(stem("клубы", &cfg), "клуб");
+    assert_eq!(stem("штабының", &cfg), "штаб");
+    assert_eq!(stem("рейтингінде", &cfg), "рейтинг");
+}
+
+#[test]
+fn sound_change_repair_still_restores_non_lemma_stems() {
+    let cfg = cfg_with(&["кітап", "ауыз", "мұрын"]);
+    assert_eq!(stem("кітабы", &cfg), "кітап");
+    assert_eq!(stem("ауызы", &cfg), "ауыз");
+    assert_eq!(stem("мұрны", &cfg), "мұрын");
+}
