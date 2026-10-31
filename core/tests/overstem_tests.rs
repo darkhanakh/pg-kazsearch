@@ -168,3 +168,46 @@ fn tay_derivation_attaches_after_voiced_stop_finals() {
     assert_eq!(stem("клубтай", &cfg), "клуб");
     assert_eq!(stem("саудтай", &cfg), "сауд");
 }
+
+#[test]
+fn lexicon_vowel_restore_resegments_reflexive_to_the_vowel_final_stem() {
+    // A vowel-final stem takes plain -н, so the BFS parse жыл + -ын- of
+    // жылынады is really жылы + -н-. Handing the one vowel back lands on the
+    // intended lemma even though жыл "year" is a lexicon entry too.
+    let cfg = cfg_with(&["жыл", "жылы"]);
+    assert_eq!(stem("жылынады", &cfg), "жылы");
+    assert_eq!(stem("жылынып", &cfg), "жылы");
+    assert_eq!(stem("жылыну", &cfg), "жылы");
+}
+
+#[test]
+fn lexicon_vowel_restore_ignores_vowels_the_suffix_did_not_start_with() {
+    let cfg = cfg_with(&["жыл", "жылы", "ел", "еле", "жол", "жола"]);
+    assert_eq!(stem("жылдары", &cfg), "жыл");
+    assert_eq!(stem("еліміздің", &cfg), "ел");
+    assert_eq!(stem("елімізде", &cfg), "ел");
+    assert_eq!(stem("жолында", &cfg), "жол");
+}
+
+#[test]
+fn lexicon_vowel_restore_keeps_a_verb_root_cut_by_a_verbal_suffix() {
+    // берілді is бер + passive -іл + past -ді, барысын is бар + -ыс + -ын and
+    // ұрынып is ұр + reflexive -ын + converb -ып. бері "hither", бары
+    // "existing" and ұры "thief" are entries, but the verb roots are
+    // already complete.
+    let mut lex = Lexicon::new();
+    for verb in ["бер", "бар", "ұр"] {
+        lex.insert_verb(verb.to_string());
+    }
+    for word in ["бері", "бары", "ұры", "жыл", "жылы"] {
+        lex.insert(word.to_string());
+    }
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+    assert_eq!(stem("берілді", &cfg), "бер");
+    assert_eq!(stem("барысын", &cfg), "бар");
+    assert_eq!(stem("ұрынып", &cfg), "ұр");
+    assert_eq!(stem("жылынады", &cfg), "жылы");
+}
