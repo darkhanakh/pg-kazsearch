@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 
 use kazsearch_core::lexicon::Lexicon;
-use kazsearch_core::{PenaltyWeights, ScriptMode, StemConfig};
+use kazsearch_core::{KeyboardMode, PenaltyWeights, ScriptMode, StemConfig};
 
 pgrx::pg_module_magic!();
 
@@ -112,6 +112,19 @@ fn pg_kazsearch_init(dict_options: pgrx::Internal) -> pgrx::Internal {
                                 );
                             }
                         };
+                    } else if name == "keyboard" {
+                        let val = pg_sys::defGetString(defel);
+                        let val_str = CStr::from_ptr(val).to_str().unwrap_or("exact");
+                        cfg.keyboard = match val_str {
+                            "exact" => KeyboardMode::Exact,
+                            "restore" => KeyboardMode::Restore,
+                            _ => {
+                                pgrx::error!(
+                                    "invalid keyboard for pg_kazsearch: \"{}\" (expected exact or restore)",
+                                    val_str
+                                );
+                            }
+                        };
                     } else {
                         let val = pg_sys::defGetString(defel);
                         let val_str = CStr::from_ptr(val).to_str().unwrap_or("");
@@ -144,6 +157,9 @@ fn pg_kazsearch_init(dict_options: pgrx::Internal) -> pgrx::Internal {
         if !lex_name.is_empty() {
             cfg.lexicon = Some(unsafe { load_lexicon_from_pg(lex_name) });
         }
+    }
+    if cfg.keyboard == KeyboardMode::Restore && cfg.lexicon.is_none() {
+        pgrx::warning!("pg_kazsearch: keyboard = restore needs a lexicon; stemming exactly");
     }
 
     pgrx::Internal::new(cfg)
