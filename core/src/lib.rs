@@ -101,6 +101,12 @@ fn restore_lexicon_vowel(lexeme: &str, lexicon: &Lexicon, steps: i32) -> String 
         return lexeme.to_string();
     }
 
+    // A stripped form that is already a lemma needs no vowel back: appending
+    // one lands on an unrelated word (жыл "year" → жылы "warm", ел → еле).
+    if lexicon.contains(lexeme) {
+        return lexeme.to_string();
+    }
+
     let ends_with_vowel = utf8_last_cp(lexeme).map_or(true, |cp| is_vowel(cp));
     if ends_with_vowel {
         return lexeme.to_string();

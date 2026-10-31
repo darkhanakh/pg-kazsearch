@@ -140,8 +140,13 @@ fn test_parity_5k_words_with_lexicon() {
     // denominal verbs) intentionally reduces ~12% of this corpus further
     // than C does; those divergences are covered by
     // test_stem_idempotent_over_5k_corpus and the gold_v2 eval instead.
+    //
+    // The C reference also re-extends a stripped lexeme that is already a
+    // lemma (елдер → еле, жолында → жола, берілді → бері). All 129 words
+    // that stopped matching C in that change keep the lemma instead (ел,
+    // жол, бер), so the floor sits below the C-faithful rate on purpose.
     assert!(
-        parity_pct >= 85.0,
+        parity_pct >= 83.0,
         "5K parity too low: {:.2}% ({}/{} words match)",
         parity_pct,
         matches,
