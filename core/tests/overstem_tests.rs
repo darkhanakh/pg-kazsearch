@@ -247,3 +247,35 @@ fn possessive_after_lexicon_noun_ending_in_qyz_still_strips() {
     assert_eq!(stem("бейқызы", &cfg), "бейқыз");
     assert_eq!(stem("серікқызы", &cfg), "серікқызы");
 }
+
+#[test]
+fn consonant_suffix_after_a_cut_verb_stem_still_restores_its_vowel() {
+    // міндеттіге is cut at міндетт and қорғалмаған at қорғал, neither an entry.
+    // The verb roots міндетте- and қорғала- are, so the stem is rebuilt from
+    // them and the fixed-point pass reduces them to міндет and қорға.
+    let mut lex = Lexicon::new();
+    for verb in ["міндетте", "қорғала", "қорға"] {
+        lex.insert_verb(verb.to_string());
+    }
+    lex.insert("міндет".to_string());
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+    assert_eq!(stem("міндеттіге", &cfg), "міндет");
+    assert_eq!(stem("қорғалмаған", &cfg), "қорға");
+}
+
+#[test]
+fn consonant_suffix_does_not_restore_a_noun_vowel() {
+    // дәрмек is cut at дәр. дәрі is a noun, not a verb root, so it must not
+    // be handed back.
+    let mut lex = Lexicon::new();
+    lex.insert_verb("бер".to_string());
+    lex.insert("дәрі".to_string());
+    let cfg = StemConfig {
+        lexicon: Some(lex),
+        ..Default::default()
+    };
+    assert_eq!(stem("дәрмектер", &cfg), "дәр");
+}
