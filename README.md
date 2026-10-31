@@ -316,6 +316,36 @@ ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (script_mode = cyrillic_only);
 
 CLI uses the same core default (`auto`) and exposes `--cyrillic-only` on `stem`, `analyze`, and `bench` commands. Elasticsearch exposes the same knob as the `script_mode` token filter setting (see the Elasticsearch configuration section above).
 
+### Russian-keyboard input
+
+Many people type Kazakh on a Russian layout, so `өнімдері` arrives as `онимдери` (қ→к, ғ→г, ң→н, ұ/ү→у, і→и, ә→а, ө→о, һ→х). With `keyboard = restore`, the stemmer restores the Kazakh letters whenever the lexicon confirms the restored reading, so keyboard-typed and properly written forms meet at the same stem:
+
+```sql
+CREATE TEXT SEARCH DICTIONARY kazakh_kb_dict (
+    TEMPLATE = pg_kazsearch_template, lexicon = kaz_stems, keyboard = restore
+);
+CREATE TEXT SEARCH CONFIGURATION kazakh_kb_cfg (COPY = kazakh_cfg);
+ALTER TEXT SEARCH CONFIGURATION kazakh_kb_cfg
+    ALTER MAPPING REPLACE pg_kazsearch_dict WITH kazakh_kb_dict;
+
+SELECT ts_lexize('kazakh_kb_dict', 'онимдери');         -- {өнім}
+SELECT ts_lexize('kazakh_kb_dict', 'мектептеримизде');  -- {мектеп}
+SELECT ts_lexize('kazakh_kb_dict', 'республикасынын');  -- {республика}
+```
+
+The default stays `keyboard = exact`, which is byte-identical to earlier releases, so upgrading does not change existing indexes. Use the `restore` configuration for both `to_tsvector` and the query functions, then reindex. Elasticsearch takes the same setting as `"keyboard": "restore"` on the `kazsearch_stem` filter, and the CLI as `--keyboard restore`.
+
+Measured on the 2,999-article corpus and gold_v2 (`python3 eval/measure_keyboard_fold.py`, PostgreSQL rows from `eval/run_eval.py`):
+
+| | exact | restore |
+| --- | --- | --- |
+| Keyboard-typed corpus tokens that reach the proper stem | 1.6% | 74.8% |
+| Properly written tokens without Kazakh letters whose stem changes | | 0.12% (mostly names) |
+| Keyboard-typed gold_v2 queries, PostgreSQL R@10 / MRR@10 | 0.028 / 0.047 | 0.376 / 0.523 |
+| Properly written gold_v2 queries, PostgreSQL R@10 / MRR@10 | 0.542 / 0.743 | 0.542 / 0.743 |
+
+Restoration needs the lexicon and does nothing without it. One-syllable roots (`бұл`, `бір`, `үшін`) are not restored, because their keyboard spellings collide with real words (`мен`/`мең`). They account for most of the remaining misses.
+
 ---
 
 ## Benchmarks
