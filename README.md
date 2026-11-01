@@ -103,7 +103,7 @@ The engine (`core/src/explore.rs`) runs a breadth-first search over ordered suff
 
 Stem repair reverses the sound changes that attaching a suffix caused. `кітабы` strips to `кітаб`, which `apply_mutation` turns back into `кітап`. `орны` strips to `орн`, and elision restore gives `орын`. When the search cut one vowel too early (`жылына` to `жыл`), `restore_lexicon_vowel` hands the vowel back if the longer form is in the lexicon.
 
-The last stage makes the stemmer idempotent. A single pass is not. One pass takes `таратқандар` to the participle `таратқан` and `таратқан` to `тарат`, so the plural and the bare participle never met in the index. With a lexicon loaded, `stem_cyrillic` therefore reruns the selected candidate, together with `reduce_to_lexicon_root` (which folds `-у` verbal nouns, `-ған/-ген/-қан/-кен` participles, `-п` converbs, and `-да/-де` denominal verbs onto their dictionary root), up to four more times, stopping as soon as a pass changes nothing. Without a lexicon there is one pass. `stem(stem(w)) == stem(w)` then holds across the 5,000-word test corpus, and `core/tests/parity_test.rs` enforces it.
+The last stage makes the stemmer idempotent. A single pass is not. One pass takes `таратқандар` to the participle `таратқан` and `таратқан` to `тарат`, so the plural and the bare participle never met in the index. With a lexicon loaded, `stem_cyrillic` therefore reruns the selected candidate, together with `reduce_to_lexicon_root` (which folds `-у` verbal nouns, `-ған/-ген/-қан/-кен` participles, `-п` converbs, and `-да/-де` denominal verbs onto their dictionary root), up to four more times, stopping as soon as a pass changes nothing. Without a lexicon there is one pass. `stem(stem(w)) == stem(w)` then holds across the 45,708 corpus tokens in `core/tests/bench_tokens.txt`, and `test_stem_idempotent_over_bench_tokens` in `core/tests/stem_tests.rs` enforces it.
 
 ### What the lexicon is for
 
@@ -595,7 +595,7 @@ Everything runs through `just`:
 | `just up` / `just down` | Start or stop the PostgreSQL 18 dev container (`docker/Dockerfile`, target `dev`) |
 | `just build` | Rebuild the lexicon, compile the extension inside the container, and install it |
 | `just reload` | `just build`, then `DROP` and `CREATE EXTENSION` |
-| `just test-core` | Rust unit and parity tests for `kazsearch-core` |
+| `just test-core` | Rust unit tests for `kazsearch-core` |
 | `just test-ext` | Smoke-test the extension over SQL |
 | `just cli` | Build the CLI |
 | `just es-up` / `just es-down` | Build the plugin and start an Elasticsearch 8.17.0 container with it |

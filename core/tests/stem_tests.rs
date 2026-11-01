@@ -502,3 +502,31 @@ fn test_hyphenated_tokens_stem_last_run() {
     // Mixed-script or non-separator punctuation still passes through.
     assert_eq!(stem("kaspi-банкті", &cfg), "kaspi-банкті");
 }
+
+/// Search-critical invariant: a stemmed form must stem to itself, otherwise
+/// two inflections of one lexeme can land on different index terms
+/// (stem(таратқандар) was таратқан while stem(таратқан) was тарат).
+#[test]
+fn test_stem_idempotent_over_bench_tokens() {
+    use kazsearch_core::lexicon::Lexicon;
+    let lexicon = Lexicon::load(concat!(env!("CARGO_MANIFEST_DIR"), "/../data/tsearch_data/kaz_stems.dict"))
+        .expect("failed to load kaz_stems.dict");
+    let cfg = StemConfig { lexicon: Some(lexicon), ..Default::default() };
+    let data = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/bench_tokens.txt"))
+        .expect("bench_tokens.txt not found");
+
+    let violations: Vec<(String, String, String)> = data
+        .lines()
+        .map(str::trim)
+        .filter(|w| !w.is_empty())
+        .filter_map(|w| {
+            let once = stem(w, &cfg);
+            let twice = stem(&once, &cfg);
+            (twice != once).then(|| (w.to_string(), once, twice))
+        })
+        .collect();
+    for (w, a, b) in violations.iter().take(30) {
+        eprintln!("{w:<30} stem={a:<20} restem={b}");
+    }
+    assert!(violations.is_empty(), "{} words are not idempotent under stem()", violations.len());
+}
