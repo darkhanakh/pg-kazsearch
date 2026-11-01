@@ -37,8 +37,6 @@ from eval.run_eval import (
 
 WEIGHT_NAMES = [
     "w_no_strip",
-    "w_short_char",
-    "w_no_syll",
     "w_two_char",
     "w_three_one",
     "w_deriv",
@@ -55,8 +53,6 @@ WEIGHT_NAMES = [
 
 DEFAULTS = {
     "w_no_strip": 6.0,
-    "w_short_char": 120.0,
-    "w_no_syll": 90.0,
     "w_two_char": 8.0,
     "w_three_one": 2.5,
     "w_deriv": 3.2,

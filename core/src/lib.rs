@@ -16,8 +16,6 @@ pub const MAX_STEM_BYTES: usize = 128;
 #[derive(Clone, Debug)]
 pub struct PenaltyWeights {
     pub w_no_strip: f64,
-    pub w_short_char: f64,
-    pub w_no_syll: f64,
     pub w_two_char: f64,
     pub w_three_one: f64,
     pub w_deriv: f64,
@@ -36,8 +34,6 @@ impl Default for PenaltyWeights {
     fn default() -> Self {
         Self {
             w_no_strip: 6.0,
-            w_short_char: 120.0,
-            w_no_syll: 90.0,
             w_two_char: 8.0,
             w_three_one: 2.5,
             w_deriv: 3.2,

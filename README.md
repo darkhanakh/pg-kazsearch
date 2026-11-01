@@ -561,7 +561,7 @@ The CLI flag is `--cyrillic-only` and the Elasticsearch setting is `script_mode`
 The scoring weights are dictionary options and change without a restart:
 
 ```sql
-ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (w_deriv = 3.5, w_short_char = 100.0);
+ALTER TEXT SEARCH DICTIONARY pg_kazsearch_dict (w_deriv = 3.5, w_two_char = 7.0);
 ```
 
 `just optimize` runs the CMA-ES search that produced the defaults, and `just apply-weights` pushes its result to the running database. One weight rarely moves alone, so remeasure with `just eval-search` after a change.

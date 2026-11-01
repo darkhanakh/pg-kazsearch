@@ -10,7 +10,7 @@ pgrx::pg_module_magic!();
 fn is_weight_param(name: &str) -> bool {
     matches!(
         name,
-        "w_no_strip" | "w_short_char" | "w_no_syll" | "w_two_char" | "w_three_one"
+        "w_no_strip" | "w_two_char" | "w_three_one"
             | "w_deriv" | "w_weak" | "w_single_char" | "w_verb_all_weak" | "w_nik_deriv"
             | "w_final_cons" | "w_nominal_inf" | "w_verbal_inf" | "w_removed" | "w_verb_track"
     )
@@ -20,8 +20,6 @@ fn try_parse_weight(name: &str, value: &str, w: &mut PenaltyWeights) -> Option<(
     let v: f64 = value.parse().ok()?;
     match name {
         "w_no_strip" => w.w_no_strip = v,
-        "w_short_char" => w.w_short_char = v,
-        "w_no_syll" => w.w_no_syll = v,
         "w_two_char" => w.w_two_char = v,
         "w_three_one" => w.w_three_one = v,
         "w_deriv" => w.w_deriv = v,

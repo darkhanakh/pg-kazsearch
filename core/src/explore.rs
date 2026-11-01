@@ -286,9 +286,11 @@ pub fn candidate_penalty(
     let removed = (original_chars - chars).max(0);
     let mut p: f64 = 0.0;
 
+    // No penalty for bases under two letters or one syllable: the BFS never
+    // generates them (see the `prefix.chars` / `prefix.syll` checks in
+    // `explore_track_best`), and whole words reach scoring only with two
+    // syllables or more.
     if c.steps == 0 { p += w.w_no_strip; }
-    if chars < 2 { p += w.w_short_char; }
-    if syll < 1 { p += w.w_no_syll; }
     if chars == 2 { p += w.w_two_char; }
     if chars == 3 && syll == 1 { p += w.w_three_one; }
 
