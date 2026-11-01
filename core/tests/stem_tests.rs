@@ -132,18 +132,20 @@ fn test_text_module_syllable_count() {
 #[test]
 fn test_text_module_harmony() {
     use kazsearch_core::text::*;
-    assert!(harmony_ok("алма", 1));
-    assert!(!harmony_ok("мектеп", 1));
-    assert!(harmony_ok("мектеп", 2));
-    assert!(harmony_ok("anything", 0));
+    let ok = |w: &str, h: u8| fill_prefix_tables(w).harmony_ok_at(w.len(), h);
+    assert!(ok("алма", 1));
+    assert!(!ok("мектеп", 1));
+    assert!(ok("мектеп", 2));
+    assert!(ok("anything", 0));
 }
 
 #[test]
-fn test_text_module_word_is_back() {
+fn test_text_module_strong_vowel_class() {
     use kazsearch_core::text::*;
-    assert!(word_is_back("алма"));
-    assert!(!word_is_back("мектеп"));
-    assert!(word_is_back("бар"));
+    assert_eq!(strong_vowel_class("алма"), Some(true));
+    assert_eq!(strong_vowel_class("мектеп"), Some(false));
+    assert_eq!(strong_vowel_class("бар"), Some(true));
+    assert_eq!(strong_vowel_class("туризм"), None);
 }
 
 #[test]
@@ -158,26 +160,16 @@ fn test_text_module_prefix_tables() {
 #[test]
 fn test_explore_apply_mutation() {
     use kazsearch_core::explore::apply_mutation;
-    let mut s = "адамб".to_string();
-    apply_mutation(&mut s);
-    assert_eq!(s, "адамп");
-
-    let mut s = "адамғ".to_string();
-    apply_mutation(&mut s);
-    assert_eq!(s, "адамқ");
-
-    let mut s = "адамг".to_string();
-    apply_mutation(&mut s);
-    assert_eq!(s, "адамк");
+    assert_eq!(apply_mutation("адамб"), "адамп");
+    assert_eq!(apply_mutation("адамғ"), "адамқ");
+    assert_eq!(apply_mutation("адамг"), "адамк");
 }
 
 #[test]
 fn test_explore_apply_mutation_exception() {
     use kazsearch_core::explore::apply_mutation;
     // After 'о' (back vowel in exception list), 'г' should not mutate
-    let mut s = "ког".to_string();
-    apply_mutation(&mut s);
-    assert_eq!(s, "ког");
+    assert_eq!(apply_mutation("ког"), "ког");
 }
 
 #[test]

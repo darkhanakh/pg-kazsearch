@@ -8,6 +8,7 @@ pub mod kbfold;
 use explore::ExploreResult;
 use rules::{is_nominal_suffix_chain, LAYER_VPERSON, LAYER_VVOICE, NOUN_LAYERS, VERB_LAYERS, POSS_VOWEL_SUFFIXES};
 use script::{LatinAnalysis, ScriptClass};
+use explore::concat_on_stack;
 use text::{count_syllables, fill_prefix_tables, utf8_char_count, utf8_last_cp, is_vowel, PrefixTables};
 use lexicon::Lexicon;
 
@@ -100,16 +101,6 @@ pub enum KeyboardMode {
 pub(crate) struct StemOutcome {
     pub(crate) stem: String,
     best: explore::Candidate,
-}
-
-fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
-    let total = a.len() + b.len();
-    if total >= MAX_STEM_BYTES {
-        return None;
-    }
-    buf[..a.len()].copy_from_slice(a.as_bytes());
-    buf[a.len()..total].copy_from_slice(b.as_bytes());
-    Some(std::str::from_utf8(&buf[..total]).unwrap())
 }
 
 /// Re-segments a stem the BFS cut one vowel too early. Stripping -ын from
@@ -606,8 +597,7 @@ fn undo_sound_changes(lexeme: &mut String, best: &explore::Candidate, lex: Optio
         && best.last_suffix.map_or(false, |s| POSS_VOWEL_SUFFIXES.contains(&s));
 
     if needs_restore {
-        explore::apply_mutation(lexeme);
-        *lexeme = explore::apply_elision_restore(lexeme);
+        *lexeme = explore::apply_elision_restore(&explore::apply_mutation(lexeme));
         return;
     }
     if let Some(root) = lex.and_then(|l| explore::voiced_verb_root(lexeme, best, l)) {
