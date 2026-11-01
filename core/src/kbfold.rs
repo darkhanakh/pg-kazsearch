@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 
 use crate::lexicon::{LexStem, Lexicon};
-use crate::text::{is_glide, is_loan_vowel, is_vocalic, is_vowel, strong_vowel_class};
+use crate::text::{count_strong_syllables, is_glide, is_vocalic, strong_vowel_class};
 use crate::{stem_cyrillic, StemConfig, MAX_STEM_BYTES};
 
 /// Restoration hypotheses stemmed per source string. Agreement saturates
@@ -98,15 +98,6 @@ fn fold_into<'b>(s: &str, buf: &'b mut [u8; MAX_STEM_BYTES]) -> Option<Folded<'b
     }
     debug_assert_eq!(n, s.len(), "fold must preserve byte length");
     Some(Folded(std::str::from_utf8(&buf[..n]).ok()?))
-}
-
-/// Harmony-bearing syllables: vowels minus glides (у/и/ю are transparent to
-/// harmony, so `туризм` has none and `кино` has one).
-fn harmony_syllables(s: &str) -> u8 {
-    s.chars()
-        .filter(|&c| (is_vowel(c) || is_loan_vowel(c)) && !is_glide(c))
-        .count()
-        .min(u8::MAX as usize) as u8
 }
 
 /// A non-glide vowel. Kazakh has no vowel hiatus at a stem-suffix boundary:
@@ -203,7 +194,7 @@ impl FoldIndex {
                 let anchor = Anchor {
                     entry: entry.as_str().into(),
                     back: strong_vowel_class(&surface),
-                    strong_syllables: harmony_syllables(entry),
+                    strong_syllables: count_strong_syllables(entry).min(u8::MAX as i32) as u8,
                     kind,
                     surface: surface.as_str().into(),
                 };

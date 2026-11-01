@@ -81,6 +81,15 @@ pub fn count_syllables(s: &str) -> i32 {
         .count() as i32
 }
 
+/// Harmony-bearing syllables: vowels minus glides (у/и/ю are transparent
+/// to harmony, so `туризм` has none and `кино` has one). A glide must not
+/// make a base look bisyllabic (оқ+ушы, ту+ған).
+pub fn count_strong_syllables(s: &str) -> i32 {
+    s.chars()
+        .filter(|&c| (is_vowel(c) || is_loan_vowel(c)) && !is_glide(c))
+        .count() as i32
+}
+
 /// Table size: stem() never explores words of `MAX_STEM_BYTES` (128) bytes
 /// or longer, so fixed stack arrays avoid four heap allocations per word.
 const TABLE_LEN: usize = crate::MAX_STEM_BYTES + 1;
@@ -214,88 +223,4 @@ pub fn strong_vowel_class(s: &str) -> Option<bool> {
         }
     }
     class
-}
-
-pub fn word_is_back(s: &str) -> bool {
-    strong_vowel_class(s).unwrap_or(true)
-}
-
-fn tail_is_back(s: &str) -> bool {
-    let mut last_two = ['\0', '\0'];
-    let mut n = 0;
-
-    for cp in s.chars() {
-        if is_glide(cp) {
-            continue;
-        }
-        if is_back_vowel(cp) || is_front_vowel(cp) || is_loan_vowel(cp) {
-            last_two[0] = last_two[1];
-            last_two[1] = cp;
-            n += 1;
-        }
-    }
-    if n == 0 {
-        return true;
-    }
-    if is_loan_vowel(last_two[1]) {
-        return if last_two[0] != '\0' {
-            is_back_vowel(last_two[0])
-        } else {
-            true
-        };
-    }
-    is_back_vowel(last_two[1])
-}
-
-pub fn harmony_ok(s: &str, harmony: u8) -> bool {
-    if harmony == 0 {
-        // KAZ_HARM_ANY
-        return true;
-    }
-    if s.is_empty() {
-        return false;
-    }
-
-    // Harmony-neutral word (glide-only vowels): either class attaches.
-    let full_back = match strong_vowel_class(s) {
-        Some(back) => back,
-        None => return true,
-    };
-    if harmony == 1 && full_back {
-        // KAZ_HARM_BACK
-        return true;
-    }
-    if harmony == 2 && !full_back {
-        // KAZ_HARM_FRONT
-        return true;
-    }
-
-    if count_syllables(s) >= 4 {
-        let tb = tail_is_back(s);
-        if harmony == 1 {
-            return tb;
-        }
-        return !tb;
-    }
-
-    false
-}
-
-pub fn ends_with_suffix<'a>(s: &'a str, suffix: &str) -> Option<&'a str> {
-    if suffix.is_empty() || suffix.len() >= s.len() {
-        return None;
-    }
-    if s.as_bytes().ends_with(suffix.as_bytes()) {
-        Some(&s[..s.len() - suffix.len()])
-    } else {
-        None
-    }
-}
-
-pub fn ends_with_any(s: &str, suffixes: &[&str]) -> bool {
-    suffixes.iter().any(|sfx| ends_with_suffix(s, sfx).is_some())
-}
-
-pub fn suffix_in(sfx: &str, arr: &[&str]) -> bool {
-    arr.contains(&sfx)
 }

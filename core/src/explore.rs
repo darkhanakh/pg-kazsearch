@@ -91,14 +91,6 @@ fn visit_key(len: i32, state_idx: i32, steps: i32) -> u64 {
     ((len as u64) << 32) | (((state_idx as u16) as u64) << 16) | ((steps as u16) as u64)
 }
 
-/// Strong (non-glide, harmony-bearing) syllable count: glides (у/и/ю) are
-/// transparent and must not make a base look bisyllabic (оқ+ушы, ту+ған).
-fn count_strong_syllables(base: &str) -> i32 {
-    base.chars()
-        .filter(|&c| (is_vowel(c) || is_loan_vowel(c)) && !is_glide(c))
-        .count() as i32
-}
-
 /// Negation and intentive suffixes (ма/ме, ба/бе, па/пе and the forms built on
 /// them: -майды, -мақ, -бек, ...) pick their first consonant from the final
 /// sound of the verb stem: м after vowels and л/р/й, б after voiced
@@ -341,66 +333,7 @@ pub fn candidate_beats(
     ch_ch > ch_cu
 }
 
-pub fn apply_mutation(lexeme: &mut String) {
-    if lexeme.len() < 2 {
-        return;
-    }
-    if lexeme.ends_with("б") {
-        let byte_len = "б".len();
-        let new_len = lexeme.len() - byte_len;
-        lexeme.truncate(new_len);
-        lexeme.push_str("п");
-    } else if lexeme.ends_with("ғ") {
-        let byte_len = "ғ".len();
-        let new_len = lexeme.len() - byte_len;
-        lexeme.truncate(new_len);
-        lexeme.push_str("қ");
-    } else if lexeme.ends_with("г") {
-        let base = &lexeme[..lexeme.len() - "г".len()];
-        if let Some(cp) = utf8_last_cp(base) {
-            if cp == 'о' || cp == 'ө' || cp == 'ұ' || cp == 'ү' || cp == 'у' {
-                return;
-            }
-        }
-        let byte_len = "г".len();
-        let new_len = lexeme.len() - byte_len;
-        lexeme.truncate(new_len);
-        lexeme.push_str("к");
-    }
-}
-
-fn try_elision_restore(s: &str) -> Option<String> {
-    let mut it = s.chars().rev();
-    let last_cp = it.next()?;
-    if last_cp != 'н' && last_cp != 'з' {
-        return None;
-    }
-    let prev_cp = it.next()?;
-
-    // Loan vowels (я/э) count: no elision happened after "агрессия" + н.
-    if (is_vowel(prev_cp) || is_loan_vowel(prev_cp)) && !(s.ends_with("уз") || s.ends_with("із")) {
-        return None;
-    }
-
-    let lv = s.chars().filter(|&c| is_vowel(c)).last()?;
-    let ins = if is_back_vowel(lv) { "ы" } else { "і" };
-
-    let last_char_start = s.len() - last_cp.len_utf8();
-    let mut result = String::with_capacity(s.len() + ins.len());
-    result.push_str(&s[..last_char_start]);
-    result.push_str(ins);
-    result.push_str(&s[last_char_start..]);
-    if result.len() >= MAX_STEM_BYTES {
-        return None;
-    }
-    Some(result)
-}
-
-pub fn apply_elision_restore(lexeme: &str) -> String {
-    try_elision_restore(lexeme).unwrap_or_else(|| lexeme.to_string())
-}
-
-fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
+pub(crate) fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
     let total = a.len() + b.len();
     if total >= MAX_STEM_BYTES {
         return None;
@@ -410,8 +343,8 @@ fn concat_on_stack<'a>(a: &str, b: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> O
     Some(std::str::from_utf8(&buf[..total]).unwrap())
 }
 
-/// Stack-buffer version of [`apply_mutation`]: writes the (possibly) mutated
-/// copy of `s` into `buf`. All mutation pairs (б→п, ғ→қ, г→к) are 2-byte
+/// Writes the (possibly) mutated copy of `s` into `buf`: final б/ғ/г devoiced
+/// to п/қ/к, except г after a rounded vowel. All mutation pairs (б→п, ғ→қ, г→к) are 2-byte
 /// Cyrillic ↔ 2-byte Cyrillic, so the length never changes.
 fn mutated_on_stack<'a>(s: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
     if s.len() >= MAX_STEM_BYTES {
@@ -442,8 +375,8 @@ fn mutated_on_stack<'a>(s: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'
     Some(std::str::from_utf8(&buf[..s.len()]).unwrap())
 }
 
-/// Stack-buffer version of [`try_elision_restore`]: writes the restored form
-/// into `buf` if restoration applies.
+/// Writes the elision-restored form of `s` into `buf` if restoration
+/// applies: ы/і put back before a final н/з that follows a consonant.
 fn elision_restored_on_stack<'a>(s: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> Option<&'a str> {
     let mut it = s.chars().rev();
     let last_cp = it.next()?;
@@ -468,6 +401,16 @@ fn elision_restored_on_stack<'a>(s: &str, buf: &'a mut [u8; MAX_STEM_BYTES]) -> 
     buf[split..split + ins.len()].copy_from_slice(ins.as_bytes());
     buf[split + ins.len()..total].copy_from_slice(s[split..].as_bytes());
     Some(std::str::from_utf8(&buf[..total]).unwrap())
+}
+
+pub fn apply_mutation(s: &str) -> String {
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    mutated_on_stack(s, &mut buf).unwrap_or(s).to_string()
+}
+
+pub fn apply_elision_restore(s: &str) -> String {
+    let mut buf = [0u8; MAX_STEM_BYTES];
+    elision_restored_on_stack(s, &mut buf).unwrap_or(s).to_string()
 }
 
 /// `stem` with its final consonant devoiced (ғ→қ, г→к, б→п), when that form
