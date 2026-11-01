@@ -444,115 +444,36 @@ fn stem_canonical(txt: &str, cfg: &StemConfig) -> StemOutcome {
     StemOutcome { stem: lexeme, best }
 }
 
-fn is_inflectional_strip(best: &explore::Candidate) -> bool {
-    best.steps > 0 && (best.nominal_inf > 0 || best.verbal_inf > 0)
+/// A transliteration's stem is believed without a lexicon only when an
+/// inflectional suffix came off and enough of a word is left: three letters
+/// and two syllables, or one syllable when the spelling carries a Kazakh
+/// diacritic.
+fn latin_confident(latin: &LatinAnalysis, outcome: &StemOutcome) -> bool {
+    let best = &outcome.best;
+    best.steps > 0
+        && (best.nominal_inf > 0 || best.verbal_inf > 0)
+        && utf8_char_count(&outcome.stem) >= 3
+        && count_syllables(&outcome.stem) >= if latin.has_diacritic { 1 } else { 2 }
 }
 
-fn latin_candidate_confident(
-    latin: &LatinAnalysis,
-    best: &explore::Candidate,
-    stem_chars: i32,
-    stem_syll: i32,
-    lex_word_hit: bool,
-    lex_stem_hit: bool,
-) -> bool {
-    if lex_word_hit || lex_stem_hit {
-        return true;
-    }
-    if !is_inflectional_strip(best) || stem_chars < 3 {
-        return false;
-    }
-
-    if latin.has_diacritic {
-        return stem_syll >= 1;
-    }
-    if latin.has_q_or_w {
-        return stem_syll >= 2;
-    }
-    stem_syll >= 2
-}
-
-fn latin_candidate_score(
-    latin: &LatinAnalysis,
-    best: &explore::Candidate,
-    stem_chars: i32,
-    stem_syll: i32,
-    lex_word_hit: bool,
-    lex_stem_hit: bool,
-) -> i32 {
-    let mut score: i32 = 0;
-    if lex_stem_hit {
-        score += 120;
-    }
-    if lex_word_hit {
-        score += 80;
-    }
-    if is_inflectional_strip(best) {
-        score += 35 + best.steps * 6;
-    }
-    if latin.has_diacritic {
-        score += 12;
-    } else if latin.has_q_or_w {
-        score += 8;
-    }
-
-    score += stem_syll * 2;
-    score + stem_chars.min(8)
-}
-
+/// Stem each transliteration through the same fixed-point path as native
+/// Cyrillic input, so Latin queries land on the stems the index was built
+/// with. The first candidate the lexicon verifies (as a stem or as a word)
+/// wins, as in keyboard restoration; otherwise the first confident one.
 fn stem_latin(latin: &LatinAnalysis, cfg: &StemConfig) -> Option<String> {
-    let mut best_choice: Option<((i32, i32, i32, i32, i32, i32), String)> = None;
-
+    let mut fallback: Option<String> = None;
     for candidate in &latin.candidates {
-        // Same fixed-point path as native Cyrillic input: transliterated
-        // queries must land on the same stems the index was built with.
         let outcome = stem_cyrillic(candidate, cfg);
-        let stem_chars = utf8_char_count(&outcome.stem);
-        let stem_syll = count_syllables(&outcome.stem);
-
-        let (lex_word_hit, lex_stem_hit) = if let Some(ref lex) = cfg.lexicon {
-            (lex.contains(candidate), lex.contains(&outcome.stem))
-        } else {
-            (false, false)
-        };
-
-        if !latin_candidate_confident(
-            latin,
-            &outcome.best,
-            stem_chars,
-            stem_syll,
-            lex_word_hit,
-            lex_stem_hit,
-        ) {
-            continue;
+        if let Some(lex) = cfg.lexicon.as_ref() {
+            if lex.contains(&outcome.stem) || lex.contains(candidate) {
+                return Some(outcome.stem);
+            }
         }
-
-        let key = (
-            latin_candidate_score(
-                latin,
-                &outcome.best,
-                stem_chars,
-                stem_syll,
-                lex_word_hit,
-                lex_stem_hit,
-            ),
-            i32::from(lex_stem_hit),
-            i32::from(lex_word_hit),
-            outcome.best.steps,
-            outcome.best.nominal_inf + outcome.best.verbal_inf,
-            stem_chars,
-        );
-
-        let should_replace = best_choice
-            .as_ref()
-            .map_or(true, |(best_key, _)| key > *best_key);
-
-        if should_replace {
-            best_choice = Some((key, outcome.stem));
+        if fallback.is_none() && latin_confident(latin, &outcome) {
+            fallback = Some(outcome.stem);
         }
     }
-
-    best_choice.map(|(_, stem)| stem)
+    fallback
 }
 
 fn should_keep_input(
