@@ -23,38 +23,68 @@
  *
  * Nominal suffixes are stripped in a loop until none matches, so a lemma
  * and its inflected forms reach the same stem even when the lemma itself
- * ends in a suffix-like string (теңге and теңгені both give тең).
+ * ends in a suffix-like string (сауда, саудада and саудасы all give сау;
+ * теңге, теңгеге and теңгемен all give тең).  The loop trades dictionary
+ * forms for consistency, and the trade is not complete.  The accusative
+ * -ны is refused after -ге to protect participles such as болғаны (see
+ * the case slot), so теңгені gives теңген.
  *
  * Finally, when a vowel-initial suffix was removed, the alternation it
  * caused on the base-final consonant is undone (б -> п, ғ -> қ, г -> к) and
  * an elided narrow vowel is restored before a final н, з or қ (орн -> орын,
  * халқ -> халық, ауз -> ауыз).
  *
- * What is deliberately not stripped, and why:
+ * What is deliberately not stripped, and why.  Only the first two items
+ * were tested as retrieval variants (BM25 recall@10 over 132 judged
+ * queries on 2,999 news articles).  On that set a single-rule change moves
+ * recall@10 by 0.008 or less, while the paired-bootstrap interval is about
+ * ±0.04 wide, so those tests show a direction and not a size.  The other
+ * items rest on probe words and on the author's reading of news text, not
+ * on counts or measurements.
  *   - the verbal noun -у (дамыту, кездесу, сайлау).  Verbal nouns are
- *     lexicalised as nouns, and conflating them with the finite verb
- *     (дамыту with дамытады, кездесу with кездесті) was measured to hurt
- *     retrieval: the finite verb is far more frequent, so the merged term
- *     loses its weight.  The nominal suffixes on a verbal noun are still
- *     removed, so дамытуға, дамытуы, дамытудың all reach дамыту;
+ *     lexicalised as nouns and are what a searcher types.  The finite verb
+ *     is far more frequent, so merging the two (дамыту with дамытады,
+ *     кездесу with кездесті) merges the rare term into a frequent one and
+ *     the query loses its weight.  A variant that stripped -у lowered
+ *     recall@10, by less than the noise of the test set.  The nominal
+ *     suffixes on a verbal noun are still removed, so дамытуға, дамытуы,
+ *     дамытудың all reach дамыту;
  *   - the voice suffixes (passive -ыл/-іл/-л/-н, causative -тыр/-дыр,
- *     -қыз/-гіз), for the same reason: өшірілді, өшірілген, өшірілуі
- *     conflate with each other but not with өшірді;
- *   - the first and second person (-мын, -сың, -сыз, -м, -ң, ...), rare in
- *     written text while the same strings end many content nouns (білім,
- *     бағдарлама, тәуелсіз).  The privative -сыз/-сіз is left for the same
- *     reason;
- *   - the bare habitual participle -атын/-етін, which cannot be told from
- *     the very common nouns in -ат/-ет with possessive and accusative
- *     (мемлекет-і-н, қызмет-і-н).  It is removed once a nominal suffix has
- *     been taken off (болатын-ын -> бол);
- *   - the reflexive -ын/-ін, which ends too many roots (дайын, ақын,
- *     тұрғын, жақын);
+ *     -қыз/-гіз), on the same term-weight argument and with the same kind
+ *     of within-noise result.  The forms өшірілді and өшірілген conflate
+ *     with each other (өшіріл) but not with өшірді (өшір), and өшірілуі
+ *     keeps its verbal noun and gives өшірілу;
+ *   - the first and second person (-мын, -сың, -сыз, -м, -ң, ...).  The
+ *     author judged them rare in written text, without a count, while the
+ *     same strings end many content nouns (білім, бағдарлама, тәуелсіз).
+ *     The privative -сыз/-сіз is left for the same reason;
+ *   - the habitual participle -атын/-етін after a consonant.  It cannot be
+ *     told from the very common nouns in -ат/-ет with possessive and
+ *     accusative (мемлекет-і-н, қызмет-і-н), which the author judged the
+ *     larger class.  The nominal chain therefore reads it that way, and
+ *     болатын, болатынын and болатындар all give болат, while айтатын
+ *     gives айтат.  After a vowel the -й- makes the participle
+ *     unambiguous, and the finite tense table strips bare -йтын/-йтін
+ *     (жасайтын gives жаса).  With a nominal suffix on top the nominal
+ *     chain reads -ын as possessive + accusative there too, so жасайтынын
+ *     gives жасайт;
+ *   - the reflexive -ын/-ін, on the argument that it ends too many roots
+ *     (дайын, ақын, тұрғын, жақын).  Not stripping it protects those four
+ *     words only inside the verb chain.  The nominal chain reads their -ын
+ *     as possessive -ы plus accusative -н, so the output has дайын -> дай,
+ *     ақын -> ақ, тұрғын -> тұрық, жақын -> жақ, and also қиын -> қиы,
+ *     мүмкін -> мүмк.  Leaving the reflexive alone protects none of them.
+ *     Whether roots in -ын/-ін deserve a guard is an open question;
  *   - the past participle -ған/-ген and converb -ып/-іп on a one-syllable
- *     base (болған, айтқан, болып).  Those are mostly auxiliaries, and
- *     nouns such as дүкен, мекен, науқан, кәсіп, тәртіп would otherwise be
- *     cut;
- *   - the similative -дай/-дей, which is rare and would cut Құрылтай.
+ *     base (болған, айтқан, келген, болып).  The author's judgment, not a
+ *     count, is that one-syllable verbs are mostly auxiliaries whose
+ *     participles may as well stay distinct terms, while nouns such as
+ *     дүкен, мекен, науқан, кәсіп, тәртіп would otherwise be cut.  The
+ *     nominal suffixes still come off (болғаны -> болған, келгенін ->
+ *     келген);
+ *   - the similative -дай/-дей/-тай/-тей.  A frequency-weighted review of
+ *     disagreements with the lexicon stemmer found it rare in news text
+ *     and found Құрылтай -> құрыл, so all four allomorphs were dropped.
  */
 
 routines (
@@ -224,8 +254,10 @@ backwardmode (
             // simple past, alone or with 1st person.  Bare -ды is excluded
             // after a plural suffix, where the string is the accusative and
             // the nominal chain must take it (балаларды).  The -ты/-ті
-            // allomorphs occur only after a voiceless consonant, which
-            // keeps Алматы and президенті whole.
+            // allomorphs occur only after a voiceless consonant, so the
+            // -ты of Алматы and the -ті of президенті are not read as a
+            // past tense.  The nominal chain then reads their final vowel
+            // as a possessive, so the output is алмат and президент.
             '{d}{y}'
                 ( back_ok not among ('{l}{a}{r}' '{d}{a}{r}' '{t}{a}{r}') )
             '{d}{i-}'
@@ -392,6 +424,10 @@ backwardmode (
     // соңғы, ішкі, сыртқы, алғашқы.  Only after a consonant: after a vowel
     // the string is a possessive on a stem in -қ/-к (саба-ғы is сабақ-ы).
     // Tried before the possessive, which would otherwise take the vowel.
+    // The price falls on roots that elide a vowel before the possessive.
+    // The word халқы (халық + -ы) is read as хал + -қы and gives хал,
+    // while халқының goes through the case and possessive slots and the
+    // postlude restores халық.
     define temporal_adjective as (
         [substring] among (
             '{gh}{y}' '{q}{y}' ( back_ok )
@@ -420,8 +456,15 @@ backwardmode (
         two_syllables delete
     )
 
-    // Participles once the nominal suffixes are off (болғандар, келгенін,
-    // болатынын).  -ған needs a two-syllable base, as in the finite table.
+    // Participles once the nominal suffixes are off (болғандар -> болған,
+    // келгенін -> келген).  -ған needs a two-syllable base, as in the
+    // finite table, so these examples keep the participle and only lose
+    // the nominal suffix.  The -атын/-етін/-йтын/-йтін entries are never
+    // reached.  The loop above has already read the -ын/-ін of any such
+    // word as possessive -ы/-і plus accusative -н and stripped it
+    // (болатынын -> болат).  Removing the four entries does not change the
+    // output for any word in voc.txt.  They are kept in case the possessive
+    // reading is ever narrowed.
     define participle as (
         [substring] among (
             '{gh}{a}{n}' '{q}{a}{n}' ( back_ok two_syllables )

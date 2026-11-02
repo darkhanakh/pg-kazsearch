@@ -86,20 +86,33 @@ The loop over nominal suffixes matters more than it looks.  Many Kazakh
 lemmas end in a string that is also a suffix (<i>теңге</i> ends in the
 dative <i>-ге</i>, <i>сауда</i> in the locative <i>-да</i>), so a single
 pass would cut the bare lemma once more than its inflected forms and the
-two would never meet in an index.  With the loop <i>теңге</i> and
-<i>теңгені</i> both give <i>тең</i>: wrong as a dictionary form, but the
-same wrong form for every occurrence, which is what matters for retrieval.
+two would never meet in an index.  With the loop <i>сауда</i>,
+<i>саудада</i> and <i>саудасы</i> all give <i>сау</i>, and <i>теңге</i>,
+<i>теңгеге</i> and <i>теңгемен</i> all give <i>тең</i>: wrong as a
+dictionary form, but the same wrong form for every occurrence, which is
+what matters for retrieval.  The loop does not reach every form.  The
+accusative <i>-ны</i> is refused after <i>-ге</i> (see below), so
+<i>теңгені</i> gives <i>теңген</i>.
 </p>
 
 <h3>Why some suffixes are not removed</h3>
 
 <p>
-The algorithm was tuned on retrieval experiments over Kazakh news text
-(2,999 articles, 132 judged queries) and Kazakh Wikipedia passages (8,370
-passages, 300 queries), comparing BM25 recall with and without stemming and
-against a dictionary-backed morphological analyser.  Several suffixes that a
-morphological analyser would strip are left alone because stripping them
-was measured to lower recall or to cut too many roots:
+The algorithm was developed against BM25 retrieval over Kazakh news text
+(2,999 articles, 132 judged queries), with Kazakh Wikipedia passages
+(8,370 passages, 300 queries) as a second check, comparing recall with and
+without stemming and against a dictionary-backed morphological analyser.
+Several suffixes that a morphological analyser would strip are left alone.
+The evidence behind each is of a different kind, and the list below says
+which.  Only three rules were tested as variants on the news set: stripping
+the verbal noun <i>-у</i>, stripping voice, and reading <i>-ны</i> after a
+vowel as the accusative (kept because the variants tied on recall and the
+current reading agrees slightly better with the analyser).  No single-rule
+variant moved recall@10 by more than 0.008, while the paired-bootstrap
+interval on 132 queries is about ±0.04 wide, so those tests fix a
+direction, not a size.  The remaining rules were decided from probe words
+and from the author's reading of news text, with no frequency count behind
+them.
 </p>
 
 <ul>
@@ -107,28 +120,58 @@ was measured to lower recall or to cut too many roots:
      "meeting", <i>сайлау</i> "election").  These are lexicalised nouns and
      are what a searcher types; conflating them with the finite verb merges
      a rare, specific term into a very frequent one and the query loses its
-     weight.  The nominal suffixes on a verbal noun are still removed.
+     weight.  Inspection of the queries that lost under an earlier version
+     showed this (<i>шығу</i> stemmed to <i>шық</i> joined a class large
+     enough to crowd the relevant documents out of the top ten), and the
+     variant that stripped <i>-у</i>
+     lowered recall@10, by less than the noise of the set.  The nominal
+     suffixes on a verbal noun are still removed.
 <li> Voice suffixes (passive <i>-ыл/-іл</i>, <i>-л/-н</i>; causative
-     <i>-тыр/-дыр</i>, <i>-қыз/-гіз</i>), for the same reason: the passive
-     reports an event, the active an agent, and keeping them apart helps.
+     <i>-тыр/-дыр</i>, <i>-қыз/-гіз</i>), on the same term-weight argument
+     and with the same kind of within-noise result.  A second reason is
+     semantic.  The passive reports an event and the active an agent, so
+     <i>жарияланды</i> "was published" is a better index term as
+     <i>жариялан</i> than as <i>жарияла</i>.  The variant test cannot tell
+     the two reasons apart.
 <li> First and second person endings (<i>-мын, -сың, -сыз, -м, -ң</i>).
-     They are rare in written text and the same strings end many content
-     nouns: <i>білім</i> "education", <i>бағдарлама</i> "programme",
-     <i>тәуелсіз</i> "independent".  The privative <i>-сыз/-сіз</i> is
-     left for the same reason.
-<li> The bare habitual participle <i>-атын/-етін</i>, which cannot be told
-     from the very common nouns in <i>-ат/-ет</i> with possessive and
-     accusative (<i>мемлекет-і-н</i> "its state", <i>қызмет-і-н</i>).  It
-     is removed once a nominal suffix has been taken off it
-     (<i>болатынын</i> gives <i>бол</i>).
-<li> The reflexive <i>-ын/-ін</i>, which ends too many roots
-     (<i>дайын</i>, <i>ақын</i>, <i>тұрғын</i>, <i>жақын</i>).
+     The author judged them rare in written text, and the same strings end
+     many content nouns: <i>білім</i> "education", <i>бағдарлама</i>
+     "programme", <i>тәуелсіз</i> "independent".  The privative
+     <i>-сыз/-сіз</i> is left for the same reason.  No count was made, and
+     the cost is that <i>оқисыз</i> "you read" stays whole.
+<li> The habitual participle <i>-атын/-етін</i> after a consonant, which
+     cannot be told from the very common nouns in <i>-ат/-ет</i> with
+     possessive and accusative (<i>мемлекет-і-н</i> "its state",
+     <i>қызмет-і-н</i>).  The author judged the nouns the larger class, so
+     the nominal chain reads the participle that way, and <i>болатын</i>,
+     <i>болатынын</i> and <i>болатындар</i> all give <i>болат</i>, while
+     <i>айтатын</i> gives <i>айтат</i>.  After a vowel the <i>-й-</i> makes
+     the participle unambiguous and the finite tense table strips bare
+     <i>-йтын/-йтін</i> (<i>жасайтын</i> gives <i>жаса</i>).  With a nominal
+     suffix on top the nominal chain again reads <i>-ын</i> as possessive
+     plus accusative, so <i>жасайтынын</i> gives <i>жасайт</i>.  The
+     participle entries for <i>-атын/-етін</i> in the code are therefore
+     never reached, and removing them changes no word in the sample
+     vocabulary.
+<li> The reflexive <i>-ын/-ін</i>, on the argument that it ends too many
+     roots (<i>дайын</i>, <i>ақын</i>, <i>тұрғын</i>, <i>жақын</i>).  That
+     argument protects those words only from the verb chain.  The nominal
+     chain reads their <i>-ын</i> as possessive plus accusative, so the
+     output has <i>дайын</i> as <i>дай</i>, <i>ақын</i> as <i>ақ</i>,
+     <i>тұрғын</i> as <i>тұрық</i>, <i>жақын</i> as <i>жақ</i>, and also
+     <i>мүмкін</i> "possible" as <i>мүмк</i>.
 <li> The past participle <i>-ған/-ген</i> and converb <i>-ып/-іп</i> on a
-     one-syllable base (<i>болған</i>, <i>айтқан</i>, <i>болып</i>).  Those
-     verbs are mostly auxiliaries, and nouns such as <i>дүкен</i> "shop",
+     one-syllable base (<i>болған</i>, <i>айтқан</i>, <i>келген</i>,
+     <i>болып</i>).  The author's judgment, not a count, is that
+     one-syllable verbs are mostly auxiliaries whose participles may as well
+     stay distinct terms, while nouns such as <i>дүкен</i> "shop",
      <i>науқан</i> "campaign", <i>кәсіп</i> "trade" would otherwise be cut.
-<li> The similative <i>-дай/-дей</i>, rare in practice and fatal to
-     <i>Құрылтай</i>.
+     The nominal suffixes still come off, so <i>болғаны</i> gives
+     <i>болған</i> and <i>келгенін</i> gives <i>келген</i>.
+<li> The similative <i>-дай/-дей/-тай/-тей</i>.  A review of disagreements
+     with the analyser, weighted by corpus frequency, found it rare in news
+     text and found <i>Құрылтай</i> "assembly" cut to <i>құрыл</i>, so all
+     four allomorphs were dropped.
 </ul>
 
 <h3>Known ambiguities</h3>
@@ -154,6 +197,15 @@ the reading that is more frequent in running text:
 <li> Accusative <i>-ны</i> is refused after <i>-ға/-ге/-қа/-ке</i> so that
      participles with the possessive are not cut (<i>болғаны</i> stays
      <i>болған</i>); the price is <i>теңгені</i> giving <i>теңген</i>.
+<li> <i>-ғы/-гі/-қы/-кі</i> after a consonant is read as the adjective of
+     time or place (<i>жылғы</i>, <i>сыртқы</i>), so a root that elides its
+     vowel before the possessive is cut.  <i>халқы</i> "its people" gives
+     <i>хал</i>, while <i>халқының</i> goes through the case and possessive
+     slots and gives <i>халық</i>.
+<li> A final <i>-ы/-і</i> after a consonant is read as the possessive, so
+     <i>Алматы</i> gives <i>алмат</i> and <i>президенті</i> gives
+     <i>президент</i>.  Only the verb chain's <i>-ты/-ті</i> is restricted
+     to a voiceless consonant before it.
 </ul>
 
 <p>
@@ -165,15 +217,70 @@ and the harmony check allows for this.
 <h3>Measured effect</h3>
 
 <p>
-On the news collection, BM25 recall@10 is 0.524 without stemming, 0.626
-with this algorithm and 0.661 with the dictionary-backed analyser; the gain
-over no stemming has a paired-bootstrap 95% interval of [+0.048, +0.156].
-On the Wikipedia collection the figures are 0.830, 0.920 and 0.903.  The
-remaining gap to the analyser on the news collection is concentrated in
-queries with many judged documents, where the analyser's errors happen to
-produce rare terms that match the judged documents' surface forms; that
-gap did not reproduce on the Wikipedia collection.
+On the news collection (132 queries), BM25 recall@10 is 0.524 without
+stemming, 0.626 with this algorithm, 0.637 with the analyser's rule engine
+run without its dictionary, and 0.663 with the dictionary-backed analyser.
+The gain over no stemming has a paired-bootstrap 95% interval of [+0.048,
++0.156].  The difference to the analyser is -0.037 with interval [-0.077,
+-0.002], and to the engine without dictionary -0.011 with interval
+[-0.048, +0.024].  On the Wikipedia collection (300 queries) recall@10 is
+0.830, 0.920, 0.910 and 0.910 in the same order.
 </p>
+
+<p>
+On KazQAD, an independent benchmark of 1,929 test questions judged against
+825,309 Kazakh Wikipedia passages (BM25 k1=0.9, b=0.4), nDCG@10 is 0.219
+without stemming and 0.290 with this algorithm, a gain of +0.071 with 95%
+interval [+0.059, +0.083].  The dictionary-backed analyser scores 0.288,
+a difference from this algorithm of -0.002 with interval [-0.009, +0.005],
+and the engine without dictionary scores 0.273, a difference of -0.017
+with interval [-0.026, -0.009].
+</p>
+
+<p>
+So the dictionary-backed analyser is ahead by about 0.04 recall@10 on the
+news set, the one collection where the interval excludes zero.  On the
+Wikipedia collection this algorithm is 0.010 ahead, and on KazQAD the
+difference is inside its interval.  While developing the algorithm, the
+author traced the news-set losses against the engine without dictionary to
+queries with many judged documents, where that engine's mis-stems produced
+rare terms that matched the judged documents' surface forms
+(<i>тоқаевтың</i> stemmed to <i>тоқаевты</i>, document frequency 118,
+against <i>тоқаев</i>, 648).  That diagnosis was not repeated against the
+dictionary-backed analyser, and the news-set gap to it has no established
+cause.
+</p>
+
+<h3>Questions for reviewers</h3>
+
+<p>
+The following decisions were taken on the author's judgment and would
+benefit from a native speaker's or a maintainer's view:
+</p>
+
+<ul>
+<li> Consonant-stem habitual participles stem to the <i>-ат/-ет</i> noun
+     class (<i>айтатын</i> gives <i>айтат</i>, <i>болатын</i> gives
+     <i>болат</i>), while vowel-stem <i>жасайтын</i> gives <i>жаса</i>.  Is
+     the judgment that <i>-ат/-ет</i> noun + possessive + accusative
+     outnumbers participle + <i>-ын</i> plausible for news and Wikipedia
+     text?  The participle entries for <i>-атын/-етін</i> are unreachable
+     and could be removed.
+<li> One-syllable <i>-ған/-ып</i> forms (<i>болған</i>, <i>болып</i>,
+     <i>айтқан</i>, <i>келген</i>) stay whole and are indexed apart from
+     <i>бол</i>, <i>айт</i>, <i>кел</i>.  Is that acceptable, and are
+     <i>дүкен</i>, <i>мекен</i>, <i>науқан</i>, <i>кәсіп</i>, <i>тәртіп</i>
+     the nouns worth protecting?
+<li> Verbal nouns in <i>-у</i> are treated as lexicalised across the board.
+     Is that defensible, or only for a subset such as <i>сайлау</i>,
+     <i>кездесу</i>, <i>дамыту</i>?
+<li> First and second person endings and <i>-сыз/-сіз</i> are assumed rare
+     in written Kazakh without a count.  How frequent are they in the text
+     this stemmer will index?
+<li> Roots in <i>-ын/-ін</i> are cut by the possessive reading
+     (<i>тұрғын</i> gives <i>тұрық</i>, <i>мүмкін</i> gives <i>мүмк</i>).
+     Is that acceptable collateral, or does it warrant a guard?
+</ul>
 
 <h2>The full algorithm in Snowball</h2>
 
