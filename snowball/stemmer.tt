@@ -3,10 +3,7 @@
 <h2>Links to resources</h2>
 
 <ul>
-<li> <a href="stemmer.sbl">The stemmer in Snowball</a>
-<li> <a href="voc.txt">Sample Kazakh vocabulary</a>
-<li> <a href="output.txt">Its stemmed equivalent</a>
-<li> <a href="diffs.txt">Vocabulary and stemmed equivalent in two columns</a>
+[% algorithm_lis('kazakh', 'Kazakh', 'https://en.wikipedia.org/wiki/Kazakh_language') %]
 </ul>
 
 [% algorithm_vocab([
