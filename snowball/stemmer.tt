@@ -106,13 +106,11 @@ Several suffixes that a morphological analyser would strip are left alone.
 The evidence behind each is of a different kind, and the list below says
 which.  Only three rules were tested as variants on the news set: stripping
 the verbal noun <i>-у</i>, stripping voice, and reading <i>-ны</i> after a
-vowel as the accusative (kept because the variants tied on recall and the
-current reading agrees slightly better with the analyser).  No single-rule
-variant moved recall@10 by more than 0.008, while the paired-bootstrap
-interval on 132 queries is about ±0.04 wide, so those tests fix a
-direction, not a size.  The remaining rules were decided from probe words
-and from the author's reading of news text, with no frequency count behind
-them.
+vowel as the accusative.  Each variant landed within the noise of 132
+queries, and those runs are not part of the published results, so they
+establish neither a direction nor a size.  The remaining rules were decided
+from probe words and from the author's reading of news text, with no
+frequency count behind them.
 </p>
 
 <ul>
@@ -120,19 +118,13 @@ them.
      "meeting", <i>сайлау</i> "election").  These are lexicalised nouns and
      are what a searcher types; conflating them with the finite verb merges
      a rare, specific term into a very frequent one and the query loses its
-     weight.  Inspection of the queries that lost under an earlier version
-     showed this (<i>шығу</i> stemmed to <i>шық</i> joined a class large
-     enough to crowd the relevant documents out of the top ten), and the
-     variant that stripped <i>-у</i>
-     lowered recall@10, by less than the noise of the set.  The nominal
-     suffixes on a verbal noun are still removed.
+     weight.  The nominal suffixes on a verbal noun are still removed, so
+     <i>дамытуға</i> and <i>дамытудың</i> give <i>дамыту</i>.
 <li> Voice suffixes (passive <i>-ыл/-іл</i>, <i>-л/-н</i>; causative
-     <i>-тыр/-дыр</i>, <i>-қыз/-гіз</i>), on the same term-weight argument
-     and with the same kind of within-noise result.  A second reason is
-     semantic.  The passive reports an event and the active an agent, so
-     <i>жарияланды</i> "was published" is a better index term as
-     <i>жариялан</i> than as <i>жарияла</i>.  The variant test cannot tell
-     the two reasons apart.
+     <i>-тыр/-дыр</i>, <i>-қыз/-гіз</i>), on the same term-weight argument.
+     A second reason is semantic.  The passive reports an event and the
+     active an agent, so <i>жарияланды</i> "was published" is a better index
+     term as <i>жариялан</i> than as <i>жарияла</i>.
 <li> First and second person endings (<i>-мын, -сың, -сыз, -м, -ң</i>).
      The author judged them rare in written text, and the same strings end
      many content nouns: <i>білім</i> "education", <i>бағдарлама</i>
@@ -168,10 +160,9 @@ them.
      <i>науқан</i> "campaign", <i>кәсіп</i> "trade" would otherwise be cut.
      The nominal suffixes still come off, so <i>болғаны</i> gives
      <i>болған</i> and <i>келгенін</i> gives <i>келген</i>.
-<li> The similative <i>-дай/-дей/-тай/-тей</i>.  A review of disagreements
-     with the analyser, weighted by corpus frequency, found it rare in news
-     text and found <i>Құрылтай</i> "assembly" cut to <i>құрыл</i>, so all
-     four allomorphs were dropped.
+<li> The similative <i>-дай/-дей/-тай/-тей</i>.  The author judged it rare
+     in news text, and the same strings end roots such as <i>құрылтай</i>
+     "assembly", which therefore stays whole.
 </ul>
 
 <h3>Known ambiguities</h3>
@@ -239,16 +230,10 @@ with interval [-0.026, -0.009].
 
 <p>
 So the dictionary-backed analyser is ahead by about 0.04 recall@10 on the
-news set, the one collection where the interval excludes zero.  On the
-Wikipedia collection this algorithm is 0.010 ahead, and on KazQAD the
-difference is inside its interval.  While developing the algorithm, the
-author traced the news-set losses against the engine without dictionary to
-queries with many judged documents, where that engine's mis-stems produced
-rare terms that matched the judged documents' surface forms
-(<i>тоқаевтың</i> stemmed to <i>тоқаевты</i>, document frequency 118,
-against <i>тоқаев</i>, 648).  That diagnosis was not repeated against the
-dictionary-backed analyser, and the news-set gap to it has no established
-cause.
+news set, with an interval that excludes zero.  On the Wikipedia
+collection this algorithm is 0.010 ahead of it, with no interval computed
+for that pair, and on KazQAD the difference is inside its interval.  The
+news-set gap has no established cause.
 </p>
 
 <h3>Questions for reviewers</h3>

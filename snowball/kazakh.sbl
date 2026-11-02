@@ -36,22 +36,21 @@
  *
  * What is deliberately not stripped, and why.  Only the first two items
  * were tested as retrieval variants (BM25 recall@10 over 132 judged
- * queries on 2,999 news articles).  On that set a single-rule change moves
- * recall@10 by 0.008 or less, while the paired-bootstrap interval is about
- * ±0.04 wide, so those tests show a direction and not a size.  The other
- * items rest on probe words and on the author's reading of news text, not
- * on counts or measurements.
+ * queries on 2,999 news articles).  Each variant landed within the noise
+ * of that set and the runs are not part of the published results, so they
+ * show neither a direction nor a size.  The other items rest on probe
+ * words and on the author's reading of news text, not on counts or
+ * measurements.
  *   - the verbal noun -у (дамыту, кездесу, сайлау).  Verbal nouns are
  *     lexicalised as nouns and are what a searcher types.  The finite verb
  *     is far more frequent, so merging the two (дамыту with дамытады,
  *     кездесу with кездесті) merges the rare term into a frequent one and
- *     the query loses its weight.  A variant that stripped -у lowered
- *     recall@10, by less than the noise of the test set.  The nominal
- *     suffixes on a verbal noun are still removed, so дамытуға, дамытуы,
+ *     the query loses its weight.  The nominal suffixes on a verbal noun
+ *     are still removed, so дамытуға, дамытуы,
  *     дамытудың all reach дамыту;
  *   - the voice suffixes (passive -ыл/-іл/-л/-н, causative -тыр/-дыр,
- *     -қыз/-гіз), on the same term-weight argument and with the same kind
- *     of within-noise result.  The forms өшірілді and өшірілген conflate
+ *     -қыз/-гіз), on the same term-weight argument.  The forms өшірілді
+ *     and өшірілген conflate
  *     with each other (өшіріл) but not with өшірді (өшір), and өшірілуі
  *     keeps its verbal noun and gives өшірілу;
  *   - the first and second person (-мын, -сың, -сыз, -м, -ң, ...).  The
@@ -82,9 +81,9 @@
  *     дүкен, мекен, науқан, кәсіп, тәртіп would otherwise be cut.  The
  *     nominal suffixes still come off (болғаны -> болған, келгенін ->
  *     келген);
- *   - the similative -дай/-дей/-тай/-тей.  A frequency-weighted review of
- *     disagreements with the lexicon stemmer found it rare in news text
- *     and found Құрылтай -> құрыл, so all four allomorphs were dropped.
+ *   - the similative -дай/-дей/-тай/-тей.  The author judged it rare in
+ *     news text, and the same strings end roots such as құрылтай, which
+ *     therefore stays whole.
  */
 
 routines (
