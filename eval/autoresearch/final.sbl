@@ -1,0 +1,602 @@
+/* Stemmer for Kazakh (Cyrillic orthography)
+ *
+ * Kazakh is an agglutinative Turkic language.  A noun carries, right to left,
+ * case, possessive and plural suffixes, each in one of several allomorphs
+ * chosen by vowel harmony (back vs front) and by the final sound of the
+ * base.  A finite verb carries tense/aspect, negation and voice suffixes in
+ * the same way.  Participles and verbal nouns take the nominal suffixes on
+ * top of the verbal ones.
+ *
+ * The algorithm strips one suffix at a time, right to left, choosing the
+ * longest suffix in each slot and checking that
+ *   - the suffix agrees in vowel harmony with the last non-glide vowel of
+ *     the base (the glides у, и, ю are transparent; a base with no other
+ *     vowel accepts either class; a base ending in к or г takes front
+ *     suffixes regardless, which covers loanwords such as банк),
+ *   - the allomorph fits the final sound of the base (-ты/-тар after a
+ *     voiceless consonant, -ды/-дар after a voiced one, -ны/-сы after a
+ *     vowel), which is what tells suffix from root in most of the
+ *     ambiguous cases (президент-і, not *президен-ті; ай-дар is a word),
+ *   - the base keeps at least one vowel and either three letters or a
+ *     vowel + consonant pair (ел, іс),
+ *   - a few slot-specific conditions hold, given at each slot below.
+ *
+ * Nominal suffixes are stripped in a loop until none matches, so a lemma
+ * and its inflected forms reach the same stem even when the lemma itself
+ * ends in a suffix-like string (сауда, саудада and саудасы all give сау;
+ * теңге, теңгеге and теңгемен all give тең).  The loop trades dictionary
+ * forms for consistency, and the trade is not complete.  The accusative
+ * -ны is refused after -ге to protect participles such as болғаны (see
+ * the case slot), so теңгені gives теңген.
+ *
+ * Finally, when a vowel-initial suffix was removed, the alternation it
+ * caused on the base-final consonant is undone (б -> п, ғ -> қ, г -> к) and
+ * an elided narrow vowel is restored before a final н, з or қ (орн -> орын,
+ * халқ -> халық, ауз -> ауыз).
+ *
+ * What is deliberately not stripped, and why.  The verbal noun and the
+ * voice suffixes were first tested as retrieval variants on a small news
+ * set (BM25 recall@10 over 132 judged queries on 2,999 articles), where
+ * they landed within the noise.  The verbal noun after a consonant, the
+ * habitual participle on a longer base and the voiceless participle on a
+ * one-syllable base were later taken together after a test on KazQAD
+ * (3,487 questions over Kazakh Wikipedia), where they raised nDCG@10.
+ * The other items rest on probe words and on the author's reading of
+ * news text, not on counts or measurements.
+ *   - the verbal noun -у after a vowel (сайлау, жасау, зерттеу), and on
+ *     a one-syllable base (оқу, болу).  After a vowel у may be the glide
+ *     of a root, and many such words are lexicalised nouns or names (атау
+ *     'name', жағалау 'coast', Мәскеу, and the place names in -тау).
+ *     After a consonant on a longer base the verbal noun is taken (see
+ *     verbal_noun): басқару, дамыту, шығарылу give басқар, дамыт,
+ *     шығарыл like the finite verbs;
+ *   - the voice suffixes (passive -ыл/-іл/-л/-н, causative -тыр/-дыр,
+ *     -қыз/-гіз).  The forms өшірілді, өшірілген and өшірілуі conflate
+ *     with each other (өшіріл) but not with өшірді (өшір);
+ *   - the first and second person (-мын, -сың, -сыз, -м, -ң, ...).  The
+ *     author judged them rare in written text, without a count, while the
+ *     same strings end many content nouns (білім, бағдарлама, тәуелсіз).
+ *     The privative -сыз/-сіз is left for the same reason;
+ *   - the habitual participle -атын/-етін after a consonant on a
+ *     one-syllable base.  There it cannot be told from the nouns in -ат/-ет
+ *     with possessive and accusative (сурет-і-н, қанат-ы-н), so болатын
+ *     gives болат.  On a longer base the participle is far the more common
+ *     reading (табылатын, аталатын, көрсететін) and is taken; see
+ *     habitual_base;
+ *   - the reflexive -ын/-ін, on the argument that it ends too many roots
+ *     (дайын, ақын, тұрғын, жақын).  Not stripping it protects those four
+ *     words only inside the verb chain.  The nominal chain reads their -ын
+ *     as possessive -ы plus accusative -н, so the output has дайын -> дай,
+ *     тұрғын -> тұрық, қиын -> қиы, мүмкін -> мүмк (ақын and жақын keep
+ *     the vowel after қ and give ақы, жақы, see possessive).  Leaving the
+ *     reflexive alone protects none of them.
+ *     Whether roots in -ын/-ін deserve a guard is an open question;
+ *   - the voiced past participle -ған/-ген and the converb -ып/-іп on a
+ *     one-syllable base (болған, келген, болып).  The author's judgment,
+ *     not a count, is that one-syllable verbs are mostly auxiliaries whose
+ *     participles may as well stay distinct terms, while nouns such as
+ *     қорған, дүкен, мекен, кәсіп, тәртіп would otherwise be cut.  The
+ *     voiceless -қан/-кен is taken there (see qan_base);
+ *   - the similative -дай/-дей/-тай/-тей.  The author judged it rare in
+ *     news text, and the same strings end roots such as құрылтай, which
+ *     therefore stays whole.
+ */
+
+routines (
+    mark_regions
+    base_ok
+    two_syllables
+    qan_base
+    vowel_letter back_ok front_ok
+    verb_chain
+    tense
+    negation
+    verbalizer
+    nominal_chain
+    case
+    possessive_n
+    habitual habitual_base
+    possessive
+    plural
+    locative_adjective
+    temporal_adjective
+    derivation
+    participle
+    verbal_noun
+    postlude
+)
+
+externals ( stem )
+
+integers ( p1 )
+
+booleans ( vowel_suffix )
+
+groupings ( vowel strong strong_back strong_front voiceless sonorant )
+
+stringescapes {}
+
+/* Kazakh Cyrillic letters.  The codes follow the Library of Congress
+ * transliteration used by the Russian stemmer, extended for the nine
+ * letters specific to Kazakh (ә ғ қ ң ө ұ ү һ і). */
+
+stringdef a    '{U+0430}'
+stringdef a"   '{U+04D9}'  // ә
+stringdef b    '{U+0431}'
+stringdef v    '{U+0432}'
+stringdef g    '{U+0433}'
+stringdef gh   '{U+0493}'  // ғ
+stringdef d    '{U+0434}'
+stringdef e    '{U+0435}'
+stringdef e"   '{U+0451}'  // ё
+stringdef zh   '{U+0436}'
+stringdef z    '{U+0437}'
+stringdef i    '{U+0438}'  // и
+stringdef i`   '{U+0439}'  // й
+stringdef k    '{U+043A}'
+stringdef q    '{U+049B}'  // қ
+stringdef l    '{U+043B}'
+stringdef m    '{U+043C}'
+stringdef n    '{U+043D}'
+stringdef ng   '{U+04A3}'  // ң
+stringdef o    '{U+043E}'
+stringdef o"   '{U+04E9}'  // ө
+stringdef p    '{U+043F}'
+stringdef r    '{U+0440}'
+stringdef s    '{U+0441}'
+stringdef t    '{U+0442}'
+stringdef u    '{U+0443}'  // у
+stringdef u-   '{U+04B1}'  // ұ
+stringdef u"   '{U+04AF}'  // ү
+stringdef f    '{U+0444}'
+stringdef kh   '{U+0445}'
+stringdef h    '{U+04BB}'  // һ
+stringdef ts   '{U+0446}'
+stringdef ch   '{U+0447}'
+stringdef sh   '{U+0448}'
+stringdef shch '{U+0449}'
+stringdef "    '{U+044A}'  // ъ
+stringdef y    '{U+044B}'  // ы
+stringdef i-   '{U+0456}'  // і
+stringdef '    '{U+044C}'  // ь
+stringdef e`   '{U+044D}'  // э
+stringdef iu   '{U+044E}'  // ю
+stringdef ia   '{U+044F}'  // я
+
+define strong_back  '{a}{o}{u-}{y}{ia}'
+define strong_front '{a"}{e}{o"}{u"}{i-}{e`}{e"}'
+define strong       strong_back + strong_front
+define vowel        strong + '{u}{i}{iu}'
+// Consonants after which the -т allomorphs appear.  The voiced stops б, в,
+// г, д occur only in loanwords and pattern with the voiceless ones there
+// (клубтар, педагогтер, Тоқаевтың).
+define voiceless    '{p}{t}{k}{q}{s}{sh}{f}{kh}{ts}{ch}{shch}{h}{b}{v}{g}{d}'
+// Consonants that may precede another consonant at the end of a root
+// (айт, тарт, құрт).
+define sonorant     '{l}{r}{n}{ng}{i`}'
+
+define mark_regions as (
+    $p1 = limit
+    do ( gopast vowel setmark p1 )
+)
+
+backwardmode (
+
+    // The base before the cursor keeps at least one vowel and either three
+    // letters or a vowel + consonant pair: ау-дан, ба-ға, кү-ні are not
+    // stem + suffix, ел-ге and іс-і are.
+    define base_ok as (
+        $p1 <= cursor
+        ( test hop 3 ) or ( test non-vowel test hop 2 )
+    )
+
+    // Two non-glide vowels before the cursor (ау, оқу count as one).
+    define two_syllables as test ( loop 2 gopast strong )
+
+    // Base of the past participle -қан/-кен.  This allomorph follows a
+    // voiceless consonant, and on a one-syllable base ending in one it can
+    // only be the participle (шық-қан, айт-қан, кет-кен, тап-қан), so
+    // шыққан joins шықты under шық.  The voiced -ған/-ген still needs two
+    // syllables: after a voiced consonant it is also the deverbal noun -н
+    // of a verb in -ға/-ге (қорға-н, жалға-н), and after a vowel the
+    // nouns дүкен, мекен, науқан would be cut.
+    define qan_base as ( two_syllables or test voiceless )
+
+    // Harmony class of the base is that of its last vowel.  A base with no
+    // vowel other than у, и, ю (туризм) takes either class.  After a
+    // consonant у, и, ю spell a vowel whose class the spelling does not
+    // show (оқу-ға but келу-ге, ми-ға but ки-ді, and in loanwords
+    // Париж-де, Мадрид-те, вегетатив-ті, Бейрут-та), so a base whose last
+    // vowel is one of them also takes either class.  After a vowel they
+    // are glides and the vowel before them decides (тау-да, үй-де).  A
+    // base ending in к or г is front however it is spelt (банк -> банкте,
+    // педагог -> педагогке).  Surnames in -ев after a back vowel take
+    // back suffixes in practice (Тоқаевтың, Назарбаевқа), so -ев is
+    // skipped when the vowel before it is back.
+    define vowel_letter as (
+        strong or ( ( '{u}' or '{i}' or '{iu}' ) test non-vowel )
+    )
+    define back_ok as (
+        not ( goto vowel_letter strong_front )
+        or ( test ( '{v}' '{e}' goto vowel_letter strong_back ) )
+    )
+    define front_ok as (
+        ( test ('{k}' or '{g}') ) or not ( goto vowel_letter strong_back )
+    )
+
+        define tense as (
+      (
+        [substring] among (
+            // negation fused with present or past
+            '{m}{a}{i`}{d}{y}' '{b}{a}{i`}{d}{y}' '{p}{a}{i`}{d}{y}'
+            '{m}{a}{d}{y}' '{b}{a}{d}{y}' '{p}{a}{d}{y}'
+                ( back_ok )
+            '{m}{e}{i`}{d}{i-}' '{b}{e}{i`}{d}{i-}' '{p}{e}{i`}{d}{i-}'
+            '{m}{e}{d}{i-}' '{b}{e}{d}{i-}' '{p}{e}{d}{i-}'
+                ( front_ok )
+            // present.  On a one-syllable base -ады/-еді is undecidable
+            // against vowel stem + past -ды (бар-ады against жаса-ды), so
+            // it must leave two syllables; a failed reading falls through
+            // to -ды below.  The reading is also rejected when it would
+            // leave a stem in consonant + л/н (the passive -л-/-н- follows
+            // a vowel: жоспарла-ды, not *жоспарл-ады), in consonant + д
+            // (the verbalizer -да: тасымалда-ды, таңда-ды, мәлімде-ді, not
+            // *тасымалд-ады) or in obstruent + т (сақта-ды, not *сақт-ады),
+            // while айт-ады and тарт-ады keep their sonorant + т ending.
+            '{a}{d}{y}'
+                ( back_ok two_syllables
+                  not ( ('{l}' or '{n}' or '{d}') non-vowel )
+                  not ( '{t}' test non-vowel non-sonorant ) )
+            '{e}{d}{i-}'
+                ( front_ok two_syllables
+                  not ( ('{l}' or '{n}' or '{d}') non-vowel )
+                  not ( '{t}' test non-vowel non-sonorant ) )
+            '{i`}{d}{y}' '{i`}{t}{y}{n}'
+                ( back_ok )
+            '{i`}{d}{i-}' '{i`}{t}{i-}{n}'
+                ( front_ok )
+            // evidential past.  The bare -пты of vowel stems (жаса-п-ты) is
+            // not listed: it would take the accusative of the many nouns in
+            // -п (кітап-ты, себеп-ті, жауап-ты).
+            '{y}{p}{t}{y}'
+                ( back_ok set vowel_suffix )
+            '{i-}{p}{t}{i-}'
+                ( front_ok set vowel_suffix )
+            // past participle, also finite, on a two-syllable base
+            '{gh}{a}{n}' ( back_ok two_syllables )
+            '{q}{a}{n}' ( back_ok qan_base )
+            '{g}{e}{n}' ( front_ok two_syllables )
+            '{k}{e}{n}' ( front_ok qan_base )
+            // simple past, alone or with 1st person.  Bare -ды is excluded
+            // after a plural suffix, where the string is the accusative and
+            // the nominal chain must take it (балаларды).  The -ты/-ті
+            // allomorphs occur only after a voiceless consonant, so the
+            // -ты of Алматы and the -ті of президенті are not read as a
+            // past tense.  The nominal chain then reads their final vowel
+            // as a possessive, so the output is алмат and президент.
+            '{d}{y}'
+                ( back_ok not among ('{l}{a}{r}' '{d}{a}{r}' '{t}{a}{r}') )
+            '{d}{i-}'
+                ( front_ok not among ('{l}{e}{r}' '{d}{e}{r}' '{t}{e}{r}') )
+            '{d}{y}{m}' '{d}{y}{q}'
+                ( back_ok )
+            '{d}{i-}{m}' '{d}{i-}{k}'
+                ( front_ok )
+            '{t}{y}' '{t}{y}{m}' '{t}{y}{q}'
+                ( back_ok test voiceless )
+            '{t}{i-}' '{t}{i-}{m}' '{t}{i-}{k}'
+                ( front_ok test voiceless )
+            // converb and conditional: only on a two-syllable base, so that
+            // nouns such as кәсіп, тәртіп, кеңсе are left whole
+            '{y}{p}'
+                ( back_ok two_syllables set vowel_suffix )
+            '{i-}{p}'
+                ( front_ok two_syllables set vowel_suffix )
+            '{s}{a}' '{s}{a}{q}' '{s}{a}{m}' '{m}{a}{i`}'
+                ( back_ok two_syllables )
+            '{s}{e}' '{s}{e}{k}' '{s}{e}{m}' '{m}{e}{i`}'
+                ( front_ok two_syllables )
+        )
+        base_ok delete
+      )
+      or
+      // past -ды/-ді on a vowel-final stem, reached when the -ады/-еді
+      // reading above was rejected (жаса-ды, жоспарла-ды)
+      ( [ '{d}{y}' or '{d}{i-}' ] test vowel base_ok delete )
+    )
+
+    define negation as (
+        [substring] among (
+            '{m}{a}' '{b}{a}' '{p}{a}' ( back_ok )
+            '{m}{e}' '{b}{e}' '{p}{e}' ( front_ok )
+        )
+        test hop 3 delete
+    )
+
+    // Denominal verb former -ла/-ле (-да/-де, -та/-те): жоспар-ла, баға-ла,
+    // дайын-да.  Only on a two-syllable base; the many one-syllable verbs
+    // in -ла (байла, ойла, сайла) are roots.
+    define verbalizer as (
+        [substring] among (
+            '{l}{a}' '{d}{a}' '{t}{a}' ( back_ok )
+            '{l}{e}' '{d}{e}' '{t}{e}' ( front_ok )
+        )
+        two_syllables delete
+    )
+
+    define verb_chain as (
+        tense
+        try negation
+        try verbalizer
+    )
+
+    // The -н that the 3rd person possessive takes before the accusative
+    // (бала-сы-н, кітаб-ы-н) and before -да/-нан (аудан-ы-н-да).  Only the
+    // -н goes here; the possessive slot takes the vowel.
+    define possessive_n as ( ['{n}'] test ('{y}' or '{i-}') delete )
+
+    // A word-final -ын/-ін that is the habitual participle and not
+    // possessive + accusative: -йтын after a vowel, and -атын/-етін on a
+    // base that qualifies (habitual_base).  Before a case suffix the -н is
+    // always the possessive's (чемпионат-ы-н-да).
+    define habitual as test (
+        '{n}'
+        ( '{y}' '{t}' ( '{i`}' or ( '{a}' habitual_base ) ) )
+        or ( '{i-}' '{t}' ( '{i`}' or ( '{e}' habitual_base ) ) )
+    )
+
+    // Base of the habitual participle -атын/-етін after a consonant.  The
+    // same string ends the many nouns in -ат/-ет with possessive and
+    // accusative (мемлекет-і-н, саясат-ы-н), but the participle is far
+    // more common in text (табыл-атын, атал-атын, көрсет-етін,
+    // қолданыл-атын).  It is read as the participle on a base of two
+    // syllables, as for the present -ады, so табылатын, табылады and
+    // табылған all give табыл, while on one syllable the noun reading
+    // stays (сурет-і-н, қанат-ы-н, and also бол-атын -> болат).  The same
+    // consonant conditions as for -ады apply.  A base with о or ө after its
+    // first syllable is a loanword, since native words have these vowels
+    // only in the first syllable, and so not a verb: чемпионат-ы-н gives
+    // чемпионат.
+    define habitual_base as (
+        test non-vowel two_syllables
+        not ( ('{l}' or '{n}' or '{d}') non-vowel )
+        not ( '{t}' test non-vowel non-sonorant )
+        not test ( gopast ( '{o}' or '{o"}' ) gopast strong )
+    )
+
+    // Case, followed at once by the possessive under it.  The possessive
+    // must be taken before the loop comes round to the case slot again,
+    // which would read the -ы of аудан-ы-ның as the accusative -ны.  The
+    // adjective in -ғы/-гі is tried first, as in the loop, so that its
+    // vowel is not taken as a possessive: жылғыдан, құрылғыға, алғашқыда
+    // give жыл, құрыл, алғаш like жылғы, құрылғы, алғашқы.
+    define case as (
+        (
+          [substring] among (
+            // allomorphs after a vowel or н/ң
+            '{n}{y}{ng}' '{n}{a}{n}' ( back_ok test ( vowel or '{n}' or '{ng}' ) )
+            '{n}{i-}{ng}' '{n}{e}{n}' ( front_ok test ( vowel or '{n}' or '{ng}' ) )
+            // dative after a possessive (бала-сы-на)
+            '{n}{a}' ( back_ok test ('{y}' or '{i-}') )
+            '{n}{e}' ( front_ok test ('{y}' or '{i-}') )
+            // accusative after a vowel, but not the -н of a participle
+            // (болған-ы, not *болға-ны), nor after и: few stems end in и,
+            // while loanwords in -ин are many and their possessive is spelt
+            // the same way (термин-і, витамин-і, not *терми-ні)
+            '{n}{y}' ( back_ok test vowel not '{i}' not among ('{gh}{a}' '{q}{a}') )
+            '{n}{i-}' ( front_ok test vowel not '{i}' not among ('{g}{e}' '{k}{e}') )
+            // allomorphs after a voiced sound; -ды also covers the past
+            // tense on a vowel stem that the verb chain declined
+            '{d}{y}{ng}' '{d}{a}{n}' '{d}{a}' '{d}{y}' '{gh}{a}'
+                ( back_ok not voiceless )
+            '{d}{i-}{ng}' '{d}{e}{n}' '{d}{e}' '{d}{i-}' '{g}{e}'
+                ( front_ok not voiceless )
+            // allomorphs after a voiceless consonant.  The ablative is
+            // refused after obstruent + с, an impossible root ending, which
+            // keeps Қазақстан, Өзбекстан, Тәжікстан whole (жұмыс-тан,
+            // қыс-тан still work).
+            '{t}{y}{ng}' '{t}{a}' '{t}{y}' '{q}{a}'
+                ( back_ok test voiceless )
+            '{t}{i-}{ng}' '{t}{e}' '{t}{i-}' '{k}{e}'
+                ( front_ok test voiceless )
+            '{t}{a}{n}'
+                ( back_ok test voiceless not ( '{s}' test non-vowel non-sonorant ) )
+            '{t}{e}{n}'
+                ( front_ok test voiceless not ( '{s}' test non-vowel non-sonorant ) )
+            // instrumental, not harmonic
+            '{m}{e}{n}' '{b}{e}{n}' '{p}{e}{n}'
+                ( true )
+          )
+          base_ok delete
+          try possessive_n
+          try ( temporal_adjective or possessive )
+        )
+        or ( not habitual possessive_n try possessive )
+    )
+
+    // Possessive.  -сы/-сі follows a vowel of a base of three letters or
+    // more, and a base in consonant + ы/і is read as noun + -ы (жұмыс-ы,
+    // облыс-ы, and with the glide у дауыс-ы, қуыс-ы) rather than as -сы on
+    // a stem in -ы, except after ш, к, қ, г where the agent nouns in -шы
+    // and the nouns and adjectives in -ғы/-гі/-қы/-кі are the larger class
+    // (тілші-сі, белгі-сі, үлгі-сі, алғашқы-сы, жылқы-сы).  ғ stays in
+    // the rule because of the deverbal nouns in -ғыс (соғыс-ы,
+    // қақтығыс-ы).  Nor is -сы
+    // read after и, where it is the root's с (артис-і, финалис-і, the
+    // spelling of артист-і), or after у: a stem in у takes -ы (тау-ы,
+    // су-ы, оқу-ы), so вирусы, радиусы, статусы are вирус-ы, радиус-ы,
+    // статус-ы.  When -сы is
+    // rejected the bare vowel is tried (бас-ы).  Bare -ы/-і is not taken
+    // after ш, so that the agent nouns keep their final vowel (басшы).
+    // Nor is it taken after vowel + қ/к: the possessive voices a final қ/к
+    // after a vowel (сабақ -> сабағы, бөлік -> бөлігі), so in екі, жалақы,
+    // темекі, шоқы the vowel belongs to the root, and екі no longer gives
+    // ек.  After a consonant the voicing of the velar tells the adjective
+    // -ғы/-гі from the root's own -қ/-к (see temporal_adjective).
+    define possessive as (
+        (
+          [substring] among (
+            '{y}{m}{y}{z}' '{y}{ng}{y}{z}'
+                ( back_ok set vowel_suffix )
+            '{i-}{m}{i-}{z}' '{i-}{ng}{i-}{z}'
+                ( front_ok set vowel_suffix )
+            '{m}{y}{z}' '{ng}{y}{z}' '{l}{a}{r}{y}' '{d}{a}{r}{y}' '{t}{a}{r}{y}'
+                ( back_ok )
+            '{m}{i-}{z}' '{ng}{i-}{z}' '{l}{e}{r}{i-}' '{d}{e}{r}{i-}' '{t}{e}{r}{i-}'
+                ( front_ok )
+            '{s}{y}'
+                ( back_ok test vowel test hop 3 not '{i}' not '{u}'
+                  not ( ('{y}' or '{i-}') not ('{sh}' or '{g}' or '{k}' or '{q}')
+                        ( non-vowel or '{u}' ) ) )
+            '{s}{i-}'
+                ( front_ok test vowel test hop 3 not '{i}' not '{u}'
+                  not ( ('{y}' or '{i-}') not ('{sh}' or '{g}' or '{k}' or '{q}')
+                        ( non-vowel or '{u}' ) ) )
+          )
+          base_ok delete
+        )
+        or ( ['{y}'] back_ok not '{sh}' not ( ('{q}' or '{k}') vowel )
+             base_ok delete set vowel_suffix )
+        or ( ['{i-}'] front_ok not '{sh}' not ( ('{q}' or '{k}') vowel )
+             base_ok delete set vowel_suffix )
+    )
+
+    // Plural allomorphs: -лар after a vowel, р, й or у; -дар after л, м,
+    // н, ң, з, ж; -тар after a voiceless consonant.  This keeps айдар,
+    // шебер and the like whole.
+    define plural as (
+        [substring] among (
+            '{l}{a}{r}' ( back_ok test ( vowel or '{r}' or '{i`}' ) )
+            '{l}{e}{r}' ( front_ok test ( vowel or '{r}' or '{i`}' ) )
+            '{d}{a}{r}' ( back_ok test ( '{l}' or '{m}' or '{n}' or '{ng}' or '{z}' or '{zh}' ) )
+            '{d}{e}{r}' ( front_ok test ( '{l}' or '{m}' or '{n}' or '{ng}' or '{z}' or '{zh}' ) )
+            '{t}{a}{r}' ( back_ok test voiceless )
+            '{t}{e}{r}' ( front_ok test voiceless )
+        )
+        base_ok delete
+    )
+
+    // "the one in/at X": Астанадағы, елдегі, ауданындағы
+    define locative_adjective as (
+        [substring] among (
+            '{d}{a}{gh}{y}' ( back_ok not voiceless )
+            '{d}{e}{g}{i-}' ( front_ok not voiceless )
+            '{t}{a}{gh}{y}' ( back_ok test voiceless )
+            '{t}{e}{g}{i-}' ( front_ok test voiceless )
+        )
+        base_ok delete
+    )
+
+    // Adjectives of time and place in -ғы/-гі/-қы/-кі: жылғы, бүгінгі,
+    // соңғы, ішкі, сыртқы, алғашқы.  Only after a consonant: after a vowel
+    // the string is a possessive on a stem in -қ/-к (саба-ғы is сабақ-ы).
+    // The allomorph agrees in voicing with that consonant, -ғы/-гі after a
+    // voiced one (жыл-ғы, соң-ғы) and -қы/-кі after a voiceless one
+    // (іш-кі, сырт-қы), so a voiceless к/қ after a voiced consonant is
+    // the root's own and the vowel is the possessive: халқ-ы -> халық,
+    // банк-і -> банк, түрк-і -> түрк (not түр).  Tried before the
+    // possessive, which would otherwise take the vowel.
+    define temporal_adjective as (
+        [substring] among (
+            '{gh}{y}' ( back_ok not voiceless )
+            '{q}{y}' ( back_ok test voiceless )
+            '{g}{i-}' ( front_ok not voiceless )
+            '{k}{i-}' ( front_ok test voiceless )
+        )
+        test non-vowel base_ok delete
+    )
+
+    // Conservative derivation: only on a two-syllable base, so that халық,
+    // салық, басшы, мүше and the like are left whole.  -лық/-лік is also
+    // matched in the voiced shape it has before a possessive vowel
+    // (шаруашылығ-ы), so both forms reach the same stem.
+    define derivation as (
+        [substring] among (
+            '{l}{y}{q}' '{d}{y}{q}' '{t}{y}{q}' '{l}{y}{gh}' '{d}{y}{gh}' '{t}{y}{gh}'
+            '{l}{y}' '{n}{sh}{y}' '{sh}{y}' '{sh}{a}'
+                ( back_ok )
+            '{l}{i-}{k}' '{d}{i-}{k}' '{t}{i-}{k}' '{l}{i-}{g}' '{d}{i-}{g}' '{t}{i-}{g}'
+            '{l}{i-}' '{n}{sh}{i-}' '{sh}{i-}' '{sh}{e}'
+                ( front_ok )
+            // agent noun on a verb stem: оқушы and сатушы stay whole, the
+            // base must have two non-glide vowels (тұтынушы -> тұтын)
+            '{u}{sh}{y}' ( back_ok test ( loop 2 gopast strong ) )
+            '{u}{sh}{i-}' ( front_ok test ( loop 2 gopast strong ) )
+        )
+        two_syllables delete
+    )
+
+    // Verbal noun -у after a consonant on a base of two syllables, once
+    // the nominal suffixes are off: дамыту, дамытуға, дамытуы and дамытады
+    // all give дамыт, басқару and басқарды both give басқар.  After a
+    // consonant у is a vowel (see back_ok), and at the end of a longer
+    // base it is the verbal noun.  One-syllable bases keep the -у (оқу,
+    // болу, ауру, сұлу), and so does a vowel stem, where у may be the glide
+    // of a root and the verbal noun is often a lexicalised noun or a name
+    // (атау 'name', жағалау 'coast', Мәскеу, Алатау).  Only the verbal
+    // slots follow.
+    define verbal_noun as (
+        ['{u}'] not vowel two_syllables base_ok delete
+    )
+
+    // Participles once the nominal suffixes are off (болғандар -> болған,
+    // келгенін -> келген, табылатынын -> табыл, жасайтынын -> жаса).
+    // -ған needs a two-syllable base, as in the finite table, so the first
+    // two examples keep the participle and only lose the nominal suffix.
+    define participle as (
+        [substring] among (
+            '{gh}{a}{n}' ( back_ok two_syllables )
+            '{q}{a}{n}' ( back_ok qan_base )
+            '{g}{e}{n}' ( front_ok two_syllables )
+            '{k}{e}{n}' ( front_ok qan_base )
+            '{a}{t}{y}{n}' ( back_ok habitual_base )
+            '{e}{t}{i-}{n}' ( front_ok habitual_base )
+            '{i`}{t}{y}{n}' ( back_ok )
+            '{i`}{t}{i-}{n}' ( front_ok )
+        )
+        base_ok delete
+    )
+
+    define nominal_chain as (
+        repeat (
+            case or locative_adjective or temporal_adjective
+            or possessive or plural or derivation
+        )
+        try ( ( verbal_noun or participle ) try negation try verbalizer )
+    )
+
+    define postlude as (
+        vowel_suffix
+        // undo the voicing a vowel-initial suffix caused on the base-final
+        // consonant: кітаб-ы -> кітап, шаруашылығ-ы -> шаруашылық,
+        // жүрег-і -> жүрек.  г after a rounded vowel is left alone
+        // (педагог, диалог).
+        do (
+            [substring] among (
+                '{b}'  ( <- '{p}' )
+                '{gh}' ( <- '{q}' )
+                '{g}'  ( not ( test ('{o}' or '{o"}' or '{u-}' or '{u"}' or '{u}') ) <- '{k}' )
+            )
+        )
+        // restore the narrow vowel elided before a possessive suffix:
+        // орн-ы -> орын, халқ-ы -> халық, ауз-ы -> ауыз
+        do (
+            [substring] among (
+                '{n}' ( test non-vowel ( back_ok <- '{y}{n}' ) or ( <- '{i-}{n}' ) )
+                '{q}' ( test non-vowel <- '{y}{q}' )
+                '{z}' ( test ( non-vowel or '{u}' ) ( back_ok <- '{y}{z}' ) or ( <- '{i-}{z}' ) )
+            )
+        )
+    )
+)
+
+define stem as (
+    // words of one syllable are never stemmed
+    test ( loop 2 gopast vowel )
+    unset vowel_suffix
+    do mark_regions
+    backwards (
+        do ( verb_chain or nominal_chain )
+        do postlude
+    )
+)
