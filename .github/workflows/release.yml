@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 env:
-  PGRX_VERSION: "=0.17.0"
+  PGRX_VERSION: "=0.20.1"
 
 jobs:
   test:
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        pg: [16, 17, 18]
+        pg: [16, 17, 18, 19]
     steps:
       - uses: actions/checkout@v4
 
@@ -227,7 +227,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        pg: [16, 17, 18]
+        pg: [16, 17, 18, 19]
     steps:
       - uses: actions/checkout@v4
 
