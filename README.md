@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="LICENSE">LGPL-3.0</a> &nbsp;·&nbsp;
-  <a href="https://github.com/darkhanakh/pg-kazsearch/releases">PostgreSQL 16, 17, 18</a> &nbsp;·&nbsp;
+  <a href="https://github.com/darkhanakh/pg-kazsearch/releases">PostgreSQL 16, 17, 18, 19</a> &nbsp;·&nbsp;
   <a href="https://github.com/darkhanakh/pg-kazsearch/releases">Elasticsearch 8.17 to 8.19</a>
 </p>
 
@@ -447,10 +447,10 @@ COPY --from=kazsearch /usr/share/postgresql/18/tsearch_data/kaz_* /usr/share/pos
 
 ### PostgreSQL from source
 
-You need a Rust toolchain, `cargo-pgrx` 0.17.0, and the server headers for your PostgreSQL major:
+You need a Rust toolchain, `cargo-pgrx` 0.20.1, and the server headers for your PostgreSQL major:
 
 ```bash
-cargo install --locked cargo-pgrx --version "=0.17.0"
+cargo install --locked cargo-pgrx --version "=0.20.1"
 cargo pgrx init --pg18 $(which pg_config)
 
 git clone https://github.com/darkhanakh/pg-kazsearch.git

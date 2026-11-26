@@ -19,7 +19,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo install --locked cargo-pgrx --version "=0.17.0" \
+    cargo install --locked cargo-pgrx --version "=0.20.1" \
     && cargo pgrx init --pg18 $(which pg_config) \
     && chmod -R a+rw $CARGO_HOME $RUSTUP_HOME
 
